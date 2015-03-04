@@ -1,19 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pm_manipulation)
+project(pm_examples)
 
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp pm_perception
+  roscpp pm_manipulation pm_perception pm_pcl_tools
 )
 
-## System dependencies are found with CMake's conventions
-find_package(PCL)
-
-
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES pm_manipulation
-  CATKIN_DEPENDS roscpp pm_perception
-  DEPENDS PCL
+#  INCLUDE_DIRS include
+#  LIBRARIES pm_examples
+  CATKIN_DEPENDS roscpp pm_manipulation pm_perception pm_pcl_tools
+#  DEPENDS system_lib
 )
 
 ###########
@@ -22,29 +21,25 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include)
+# include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS}  ${PCL_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-add_library(pm_manipulation
-  src/grasp_hypothesis_evaluation.cpp
-  src/hypothesis_generation.cpp
-  src/pm_grasp_planning.cpp
-)
+# add_library(pm_examples
+#   src/${PROJECT_NAME}/pm_examples.cpp
+# )
 
 ## Declare a cpp executable
-# add_executable(pm_manipulation_node src/pm_manipulation_node.cpp)
+add_executable(grasp_planning_example src/grasp_planning_example.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(pm_manipulation_node pm_manipulation_generate_messages_cpp)
+# add_dependencies(pm_examples_node pm_examples_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(pm_manipulation
-  ${catkin_LIBRARIES}  ${PCL_LIBRARIES} 
-)
+target_link_libraries(grasp_planning_example ${catkin_LIBRARIES} )
 
 #############
 ## Install ##
@@ -61,7 +56,7 @@ target_link_libraries(pm_manipulation
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS pm_manipulation pm_manipulation_node
+# install(TARGETS pm_examples pm_examples_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -86,7 +81,7 @@ target_link_libraries(pm_manipulation
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_pm_manipulation.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_pm_examples.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
