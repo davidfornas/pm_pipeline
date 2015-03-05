@@ -6,54 +6,48 @@
  */
 #include <pm_pcl_tools/pcl_tools.h>
 
-//Time measures
-#include <ctime>
 
 
+void PCLTools::cloudFromPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName){}
+void PCLTools::cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName){}
 
-namespace pm_pcl_tools{
-
-void PCLoader(pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene, std::string name, bool fromFile = true){}//Load from PCDReader or from topic
-void PassthroughFilter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene, double x, double y, double z){}
-	/*
-void passThrough(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, double z_min, double z_max){
+void PCLTools::applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, double min, double max){
   pcl::PassThrough<PointT> pass;
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud (in);
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (-10, 10);
+  pass.setFilterLimits (min, max);
   pass.filter (*out);
 }
-
-void statisticalOutlierRemoval(pcl::PCLPointCloud2::Ptr in, pcl::PCLPointCloud2::Ptr out){
-  pcl::VoxelGrid< pcl::PCLPointCloud2 > vg;
+/** Statistical Outlier Removal filter */
+void PCLTools::applyStatisticalOutlierRemoval(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out){
+  pcl::VoxelGrid<PointT> vg;
   vg.setInputCloud (in);
   vg.setLeafSize (0.01, 0.01, 0.01);
   vg.filter (*out);
 }
-
-void voxelGridFilter(pcl::PCLPointCloud2::Ptr in, pcl::PCLPointCloud2::Ptr out){
-  pcl::StatisticalOutlierRemoval<pcl::PCLPointCloud2> sor;
+/** Voxel Grid filter filter */
+void PCLTools::applyVoxelGridFilter(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out){
+  pcl::StatisticalOutlierRemoval<PointT> sor;
   sor.setInputCloud (in);
   sor.setMeanK (50);
   sor.setStddevMulThresh (1.0);
   sor.filter(*out);
-		
 }
 
-void estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals){  
-  
-  pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());  
+/** Compute normals */
+void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals){
+  pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
   pcl::NormalEstimation<PointT, pcl::Normal> ne;
   // Estimate point normals
   ne.setSearchMethod (tree);
   ne.setInputCloud (in);
   ne.setKSearch (50);
   ne.compute (*cloud_normals);
-	
 }
 
-pcl::ModelCoefficients::Ptr planeSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
+/** RANSAC plane estimation */
+pcl::ModelCoefficients::Ptr PCLTools::planeSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
                                                 pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals,
                                                 pcl::PointCloud<PointT>::Ptr cloud_plane, double distanceThreshold, int iterations){
 
@@ -103,7 +97,8 @@ pcl::ModelCoefficients::Ptr planeSegmentation(pcl::PointCloud<PointT>::Ptr in_cl
   return coefficients_plane;
 }
 
-pcl::ModelCoefficients::Ptr cylinderSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
+/** RANSAC cylinder estimation */
+pcl::ModelCoefficients::Ptr PCLTools::cylinderSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
                                                     pcl::PointCloud<PointT>::Ptr cloud_cylinder, double distanceThreshold,
                                                     int iterations, double rlimit){
 
@@ -149,7 +144,8 @@ pcl::ModelCoefficients::Ptr cylinderSegmentation(pcl::PointCloud<PointT>::Ptr in
   return coefficients_cylinder;
 }
 
-void showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<PointT>::Ptr c2, pcl::ModelCoefficients::Ptr plane_coeffs, pcl::ModelCoefficients::Ptr cylinder_coeffs){
+/** Show segmented cloud and plane by coefficients and inliers */
+void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<PointT>::Ptr c2, pcl::ModelCoefficients::Ptr plane_coeffs, pcl::ModelCoefficients::Ptr cylinder_coeffs){
 
      //pcl::visualization::PCLVisualizer viewer ("3D Viewer");
      //viewer.setBackgroundColor (0, 0, 0);
@@ -181,6 +177,6 @@ void showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<PointT>::Ptr c2
        viewer->spinOnce (100);
        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
      }
-}*/
+}
 
-} //end namespace
+

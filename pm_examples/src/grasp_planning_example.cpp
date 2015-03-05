@@ -1,9 +1,8 @@
 /** 
- * ..
- *  Created on: 3/03/2014
+ * This program test the classes available in the Perception&Manipulation pipeline
+ *  Created on: 03/03/2014
  *      Author: dfornas
  */
-
 #include <pm_pcl_tools/pcl_tools.h>
 
 #include <pm_perception/background_removal.h>
@@ -23,9 +22,10 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   //Ejemplo de utilizacion de la clase, diseño top-down.
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene;
-  pm_pcl_tools::PCLoader(scene, "cloud", true);//Load from PCDReader or from topic
-  pm_pcl_tools::PassthroughFilter(scene, 0, 0, 1);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene, scene_filtered;
+  PCLTools::cloudFromPCD(scene, "cloud.pcd");//Load from PCDReader or from topic
+  PCLTools::cloudFromTopic(scene, "/stereo/points2");
+  PCLTools::applyZAxisPassthrough(scene, scene, 0, 3);
 
   BackgroundRemoval background_remover;
   ObjectSegmentation segmentator;
