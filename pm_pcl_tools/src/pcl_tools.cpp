@@ -6,10 +6,24 @@
  */
 #include <pm_pcl_tools/pcl_tools.h>
 
+#include <ros/topic.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
 
+void PCLTools::cloudFromPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName){
+  pcl::PCDReader reader;
+  reader.read(fileName, *cloud);
+  std::cerr << "PointCloud loaded: " << cloud->points.size() << " data points." << std::endl;
+}
 
-void PCLTools::cloudFromPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName){}
-void PCLTools::cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName){}
+void PCLTools::cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName){
+  sensor_msgs::PointCloud2::ConstPtr message = ros::topic::waitForMessage< sensor_msgs::PointCloud2 >(topicName);
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl_conversions::toPCL(*message, pcl_pc);
+  //PCL Generic cloud to XYZRGB strong type.
+  pcl::fromPCLPointCloud2(pcl_pc, *cloud);
+  std::cerr << "PointCloud loaded: " << cloud->points.size() << " data points." << std::endl;
+}
 
 void PCLTools::applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, double min, double max){
   pcl::PassThrough<PointT> pass;
@@ -19,6 +33,7 @@ void PCLTools::applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::Point
   pass.setFilterLimits (min, max);
   pass.filter (*out);
 }
+
 /** Statistical Outlier Removal filter */
 void PCLTools::applyStatisticalOutlierRemoval(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out){
   pcl::VoxelGrid<PointT> vg;
@@ -26,6 +41,7 @@ void PCLTools::applyStatisticalOutlierRemoval(pcl::PointCloud<PointT>::Ptr in, p
   vg.setLeafSize (0.01, 0.01, 0.01);
   vg.filter (*out);
 }
+
 /** Voxel Grid filter filter */
 void PCLTools::applyVoxelGridFilter(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out){
   pcl::StatisticalOutlierRemoval<PointT> sor;
@@ -139,14 +155,11 @@ pcl::ModelCoefficients::Ptr PCLTools::cylinderSegmentation(pcl::PointCloud<Point
     std::cerr << *coefficients_cylinder << std::endl;
     writer.write ("/home/dfornas/data/scene_cylinder.pcd", *cloud_cylinder, false);
   }
-
-
   return coefficients_cylinder;
 }
 
 /** Show segmented cloud and plane by coefficients and inliers */
 void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<PointT>::Ptr c2, pcl::ModelCoefficients::Ptr plane_coeffs, pcl::ModelCoefficients::Ptr cylinder_coeffs){
-
      //pcl::visualization::PCLVisualizer viewer ("3D Viewer");
      //viewer.setBackgroundColor (0, 0, 0);
      //viewer.addPointCloud<PointT> (c1, "sample cloud");

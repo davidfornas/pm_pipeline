@@ -22,7 +22,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   //Ejemplo de utilizacion de la clase, diseño top-down.
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene, scene_filtered;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGB>), scene_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
   PCLTools::cloudFromPCD(scene, "cloud.pcd");//Load from PCDReader or from topic
   PCLTools::cloudFromTopic(scene, "/stereo/points2");
   PCLTools::applyZAxisPassthrough(scene, scene, 0, 3);
