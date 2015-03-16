@@ -8,6 +8,8 @@
 #ifndef BACKGROUNDREMOVAL_H_
 #define BACKGROUNDREMOVAL_H_
 
+#include <pcl/io/pcd_io.h>
+
 /** Description
  */
 class BackgroundRemoval {
@@ -17,13 +19,14 @@ class BackgroundRemoval {
 	/** Constructor.
 	 * @param cloud, background_remover, segmentator, hypothesis_generator
 	 * */
-        BackgroundRemoval(){
+        BackgroundRemoval(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
 
 	}
 
+        void setParameters(){}
 	void process();
 
-	~BackgroundRemoval() {}
+	~BackgroundRemoval(){}
 };
 
 #endif /* BACKGROUNDREMOVAL_H_ */

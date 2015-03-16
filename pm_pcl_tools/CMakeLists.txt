@@ -16,7 +16,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
 )
 
-add_library(pm_pcl_tools
+add_library(pm_pcl_tools 
   src/pcl_tools.cpp
 )
 target_link_libraries(pm_pcl_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} )

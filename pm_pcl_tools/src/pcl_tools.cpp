@@ -30,7 +30,7 @@ void PCLTools::applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::Point
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud (in);
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (min, max);
+  pass.setFilterLimits (-10, 10);
   pass.filter (*out);
 }
 
@@ -53,6 +53,7 @@ void PCLTools::applyVoxelGridFilter(pcl::PointCloud<PointT>::Ptr in, pcl::PointC
 
 /** Compute normals */
 void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals){
+  std::cerr << "Applying NORMAL ESTIMATION..." << std::endl;
   pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
   pcl::NormalEstimation<PointT, pcl::Normal> ne;
   // Estimate point normals
@@ -60,12 +61,14 @@ void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<
   ne.setInputCloud (in);
   ne.setKSearch (50);
   ne.compute (*cloud_normals);
+  std::cerr << "Applying NORMAL ESTIMATION2..." << std::endl;
 }
 
 /** RANSAC plane estimation */
 pcl::ModelCoefficients::Ptr PCLTools::planeSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
                                                 pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals,
                                                 pcl::PointCloud<PointT>::Ptr cloud_plane, double distanceThreshold, int iterations){
+  std::cerr << "Plane seg..." << std::endl;
 
   clock_t begin = clock();
   pcl::PointIndices::Ptr inliers_plane (new pcl::PointIndices);

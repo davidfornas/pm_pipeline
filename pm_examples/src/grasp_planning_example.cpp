@@ -23,16 +23,21 @@ int main(int argc, char **argv)
 
   //Ejemplo de utilizacion de la clase, diseño top-down.
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGB>), scene_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
-  PCLTools::cloudFromPCD(scene, "cloud.pcd");//Load from PCDReader or from topic
-  PCLTools::cloudFromTopic(scene, "/stereo/points2");
-  PCLTools::applyZAxisPassthrough(scene, scene, 0, 3);
+  std::string input_basename("in");
+  nh.getParam("input_basename", input_basename);
+  PCLTools::cloudFromPCD(scene, input_basename + std::string(".pcd"));//Load from PCDReader or from topic
+  //PCLTools::cloudFromTopic(scene, "/stereo/points2");
+  //PCLTools::applyZAxisPassthrough(scene, scene, 0, 3);
 
-  BackgroundRemoval background_remover;
-  ObjectSegmentation segmentator;
-  HypothesisGeneration hypothesis_generation;
+  BackgroundRemoval * background_remover;
+  ObjectSegmentation * segmentator;
+  HypothesisGeneration * hypothesis_generation;//NEWS!!!!!!!
+
   PMGraspPlanning planner(scene, background_remover, segmentator, hypothesis_generation);
 
-  planner.proccessScene();
+  planner.perceive();
+  planner.get_cMg();
+  //planner.proccessScene();
 
   GraspHypothesisEvaluation ghyval;//();//planner.getGraspHypothesis);
   ghyval.getBestGrasp();
@@ -40,3 +45,4 @@ int main(int argc, char **argv)
   //SHOW RESULT...
   return 0;
 }
+
