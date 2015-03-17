@@ -16,6 +16,8 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/features/normal_3d.h>
 
+#include <pcl/visualization/pcl_visualizer.h>
+
 typedef pcl::PointXYZRGB PointT;
 
 int
@@ -56,7 +58,7 @@ main (int argc, char** argv)
     seg.setNormalDistanceWeight (0.1);
     seg.setMethodType (pcl::SAC_RANSAC);
     seg.setMaxIterations (100);
-    seg.setDistanceThreshold (0.03);
+    seg.setDistanceThreshold (0.12);
     seg.setInputCloud (cloud_filtered);
     seg.setInputNormals (cloud_normals);
 
@@ -86,7 +88,7 @@ pcl::ExtractIndices<PointT> extract;
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setNormalDistanceWeight (0.1);
   seg.setMaxIterations (10000);
-  seg.setDistanceThreshold (0.05);
+  seg.setDistanceThreshold (0.03);
   seg.setRadiusLimits (0, 0.1);
   seg.setInputCloud (cloud_filtered2);
   seg.setInputNormals (cloud_normals2);
@@ -105,7 +107,6 @@ pcl::ExtractIndices<PointT> extract;
   proj.setInputCloud (cloud_filtered2);
   proj.setModelCoefficients (coefficients_plane);
   proj.filter (*cloud_projected);
-  std::cerr << "PointCloud after projection has: "
 
   pcl::PCDWriter writer;
   writer.write ("projected_cylinder.pcd", *cloud_projected, false);
@@ -117,6 +118,28 @@ pcl::ExtractIndices<PointT> extract;
   chull.setAlpha (0.1);
   chull.reconstruct (*cloud_hull);
   writer.write ("chull.pcd", *cloud_hull, false);
+  std::cout << cloud_hull->points.size() << std::endl;
+  // ----  VISUALIZATION  ---
+  // -----Open 3D viewer and add point cloud-----
+    pcl::visualization::PCLVisualizer viewer ("3D Viewer");
+    viewer.setBackgroundColor (1, 1, 1);
+    //viewer.addCoordinateSystem (1.0f);
+    pcl::visualization::PointCloudColorHandlerCustom<PointT> point_cloud_color_handler (cloud_filtered, 0, 0, 0);
+    viewer.addPointCloud (cloud_filtered);//, point_cloud_color_handler, "original point cloud");
+    for (int i=1; i<cloud_hull->points.size(); ++i)
+    {
+      std::ostringstream id;
+        id << "name: " << i ;
+        std::cout << id;
+      viewer.addLine<PointT>(cloud_hull->points[i-1],cloud_hull->points[i],0,255,0,id.str());
+      std::cout << cloud_hull->points[i] << std::endl;
+    }
 
+  // -----Main loop-----
+  while (!viewer.wasStopped ())
+  {
+    viewer.spinOnce ();
+    pcl_sleep(0.01);
+  }
   return (0);
 }
