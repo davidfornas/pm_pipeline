@@ -6,34 +6,11 @@
  */
 
 #include <pm_manipulation/pm_grasp_planning.h>
-
 #include <pm_pcl_tools/pcl_tools.h>
-//#include <pm_manipulation/pm_grasp_planning.h>
 
-//CHECK
-#include <ros/ros.h>
-
-#include <visp/vpPixelMeterConversion.h>
 #include <visp/vpHomogeneousMatrix.h>
-#include <visp/vpPoint.h>
 
-//Includes del reconstruction, algunos pueden sobrar...
-#include <pcl/ModelCoefficients.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-
-//Comprobar si son necesarias
-#include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/filters/conditional_removal.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/surface/convex_hull.h>
-
-#include <tf/transform_datatypes.h>
 #include <boost/bind.hpp>
-
 #include <vector>
 #include <algorithm>
 
@@ -63,20 +40,22 @@ void PMGraspPlanning::perceive() {
   // @todo : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools::estimateNormals(cloud_filtered, cloud_normals);
 
+  //background_remover_->setInput(cloud_filtered,normals);
+  //background_remover_->filter(coefficients_plane);
   coefficients_plane = PCLTools::planeSegmentation(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2, cloud_plane, plane_distance_threshold_, plane_iterations_);
+  //background_remover_->setInput(cloud_filtered);
+  //background_remover_->filter(coefficients_plane);
+  //segmentator_ ->setInput(cloud_filtered);
   coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
   PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
-
   //Puntos de agarre
   PointT mean, max, min;  //Puntos que definiran el cilindro.
-
   //Punto de origen del cilindro.
   PointT axis_point;
   axis_point.x=coefficients_cylinder->values[0];
   axis_point.y=coefficients_cylinder->values[1];
   axis_point.z=coefficients_cylinder->values[2];
-
   //Vectores directores
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();

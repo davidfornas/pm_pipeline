@@ -26,6 +26,8 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(grasp_planning_example src/grasp_planning_example.cpp)
+add_executable(border_following_example src/border_following_example.cpp)
+add_executable(concave_hull_example src/concave_hull_example.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -33,3 +35,5 @@ add_executable(grasp_planning_example src/grasp_planning_example.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planning_example ${catkin_LIBRARIES} )
+target_link_libraries(border_following_example ${catkin_LIBRARIES} )
+target_link_libraries(concave_hull_example ${catkin_LIBRARIES} )

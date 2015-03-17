@@ -1,7 +1,7 @@
 <launch>
   <arg name="input_basename" default="uwsimFeb15" />
   <param name="input_basename" value="$(find pcl_manipulation)/resources/$(arg input_basename)" />
-  <node name="grasp_planning_example" pkg="pm_examples" type="grasp_planning_example" output="screen" respawn="false"/>
+  <node name="grasp_planning_example" pkg="pm_examples" type="concave_hull_example" output="screen" respawn="false"/>
 </launch>
 
 
