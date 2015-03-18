@@ -4,12 +4,13 @@ project(pm_perception)
 find_package(catkin REQUIRED COMPONENTS roscpp)
 
 find_package(PCL REQUIRED)
+find_package(Boost REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES pm_perception
   CATKIN_DEPENDS roscpp
-  DEPENDS PCL
+  DEPENDS PCL Boost
 )
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -20,6 +21,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 add_library(pm_perception 
   src/background_removal.cpp
   src/object_segmentation.cpp
+  src/border_detection.cpp
 )
 
 ## Declare a cpp executable
