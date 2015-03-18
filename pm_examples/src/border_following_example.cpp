@@ -13,6 +13,9 @@
 #include <pcl/features/range_image_border_extractor.h>
 #include <pcl/console/parse.h>
 
+//Time measures
+#include <ctime>
+
 typedef pcl::PointXYZRGB PointType;
 
 // -----Parameters-----
@@ -33,6 +36,7 @@ main (int argc, char** argv)
     cout << "Setting angular resolution to "<<angular_resolution<<"deg.\n";
   angular_resolution = pcl::deg2rad (angular_resolution);
 
+
   // -----Read pcd file or create example point cloud if not given-----
   pcl::PointCloud<PointType>::Ptr point_cloud_ptr (new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>& point_cloud = *point_cloud_ptr;
@@ -42,6 +46,7 @@ main (int argc, char** argv)
   if (!pcd_filename_indices.empty ())
   {
     std::string filename = argv[pcd_filename_indices[0]];
+    clock_t begin = clock();
     if (pcl::io::loadPCDFile (filename, point_cloud) == -1)
     {
       cout << "Was not able to open file \""<<filename<<"\".\n";
@@ -52,11 +57,14 @@ main (int argc, char** argv)
                                                                point_cloud.sensor_origin_[2])) *
                         Eigen::Affine3f (point_cloud.sensor_orientation_);
 
-    std::string far_ranges_filename = pcl::getFilenameWithoutExtension (filename)+"_far_ranges.pcd";
-    if (pcl::io::loadPCDFile(far_ranges_filename.c_str(), far_ranges) == -1)
-      std::cout << "Far ranges file \""<<far_ranges_filename<<"\" does not exists.\n";
+    //std::string far_ranges_filename = pcl::getFilenameWithoutExtension (filename)+"_far_ranges.pcd";
+    //if (pcl::io::loadPCDFile(far_ranges_filename.c_str(), far_ranges) == -1)
+    //  std::cout << "Far ranges file \""<<far_ranges_filename<<"\" does not exists.\n";
+    clock_t end = clock();
+    std::cerr << "Loading elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
   }
 
+  clock_t begin = clock();
   // -----Create RangeImage from the PointCloud-----
   float noise_level = 0.0;
   float min_range = 0.0f;
@@ -69,6 +77,17 @@ main (int argc, char** argv)
   if (setUnseenToMaxRange)
     range_image.setUnseenToMaxRange ();
 
+
+
+  // -----Extract borders-----
+  pcl::RangeImageBorderExtractor border_extractor (&range_image);
+  pcl::PointCloud<pcl::BorderDescription> border_descriptions;
+  border_extractor.compute (border_descriptions);
+
+  clock_t end = clock();
+  std::cerr << "Computing elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
+
+
   // -----Open 3D viewer and add point cloud-----
   pcl::visualization::PCLVisualizer viewer ("3D Viewer");
   viewer.setBackgroundColor (1, 1, 1);
@@ -79,10 +98,6 @@ main (int argc, char** argv)
   //viewer.addPointCloud (range_image_ptr, range_image_color_handler, "range image");
   //viewer.setPointCloudRenderingProperties (PCL_VISUALIZER_POINT_SIZE, 2, "range image");
 
-  // -----Extract borders-----
-  pcl::RangeImageBorderExtractor border_extractor (&range_image);
-  pcl::PointCloud<pcl::BorderDescription> border_descriptions;
-  border_extractor.compute (border_descriptions);
 
   // -----Show points in 3D viewer-----
   pcl::PointCloud<pcl::PointWithRange>::Ptr border_points_ptr(new pcl::PointCloud<pcl::PointWithRange>),

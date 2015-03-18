@@ -18,6 +18,9 @@
 
 #include <pcl/visualization/pcl_visualizer.h>
 
+//Time measures
+#include <ctime>
+
 typedef pcl::PointXYZRGB PointT;
 
 int
@@ -33,8 +36,11 @@ main (int argc, char** argv)
   pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
   pcl::PCDReader reader;
 
-  reader.read ("test.pcd", *cloud);
+  reader.read ("uwsimFeb15.pcd", *cloud);
   // Build a filter to remove spurious NaNs
+
+  clock_t begin = clock();
+
   pcl::PassThrough<PointT> pass;
   pass.setInputCloud (cloud);
   pass.setFilterFieldName ("z");
@@ -100,6 +106,11 @@ pcl::ExtractIndices<PointT> extract;
   extract.setNegative (false);
   extract.filter (*cloud_cylinder);
 
+  clock_t end = clock();
+  std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
+
+  begin = clock();
+
   // Project the CILINDER inliers into the PLANE model
   pcl::ProjectInliers<PointT> proj;
   proj.setModelType (pcl::SACMODEL_PLANE);
@@ -108,8 +119,12 @@ pcl::ExtractIndices<PointT> extract;
   proj.setModelCoefficients (coefficients_plane);
   proj.filter (*cloud_projected);
 
-  pcl::PCDWriter writer;
-  writer.write ("projected_cylinder.pcd", *cloud_projected, false);
+  end = clock();
+  std::cerr << "Elapsed projection time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
+  begin = clock();
+
+  //pcl::PCDWriter writer;
+  //writer.write ("projected_cylinder.pcd", *cloud_projected, false);
 
   // Create a Concave Hull representation of the projected inliers
   pcl::PointCloud<PointT>::Ptr cloud_hull (new pcl::PointCloud<PointT>);
@@ -117,8 +132,16 @@ pcl::ExtractIndices<PointT> extract;
   chull.setInputCloud (cloud_projected);
   chull.setAlpha (0.1);
   chull.reconstruct (*cloud_hull);
-  writer.write ("chull.pcd", *cloud_hull, false);
+
+  end = clock();
+  std::cerr << "Elapsed concave hull time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
+
+  //writer.write ("chull.pcd", *cloud_hull, false);
   std::cout << cloud_hull->points.size() << std::endl;
+
+  end = clock();
+  std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
+
   // ----  VISUALIZATION  ---
   // -----Open 3D viewer and add point cloud-----
     pcl::visualization::PCLVisualizer viewer ("3D Viewer");
@@ -129,10 +152,8 @@ pcl::ExtractIndices<PointT> extract;
     for (int i=1; i<cloud_hull->points.size(); ++i)
     {
       std::ostringstream id;
-        id << "name: " << i ;
-        std::cout << id;
+      id << "name: " << i ;
       viewer.addLine<PointT>(cloud_hull->points[i-1],cloud_hull->points[i],0,255,0,id.str());
-      std::cout << cloud_hull->points[i] << std::endl;
     }
 
   // -----Main loop-----
