@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_perception)
 
-find_package(catkin REQUIRED COMPONENTS roscpp)
+find_package(catkin REQUIRED COMPONENTS roscpp visualization_msgs)
 
 find_package(PCL REQUIRED)
 find_package(Boost REQUIRED)
@@ -9,7 +9,7 @@ find_package(Boost REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES pm_perception
-  CATKIN_DEPENDS roscpp
+  CATKIN_DEPENDS roscpp visualization_msgs
   DEPENDS PCL Boost
 )
 ## Specify additional locations of header files

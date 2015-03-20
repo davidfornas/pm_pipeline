@@ -4,6 +4,7 @@
  *  Created on: 18/03/2014
  *      Author: dfornas
  */
+#include<ros/ros.h>
 
 #include <pm_perception/border_detection.h>
 
@@ -141,6 +142,35 @@ void ConcaveHullBorderDetection::process(){
     std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
 }
 
+void ConcaveHullBorderDetection::publishMarker(ros::NodeHandle & n){
+  ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
+  visualization_msgs::Marker trajectory;
+  trajectory.header.frame_id = "/stereo_down";//CAMERA FRAME
+  trajectory.header.stamp = ros::Time::now();
+  trajectory.ns = "points_and_lines";
+  trajectory.action = visualization_msgs::Marker::ADD;
+  trajectory.pose.orientation.w = 1.0;
+  trajectory.id = 0;
+  trajectory.type = visualization_msgs::Marker::LINE_LIST;
+  trajectory.scale.x = 0.3;
+  trajectory.color.r = 1.0;
+  trajectory.color.a = 1.0;
+  // Create the vertices
+     geometry_msgs::Point p;
+     for (int i = 0; i < border_cloud_->points.size(); ++i)
+     {
+       p.x = border_cloud_->points[i].x;
+       p.y = border_cloud_->points[i].y;
+       p.z = border_cloud_->points[i].z;
+       trajectory.points.push_back(p);
+     }
+     if(border_cloud_->points.size()%2==1)trajectory.points.push_back(p);
+     marker_pub.publish(trajectory);
+
+}
+void RangeImageBorderDetection::publishMarker(ros::NodeHandle & n){
+
+}
 void RangeImageBorderDetection::process(){
 
   // -----Parameters-----

@@ -10,6 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <pcl/io/pcd_io.h>
+#include <visualization_msgs/Marker.h>
 
 typedef pcl::PointXYZRGB PointT;
 
@@ -25,6 +26,7 @@ public:
 
   BorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : cloud_(cloud) {}
   virtual void process(){};
+  virtual void publishMarker(ros::NodeHandle & n){};
   void getTrajectory(pcl::PointCloud<PointT>::Ptr trajectory){ trajectory=border_cloud_; }
   virtual ~BorderDetection() {}
 
@@ -37,6 +39,7 @@ public:
 
   RangeImageBorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : BorderDetection(cloud) {}
   void process();
+  void publishMarker(ros::NodeHandle & n);
   void getTrajectoryWithRange(pcl::PointCloud<pcl::PointWithRange>::Ptr trajectory){ trajectory=border_cloud_with_ranges_; }
   ~RangeImageBorderDetection(){}
 
@@ -48,6 +51,7 @@ public:
 
   ConcaveHullBorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : BorderDetection(cloud) {}
   void process();
+  void publishMarker(ros::NodeHandle & n);
   ~ConcaveHullBorderDetection(){}
 
 };

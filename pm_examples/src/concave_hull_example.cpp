@@ -3,6 +3,7 @@
  *  Created on: 17/03/2014
  *      Author: dfornas
  */
+#include <ros/ros.h>
 
 #include <pm_perception/border_detection.h>
 
@@ -18,6 +19,10 @@
 int
 main (int argc, char** argv)
 {
+  ros::init(argc, argv, "points_and_lines");
+  ros::NodeHandle n;
+
+
   pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_hull(new pcl::PointCloud<PointT>);
   pcl::PCDReader reader;
 
@@ -48,6 +53,7 @@ main (int argc, char** argv)
   while (!viewer.wasStopped ())
   {
     viewer.spinOnce ();
+    border_detector.publishMarker(n);
     pcl_sleep(0.01);
   }
   return (0);
