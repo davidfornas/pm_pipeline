@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_manipulation)
 
-find_package(catkin REQUIRED COMPONENTS roscpp pm_perception pm_pcl_tools )
+find_package(catkin REQUIRED COMPONENTS roscpp pm_perception pm_tools )
 
 find_package(PCL)
 find_package(VISP)
@@ -10,7 +10,7 @@ find_package(OpenCV)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES pm_manipulation
-  CATKIN_DEPENDS roscpp pm_perception pm_pcl_tools
+  CATKIN_DEPENDS roscpp pm_perception pm_tools
   DEPENDS PCL VISP OpenCV
 )
 

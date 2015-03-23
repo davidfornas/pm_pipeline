@@ -7,8 +7,6 @@
 
 #include <pm_perception/border_detection.h>
 
-
-
 #include <pcl/visualization/pcl_visualizer.h>
 
 //Time measures
@@ -19,7 +17,7 @@
 int
 main (int argc, char** argv)
 {
-  ros::init(argc, argv, "points_and_lines");
+  ros::init(argc, argv, "concave_hull_example");
   ros::NodeHandle n;
 
 
@@ -46,6 +44,7 @@ main (int argc, char** argv)
     {
       std::ostringstream id;
       id << "name: " << i ;
+      std::cout << id;
       viewer.addLine<PointT>(cloud_hull->points[i-1],cloud_hull->points[i],0,255,0,id.str());
     }
 
@@ -53,7 +52,8 @@ main (int argc, char** argv)
   while (!viewer.wasStopped ())
   {
     viewer.spinOnce ();
-    border_detector.publishMarker(n);
+    border_detector.publishPath(n);
+    border_detector.publishTF();
     pcl_sleep(0.01);
   }
   return (0);

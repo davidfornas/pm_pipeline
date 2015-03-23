@@ -11,10 +11,8 @@
 #include <pm_perception/background_removal.h>
 #include <pm_perception/object_segmentation.h>
 #include <pm_manipulation/hypothesis_generation.h>
-#include <pcl/io/pcd_io.h>
 
-//#include <mar_perception/VispUtils.h>
-//#include <mar_perception/PCLUtils.h>
+#include <pcl/io/pcd_io.h>
 
 #include <visp/vpImage.h>
 #include <visp/vpRGBa.h>

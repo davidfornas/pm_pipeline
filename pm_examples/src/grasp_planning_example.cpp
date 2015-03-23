@@ -3,7 +3,7 @@
  *  Created on: 03/03/2014
  *      Author: dfornas
  */
-#include <pm_pcl_tools/pcl_tools.h>
+#include <pm_tools/pcl_tools.h>
 
 #include <pm_perception/background_removal.h>
 #include <pm_perception/object_segmentation.h>

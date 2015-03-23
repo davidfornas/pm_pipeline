@@ -24,6 +24,9 @@
 #include <pcl/range_image/range_image.h>
 #include <pcl/features/range_image_border_extractor.h>
 
+//VISP
+#include <visp/vpHomogeneousMatrix.h>
+
 //Time measures
 #include <ctime>
 
@@ -142,8 +145,8 @@ void ConcaveHullBorderDetection::process(){
     std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
 }
 
-void ConcaveHullBorderDetection::publishMarker(ros::NodeHandle & n){
-  ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
+void ConcaveHullBorderDetection::publishPath(ros::NodeHandle & n){
+  /*ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
   visualization_msgs::Marker trajectory;
   trajectory.header.frame_id = "/stereo_down";//CAMERA FRAME
   trajectory.header.stamp = ros::Time::now();
@@ -156,19 +159,88 @@ void ConcaveHullBorderDetection::publishMarker(ros::NodeHandle & n){
   trajectory.color.r = 1.0;
   trajectory.color.a = 1.0;
   // Create the vertices
-     geometry_msgs::Point p;
+     geometry_msgs::Point p, p_old;
+     p_old.x = border_cloud_->points[0].x;
+     p_old.y = border_cloud_->points[0].y;
+     p_old.z = border_cloud_->points[0].z;
      for (int i = 0; i < border_cloud_->points.size(); ++i)
      {
        p.x = border_cloud_->points[i].x;
        p.y = border_cloud_->points[i].y;
        p.z = border_cloud_->points[i].z;
+       trajectory.points.push_back(p_old);
        trajectory.points.push_back(p);
+       p_old.x = border_cloud_->points[i].x;
+       p_old.y = border_cloud_->points[i].y;
+       p_old.z = border_cloud_->points[i].z;
      }
-     if(border_cloud_->points.size()%2==1)trajectory.points.push_back(p);
      marker_pub.publish(trajectory);
+  */
+  ros::Publisher path_pub = n.advertise<nav_msgs::Path>("path", 10);
+  nav_msgs::Path path;
+  path.header.frame_id="/stereo_down";
+  geometry_msgs::PoseStamped mass_center;
+  for (int i = 0; i < border_cloud_->points.size(); ++i)
+  {
+    mass_center.pose.position.x += border_cloud_->points[i].x;
+    mass_center.pose.position.y += border_cloud_->points[i].y;
+    mass_center.pose.position.z += border_cloud_->points[i].z;
+  }
+  mass_center.pose.position.x /= border_cloud_->points.size();
+  mass_center.pose.position.y /= border_cloud_->points.size();
+  mass_center.pose.position.z /= border_cloud_->points.size();
+  path.poses.push_back(mass_center);
 
+  for (int i = 0; i < border_cloud_->points.size(); ++i)
+  {
+    geometry_msgs::PoseStamped p;
+    p.header.frame_id="/stereo_down";
+    //Postion
+    p.pose.position.x = border_cloud_->points[i].x;
+    p.pose.position.y = border_cloud_->points[i].y;
+    p.pose.position.z = border_cloud_->points[i].z;
+
+    //Orientation
+    double xdiff = mass_center.pose.position.x - border_cloud_->points[i].x;
+    double ydiff = mass_center.pose.position.y - border_cloud_->points[i].y;
+    double zdiff = mass_center.pose.position.z - border_cloud_->points[i].z;
+
+    vpColVector zaxis(3), xaxis(3);
+    zaxis[0] = xdiff;
+    zaxis[1] = ydiff;
+    zaxis[2] = zdiff;
+    xaxis[0] = ydiff;
+    xaxis[1] = -xdiff;
+    xaxis[2] = 0;
+    zaxis=zaxis.normalize();
+    xaxis=xaxis.normalize();
+    vpColVector yaxis=vpColVector::crossProd( zaxis, xaxis ).normalize();
+
+    vpHomogeneousMatrix frame;
+    frame[0][0]=xaxis[0]; frame[0][1]=yaxis[0]; frame[0][2]=zaxis[0];frame[0][3]=border_cloud_->points[i].x;
+    frame[1][0]=xaxis[1]; frame[1][1]=yaxis[1]; frame[1][2]=zaxis[1];frame[1][3]=border_cloud_->points[i].y;
+    frame[2][0]=xaxis[2]; frame[2][1]=yaxis[2]; frame[2][2]=zaxis[2];frame[2][3]=border_cloud_->points[i].z;
+    frame[3][0]=0;        frame[3][1]=0;        frame[3][2]=0;       frame[3][3]=1;
+
+    vpQuaternionVector q;
+    frame.extract(q);
+
+    p.pose.orientation.x = q.x();
+    p.pose.orientation.y = q.y();
+    p.pose.orientation.z = q.z();
+    p.pose.orientation.w = q.w();
+
+    std::ostringstream id, id2;
+    id << "name: " << i ;
+    id2 << "id: " << i ;
+
+    vispToTF.addTransform(frame, "/stereo_down", id.str(), id2.str());
+
+    path.poses.push_back(p);
+  }
+  path_pub.publish(path);
 }
-void RangeImageBorderDetection::publishMarker(ros::NodeHandle & n){
+void RangeImageBorderDetection::publishPath(ros::NodeHandle & n){
 
 }
 void RangeImageBorderDetection::process(){

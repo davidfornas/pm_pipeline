@@ -3,10 +3,7 @@
  *  Created on: 17/03/2014
  *      Author: dfornas
  */
-
 #include <pm_perception/border_detection.h>
-
-
 
 #include <pcl/visualization/pcl_visualizer.h>
 

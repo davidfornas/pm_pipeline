@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 2.8.3)
 project(pm_examples)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp pm_manipulation pm_perception pm_pcl_tools
+  roscpp pm_manipulation pm_perception pm_tools
 )
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES pm_examples
-  CATKIN_DEPENDS roscpp pm_manipulation pm_perception pm_pcl_tools
+  CATKIN_DEPENDS roscpp pm_manipulation pm_perception pm_tools
 #  DEPENDS system_lib
 )
 

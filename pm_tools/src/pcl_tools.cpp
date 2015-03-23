@@ -4,7 +4,7 @@
  *  Created on: 03/03/2015
  *      Author: dfornas
  */
-#include <pm_pcl_tools/pcl_tools.h>
+#include <pm_tools/pcl_tools.h>
 
 #include <ros/topic.h>
 #include <pcl_conversions/pcl_conversions.h>

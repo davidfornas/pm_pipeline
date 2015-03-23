@@ -10,7 +10,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <pcl/io/pcd_io.h>
-#include <visualization_msgs/Marker.h>
+#include <nav_msgs/Path.h>
+
+#include <pm_tools/visp_tools.h>
 
 typedef pcl::PointXYZRGB PointT;
 
@@ -20,14 +22,17 @@ class BorderDetection {
 
 protected:
 
+  VispToTF vispToTF;
   pcl::PointCloud<PointT>::Ptr cloud_, border_cloud_;
 
 public:
 
+  void publishTF(){ vispToTF.publish(); }
+
   BorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : cloud_(cloud) {}
   virtual void process(){};
-  virtual void publishMarker(ros::NodeHandle & n){};
-  void getTrajectory(pcl::PointCloud<PointT>::Ptr trajectory){ trajectory=border_cloud_; }
+  virtual void publishPath(ros::NodeHandle & n){};
+  void getTrajectory(pcl::PointCloud<PointT>::Ptr & trajectory){ trajectory=border_cloud_; }
   virtual ~BorderDetection() {}
 
 };
@@ -39,8 +44,8 @@ public:
 
   RangeImageBorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : BorderDetection(cloud) {}
   void process();
-  void publishMarker(ros::NodeHandle & n);
-  void getTrajectoryWithRange(pcl::PointCloud<pcl::PointWithRange>::Ptr trajectory){ trajectory=border_cloud_with_ranges_; }
+  void publishPath(ros::NodeHandle & n);
+  void getTrajectoryWithRange(pcl::PointCloud<pcl::PointWithRange>::Ptr & trajectory){ trajectory=border_cloud_with_ranges_; }
   ~RangeImageBorderDetection(){}
 
 };
@@ -51,7 +56,7 @@ public:
 
   ConcaveHullBorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : BorderDetection(cloud) {}
   void process();
-  void publishMarker(ros::NodeHandle & n);
+  void publishPath(ros::NodeHandle & n);
   ~ConcaveHullBorderDetection(){}
 
 };
