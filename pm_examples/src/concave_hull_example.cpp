@@ -31,6 +31,8 @@ main (int argc, char** argv)
   ConcaveHullBorderDetection border_detector(cloud);
   border_detector.process();
   border_detector.getTrajectory(cloud_hull);
+  border_detector.generatePath();
+  border_detector.transformPathFrame("/world");
 
 
   // ----  VISUALIZATION  ---
