@@ -65,14 +65,10 @@ void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<
 }
 
 /** RANSAC plane estimation */
-pcl::ModelCoefficients::Ptr PCLTools::planeSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
-                                                pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals,
-                                                pcl::PointCloud<PointT>::Ptr cloud_plane, double distanceThreshold, int iterations){
-  std::cerr << "Plane seg..." << std::endl;
+bool PlaneSegmentation::apply(pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals, pcl::PointCloud<PointT>::Ptr cloud_plane, pcl::ModelCoefficients::Ptr coeffs){
 
   clock_t begin = clock();
   pcl::PointIndices::Ptr inliers_plane (new pcl::PointIndices);
-  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients);
   
   pcl::ExtractIndices<PointT> extract;
   pcl::ExtractIndices<pcl::Normal> extract_normals;
@@ -84,18 +80,18 @@ pcl::ModelCoefficients::Ptr PCLTools::planeSegmentation(pcl::PointCloud<PointT>:
   seg.setModelType (pcl::SACMODEL_NORMAL_PLANE);
   seg.setNormalDistanceWeight (0.1);
   seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setMaxIterations (iterations);
-  seg.setDistanceThreshold (distanceThreshold);
-  seg.setInputCloud (in_cloud);
-  seg.setInputNormals (in_normals);
+  seg.setMaxIterations (num_iterations_);
+  seg.setDistanceThreshold (distance_threshold_);
+  seg.setInputCloud (in_cloud_);
+  seg.setInputNormals (in_normals_);
   // Obtain the plane inliers and coefficients
-  seg.segment (*inliers_plane, *coefficients_plane);
-  std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
+  seg.segment (*inliers_plane, *coeffs);
+  std::cerr << "Plane coefficients: " << *coeffs << std::endl;
   clock_t end = clock();
   std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
 
   // Extract the planar inliers from the input cloud
-  extract.setInputCloud (in_cloud);
+  extract.setInputCloud (in_cloud_);
   extract.setIndices (inliers_plane);
   extract.setNegative (false);
 
@@ -109,21 +105,19 @@ pcl::ModelCoefficients::Ptr PCLTools::planeSegmentation(pcl::PointCloud<PointT>:
   extract.filter (*out_cloud);
   
   extract_normals.setNegative (true);
-  extract_normals.setInputCloud (in_normals);
+  extract_normals.setInputCloud (in_normals_);
   extract_normals.setIndices (inliers_plane);
   extract_normals.filter (*out_normals);
 
-  return coefficients_plane;
+  // @ TODO check if plane not found
+  return true;
 }
 
 /** RANSAC cylinder estimation */
-pcl::ModelCoefficients::Ptr PCLTools::cylinderSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals,
-                                                    pcl::PointCloud<PointT>::Ptr cloud_cylinder, double distanceThreshold,
-                                                    int iterations, double rlimit){
+bool CylinderSegmentation::apply(pcl::PointCloud<PointT>::Ptr cloud_cylinder, pcl::ModelCoefficients::Ptr coeffs){
 
   clock_t begin = clock();
   pcl::PointIndices::Ptr inliers_cylinder (new pcl::PointIndices);
-  pcl::ModelCoefficients::Ptr coefficients_cylinder (new pcl::ModelCoefficients);  
   pcl::ExtractIndices<PointT> extract;
   pcl::PCDWriter writer;
   pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg; 
@@ -133,21 +127,21 @@ pcl::ModelCoefficients::Ptr PCLTools::cylinderSegmentation(pcl::PointCloud<Point
   seg.setModelType (pcl::SACMODEL_CYLINDER);
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setNormalDistanceWeight (0.1);
-  seg.setMaxIterations (iterations);//10000
-  seg.setDistanceThreshold (distanceThreshold);//0.05
-  seg.setRadiusLimits (0, rlimit);//0, 0.1
-  seg.setInputCloud (in_cloud);
-  seg.setInputNormals (in_normals);
+  seg.setMaxIterations (num_iterations_);//10000
+  seg.setDistanceThreshold (distance_threshold_);//0.05
+  seg.setRadiusLimits (0, radious_limit_);//0, 0.1
+  seg.setInputCloud (in_cloud_);
+  seg.setInputNormals (in_normals_);
 
   // Obtain the cylinder inliers and coefficients
-  seg.segment (*inliers_cylinder, *coefficients_cylinder);
-  std::cerr << "Cylinder coefficients: " << *coefficients_cylinder << std::endl;
+  seg.segment (*inliers_cylinder_, *coeffs);
+  std::cerr << "Cylinder coefficients: " << *coeffs << std::endl;
   clock_t end = clock();
   std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
 
   // Write the cylinder inlier1s to disk
-  extract.setInputCloud (in_cloud);
-  extract.setIndices (inliers_cylinder);
+  extract.setInputCloud (in_cloud_);
+  extract.setIndices (inliers_cylinder_);
   extract.setNegative (false);
   extract.filter (*cloud_cylinder);
   if (cloud_cylinder->points.empty ()) 
@@ -155,10 +149,10 @@ pcl::ModelCoefficients::Ptr PCLTools::cylinderSegmentation(pcl::PointCloud<Point
   else
   {
     std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points." << std::endl;
-    std::cerr << *coefficients_cylinder << std::endl;
+    std::cerr << *coeffs << std::endl;
     writer.write ("/home/dfornas/data/scene_cylinder.pcd", *cloud_cylinder, false);
   }
-  return coefficients_cylinder;
+  return true;
 }
 
 /** Show segmented cloud and plane by coefficients and inliers */
@@ -185,7 +179,6 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
      if(cylinder_coeffs!=0){
        viewer->addCylinder(*cylinder_coeffs, "cylinder");
      }
-
      //viewer->addCoordinateSystem (0.1);
      viewer->initCameraParameters ();
      while (!viewer->wasStopped ())
@@ -193,6 +186,7 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
        viewer->spinOnce (100);
        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
      }
+     ROS_INFO("DIE4");
 }
 
 

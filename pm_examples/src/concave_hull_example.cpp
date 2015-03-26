@@ -51,6 +51,8 @@ main (int argc, char** argv)
     }
 
   // -----Main loop-----
+  //int i=0;
+  //viewer.addSphere(cloud_hull->points[i-1], 0.1, )
   while (!viewer.wasStopped ())
   {
     viewer.spinOnce ();

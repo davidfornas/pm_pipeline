@@ -8,6 +8,7 @@
 #include <tf/transform_listener.h>
 
 #include <pm_perception/border_detection.h>
+#include <pm_tools/pcl_tools.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
@@ -61,53 +62,24 @@ void ConcaveHullBorderDetection::process(){
   ne.setKSearch (50);
   ne.compute (*cloud_normals);
 
-  // Create the segmentation object for the planar model and set all the parameters
-  seg.setOptimizeCoefficients (true);
-  seg.setModelType (pcl::SACMODEL_NORMAL_PLANE);
-  seg.setNormalDistanceWeight (0.1);
-  seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setMaxIterations (100);
-  seg.setDistanceThreshold (0.12);
-  seg.setInputCloud (cloud_filtered);
-  seg.setInputNormals (cloud_normals);
+  PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
+  plane_seg.setDistanceThreshold(0.12);
+  plane_seg.setIterations(100);
+  plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
 
-  // Obtain the plane inliers and coefficients
-  seg.segment (*inliers_plane, *coefficients_plane);
+  plane_normal_.resize(3);
+  plane_normal_[0] = coefficients_plane->values[0];
+  plane_normal_[1] = coefficients_plane->values[1];
+  plane_normal_[2] = coefficients_plane->values[2];
 
-  pcl::ExtractIndices<PointT> extract;
-  pcl::ExtractIndices<pcl::Normal> extract_normals;
 
-  // Extract the planar inliers from the input cloud
-  extract.setInputCloud (cloud_filtered);
-  extract.setIndices (inliers_plane);
-  extract.setNegative (false);
-  extract.filter (*cloud_plane);
-
-  // Remove the planar inliers, extract the rest
-  extract.setNegative (true);
-  extract.filter (*cloud_filtered2);
-  extract_normals.setNegative (true);
-  extract_normals.setInputCloud (cloud_normals);
-  extract_normals.setIndices (inliers_plane);
-  extract_normals.filter (*cloud_normals2);
-
-  // Create the segmentation object for cylinder segmentation and set all the parameters
-  seg.setOptimizeCoefficients (true);
-  seg.setModelType (pcl::SACMODEL_CYLINDER);
-  seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setNormalDistanceWeight (0.1);
-  seg.setMaxIterations (10000);
-  seg.setDistanceThreshold (0.03);
-  seg.setRadiusLimits (0, 0.1);
-  seg.setInputCloud (cloud_filtered2);
-  seg.setInputNormals (cloud_normals2);
-
-  // Obtain the cylinder inliers and coefficients
-  seg.segment (*inliers_cylinder, *coefficients_cylinder);
-  extract.setInputCloud (cloud_filtered2);
-  extract.setIndices (inliers_cylinder);
-  extract.setNegative (false);
-  extract.filter (*cloud_cylinder);
+  CylinderSegmentation cyl_seg(cloud_filtered2, cloud_normals2);
+  cyl_seg.setDistanceThreshold(0.03);
+  cyl_seg.setIterations(10000);
+  cyl_seg.setRadiousLimit(0.1);
+  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
+  // @ TODO cleaner solution
+  cyl_seg.getInliers(inliers_cylinder);
 
   clock_t end = clock();
   std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
@@ -207,15 +179,13 @@ void ConcaveHullBorderDetection::generatePath(){
     double ydiff = mass_center.pose.position.y - border_cloud_->points[i].y;
     double zdiff = mass_center.pose.position.z - border_cloud_->points[i].z;
 
-    vpColVector zaxis(3), xaxis(3);
+    vpColVector zaxis(3);//, xaxis(3);
     zaxis[0] = xdiff;
     zaxis[1] = ydiff;
     zaxis[2] = zdiff;
-    xaxis[0] = ydiff;
-    xaxis[1] = -xdiff;
-    xaxis[2] = 0;
     zaxis=zaxis.normalize();
-    xaxis=xaxis.normalize();
+
+    vpColVector xaxis=vpColVector::crossProd( zaxis, plane_normal_ ).normalize();
     vpColVector yaxis=vpColVector::crossProd( zaxis, xaxis ).normalize();
 
     vpHomogeneousMatrix frame;
@@ -224,6 +194,11 @@ void ConcaveHullBorderDetection::generatePath(){
     frame[2][0]=xaxis[2]; frame[2][1]=yaxis[2]; frame[2][2]=zaxis[2];frame[2][3]=border_cloud_->points[i].z;
     frame[3][0]=0;        frame[3][1]=0;        frame[3][2]=0;       frame[3][3]=1;
 
+    //Aplicamos una rotación y traslación para posicionar la garra mejor
+    vpHomogeneousMatrix trans(0,0,-0.05,0,0,0);
+    vpHomogeneousMatrix rot(0,0,0,-0.74,0,0);
+    frame =  frame * rot *trans;
+
     vpQuaternionVector q;
     frame.extract(q);
 
@@ -231,6 +206,11 @@ void ConcaveHullBorderDetection::generatePath(){
     p.pose.orientation.y = q.y();
     p.pose.orientation.z = q.z();
     p.pose.orientation.w = q.w();
+
+    // @ TODO COGER LOS PUNTOS DESPUES DE LA TRASLACION
+    //p.pose.position.x = frame[0][3];
+    //p.pose.position.y = frame[1][3];
+    //p.pose.position.z = frame[2][3];
 
     std::ostringstream name, id;
     name << "name: " << i ;

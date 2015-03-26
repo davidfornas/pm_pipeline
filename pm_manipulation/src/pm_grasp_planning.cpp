@@ -37,16 +37,19 @@ void PMGraspPlanning::perceive() {
   PCLTools::applyZAxisPassthrough(cloud_, cloud_filtered, -1, 1);
   std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size () << " data points." << std::endl;
 
-  // @todo : Add more filters -> downsampling and radial ooutlier removal.
+  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools::estimateNormals(cloud_filtered, cloud_normals);
 
-  //background_remover_->setInput(cloud_filtered,normals);
-  //background_remover_->filter(coefficients_plane);
-  coefficients_plane = PCLTools::planeSegmentation(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2, cloud_plane, plane_distance_threshold_, plane_iterations_);
-  //background_remover_->setInput(cloud_filtered);
-  //background_remover_->filter(coefficients_plane);
-  //segmentator_ ->setInput(cloud_filtered);
-  coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
+  PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
+  plane_seg.setDistanceThreshold(plane_distance_threshold_);
+  plane_seg.setIterations(plane_iterations_);
+  plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+
+  CylinderSegmentation cyl_seg(cloud_filtered2, cloud_normals2);
+  cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
+  cyl_seg.setIterations(cylinder_iterations_);
+  cyl_seg.setRadiousLimit(radious_limit_);
+  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
   PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
   //Puntos de agarre
@@ -68,8 +71,8 @@ void PMGraspPlanning::perceive() {
   getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir);
   //Punto medio reposicionado.
   mean.x=(max.x+min.x)/2;mean.y=(max.y+min.y)/2;mean.z=(max.z+min.z)/2;
- coefficients_cylinder->values[0]=mean.x;
-   coefficients_cylinder->values[1]=mean.y;
+  coefficients_cylinder->values[0]=mean.x;
+  coefficients_cylinder->values[1]=mean.y;
   coefficients_cylinder->values[2]=mean.z;
   radious=coefficients_cylinder->values[6];
   height=sqrt((max.x-min.x)*(max.x-min.x)+(max.y-min.y)*(max.y-min.y)+(max.z-min.z)*(max.z-min.z));

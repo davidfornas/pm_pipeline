@@ -14,6 +14,9 @@
 
 #include <pm_tools/visp_tools.h>
 
+//VISP
+#include <visp/vpHomogeneousMatrix.h>
+
 typedef pcl::PointXYZRGB PointT;
 
 /** Border detection base class
@@ -61,6 +64,8 @@ public:
 };
 
 class ConcaveHullBorderDetection : public BorderDetection {
+
+  vpColVector plane_normal_;
 
 public:
 

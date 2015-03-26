@@ -54,9 +54,9 @@ public:
   ///@TODO Make classes for this more complex operations.
 
   /** RANSAC plane estimation */
-  static pcl::ModelCoefficients::Ptr planeSegmentation(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
+  /*static pcl::ModelCoefficients::Ptr planeSegmentation(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
                                                 pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
-                                                pcl::PointCloud<PointT>::Ptr, double distanceThreshold = 0.03, int iterations = 100);
+                                                pcl::PointCloud<PointT>::Ptr, double distanceThreshold = 0.03, int iterations = 100);*/
 
   /** RANSAC cylinder estimation */
   static pcl::ModelCoefficients::Ptr cylinderSegmentation(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
@@ -67,5 +67,45 @@ public:
   static void showClouds(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<PointT>::Ptr, pcl::ModelCoefficients::Ptr, pcl::ModelCoefficients::Ptr);
 
 };
+
+class PlaneSegmentation {
+  pcl::PointCloud<PointT>::Ptr in_cloud_;
+  pcl::PointCloud<pcl::Normal>::Ptr in_normals_;
+  double distance_threshold_;//@ TODO set defaults...
+  int num_iterations_;
+public:
+  PlaneSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals) : in_cloud_(in_cloud), in_normals_(in_normals) {
+    distance_threshold_=0.05;
+    num_iterations_=100;
+  }
+  bool apply(pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals, pcl::PointCloud<PointT>::Ptr cloud_plane, pcl::ModelCoefficients::Ptr coeffs);
+  void setIterations( int iterations ){ num_iterations_ = iterations; }
+  void setDistanceThreshold( double threshold ){ distance_threshold_ = threshold; }
+  ~PlaneSegmentation(){}
+};
+
+class CylinderSegmentation {
+  pcl::PointCloud<PointT>::Ptr in_cloud_;
+  pcl::PointCloud<pcl::Normal>::Ptr in_normals_;
+  pcl::PointIndices::Ptr inliers_cylinder_;
+  double distance_threshold_, radious_limit_;//@ TODO set defaults...
+  int num_iterations_;
+
+public:
+  CylinderSegmentation(pcl::PointCloud<PointT>::Ptr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals) : in_cloud_(in_cloud), in_normals_(in_normals) {
+    distance_threshold_=0.05;
+    num_iterations_=100;
+    radious_limit_=0.05;
+    inliers_cylinder_=boost::shared_ptr<pcl::PointIndices>(new pcl::PointIndices);
+  }
+  bool apply(pcl::PointCloud<PointT>::Ptr cloud_cylinder, pcl::ModelCoefficients::Ptr coeffs);
+  void setIterations( int iterations ){ num_iterations_ = iterations; }
+  void setDistanceThreshold( double threshold ){ distance_threshold_ = threshold; }
+  void setRadiousLimit( double radious ){ radious_limit_ = radious; }
+  void getInliers( pcl::PointIndices::Ptr & inliers ){ inliers = inliers_cylinder_; }
+  ~CylinderSegmentation(){}
+};
+
+
 
 #endif
