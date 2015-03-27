@@ -128,6 +128,7 @@ bool CylinderSegmentation::apply(pcl::PointCloud<PointT>::Ptr cloud_cylinder, pc
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setNormalDistanceWeight (0.1);
   seg.setMaxIterations (num_iterations_);//10000
+  ROS_ERROR_STREAM("Distance"<<distance_threshold_);
   seg.setDistanceThreshold (distance_threshold_);//0.05
   seg.setRadiusLimits (0, radious_limit_);//0, 0.1
   seg.setInputCloud (in_cloud_);
@@ -172,7 +173,6 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
      viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
      viewer->addPointCloud<PointT>(c2, single_color2, "sample cloud2");
      viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud2");
-
      if(plane_coeffs!=0){
        viewer->addPlane (*plane_coeffs, "plane");
      }
@@ -186,7 +186,7 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
        viewer->spinOnce (100);
        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
      }
-     ROS_INFO("DIE4");
+     ROS_INFO("TEST");
 }
 
 

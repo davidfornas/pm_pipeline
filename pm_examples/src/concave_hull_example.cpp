@@ -7,6 +7,8 @@
 
 #include <pm_perception/border_detection.h>
 
+#include <pm_manipulation/trajectory_following.h>
+
 #include <pcl/visualization/pcl_visualizer.h>
 
 //Time measures
@@ -18,13 +20,13 @@ int
 main (int argc, char** argv)
 {
   ros::init(argc, argv, "concave_hull_example");
-  ros::NodeHandle n;
+  ros::NodeHandle nh;
 
 
   pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_hull(new pcl::PointCloud<PointT>);
   pcl::PCDReader reader;
 
-  reader.read ("uwsimFeb15.pcd", *cloud);
+  reader.read ("piramide.pcd", *cloud);
 //  BorderDetection * border_detector = new ConcaveHullBorderDetection(cloud);
 //  border_detector->process();
 //  border_detector->getTrajectory(cloud_hull);
@@ -33,6 +35,8 @@ main (int argc, char** argv)
   border_detector.getTrajectory(cloud_hull);
   border_detector.generatePath();
   border_detector.transformPathFrame("/world");
+
+  TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
 
 
   // ----  VISUALIZATION  ---
@@ -53,12 +57,16 @@ main (int argc, char** argv)
   // -----Main loop-----
   //int i=0;
   //viewer.addSphere(cloud_hull->points[i-1], 0.1, )
+  long long path_counter=0;
   while (!viewer.wasStopped ())
   {
     viewer.spinOnce ();
-    border_detector.publishPath(n);
+    border_detector.publishPath(nh);
     border_detector.publishTF();
     pcl_sleep(0.01);
+    path_counter++;
+    if(path_counter%100==0)// execute at 1hz
+      trajectory_following.moveToNextWaypoint();
   }
   return (0);
 }

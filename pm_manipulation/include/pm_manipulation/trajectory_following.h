@@ -20,15 +20,19 @@
 class TrajectoryFollowing {
 
   nav_msgs::Path & path_;
-  ARM5Arm * robot;
+  boost::shared_ptr<ARM5Arm> robot_;
 
+  int path_index_;
 public:
 
 
   /** Constructor.
    * @param xx
    * */
-  TrajectoryFollowing(nav_msgs::Path & path) : path_(path){}
+  TrajectoryFollowing(nav_msgs::Path path, ros::NodeHandle & nh, std::string joint_state, std::string joint_state_command) : path_(path), path_index_(-1){
+
+    robot_ = boost::shared_ptr<ARM5Arm>(new ARM5Arm(nh, joint_state, joint_state_command));
+  }
 
   void moveToNextWaypoint();
   void getCurrentWaypointPose();

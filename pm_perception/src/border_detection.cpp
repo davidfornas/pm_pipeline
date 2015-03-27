@@ -33,13 +33,13 @@
 #include <ctime>
 
 void ConcaveHullBorderDetection::process(){
-  pcl::PointCloud<PointT>::Ptr  cloud_filtered (new pcl::PointCloud<PointT>), cloud_projected (new pcl::PointCloud<PointT>) ;
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-  pcl::PointCloud<PointT>::Ptr cloud_filtered2 (new pcl::PointCloud<PointT>);
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
+  pcl::PointCloud<PointT>::Ptr  cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>), cloud_projected (new pcl::PointCloud<PointT>) ;
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals3 (new pcl::PointCloud<pcl::Normal>);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered3 (new pcl::PointCloud<PointT>);
 
-  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
-  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
+  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_plane2 (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
+  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ()), cloud_plane2 (new pcl::PointCloud<PointT> ());
 
   // Build a filter to remove spurious NaNs
 
@@ -64,22 +64,29 @@ void ConcaveHullBorderDetection::process(){
 
   PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
   plane_seg.setDistanceThreshold(0.12);
-  plane_seg.setIterations(100);
+  plane_seg.setIterations(200);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
 
+  //Double plane segmentation
+  PlaneSegmentation plane_seg2(cloud_filtered2, cloud_normals2);
+  plane_seg2.setDistanceThreshold(0.05);
+  plane_seg2.setIterations(200);
+  plane_seg2.apply(cloud_filtered3, cloud_normals3, cloud_plane2, coefficients_plane2);
+
   plane_normal_.resize(3);
-  plane_normal_[0] = coefficients_plane->values[0];
-  plane_normal_[1] = coefficients_plane->values[1];
-  plane_normal_[2] = coefficients_plane->values[2];
+  plane_normal_[0] = coefficients_plane2->values[0];
+  plane_normal_[1] = coefficients_plane2->values[1];
+  plane_normal_[2] = coefficients_plane2->values[2];
 
-
-  CylinderSegmentation cyl_seg(cloud_filtered2, cloud_normals2);
-  cyl_seg.setDistanceThreshold(0.03);
-  cyl_seg.setIterations(10000);
+  CylinderSegmentation cyl_seg(cloud_filtered3, cloud_normals3);
+  cyl_seg.setDistanceThreshold(0.02);
+  cyl_seg.setIterations(5000);
   cyl_seg.setRadiousLimit(0.1);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
   // @ TODO cleaner solution
   cyl_seg.getInliers(inliers_cylinder);
+  PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+
 
   clock_t end = clock();
   std::cerr << "Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
@@ -90,8 +97,8 @@ void ConcaveHullBorderDetection::process(){
   pcl::ProjectInliers<PointT> proj;
   proj.setModelType (pcl::SACMODEL_PLANE);
   proj.setIndices (inliers_cylinder);
-  proj.setInputCloud (cloud_filtered2);
-  proj.setModelCoefficients (coefficients_plane);
+  proj.setInputCloud (cloud_filtered3);
+  proj.setModelCoefficients (coefficients_plane2);
   proj.filter (*cloud_projected);
 
   end = clock();
