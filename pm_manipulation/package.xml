@@ -18,11 +18,15 @@
   <build_depend>tf</build_depend>
   <build_depend>mar_robot_arm5e</build_depend>
   <build_depend>pm_tools</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
     
   <run_depend>roscpp</run_depend>
   <run_depend>pm_perception</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>mar_robot_arm5e</run_depend>
   <run_depend>pm_tools</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
 
 </package>

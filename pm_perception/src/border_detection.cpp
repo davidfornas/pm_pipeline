@@ -63,12 +63,12 @@ void ConcaveHullBorderDetection::process(){
   ne.compute (*cloud_normals);
 
   PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
-  plane_seg.setDistanceThreshold(0.12);
+  plane_seg.setDistanceThreshold(0.105);//12
   plane_seg.setIterations(200);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
 
   //Double plane segmentation
-  PlaneSegmentation plane_seg2(cloud_filtered2, cloud_normals2);
+  /*PlaneSegmentation plane_seg2(cloud_filtered2, cloud_normals2);
   plane_seg2.setDistanceThreshold(0.05);
   plane_seg2.setIterations(200);
   plane_seg2.apply(cloud_filtered3, cloud_normals3, cloud_plane2, coefficients_plane2);
@@ -80,6 +80,22 @@ void ConcaveHullBorderDetection::process(){
 
   CylinderSegmentation cyl_seg(cloud_filtered3, cloud_normals3);
   cyl_seg.setDistanceThreshold(0.02);
+  cyl_seg.setIterations(5000);
+  cyl_seg.setRadiousLimit(0.1);
+  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
+  // @ TODO cleaner solution
+  cyl_seg.getInliers(inliers_cylinder);
+  PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);*/
+
+
+
+  plane_normal_.resize(3);
+  plane_normal_[0] = coefficients_plane->values[0];
+  plane_normal_[1] = coefficients_plane->values[1];
+  plane_normal_[2] = coefficients_plane->values[2];
+
+  CylinderSegmentation cyl_seg(cloud_filtered2, cloud_normals2);
+  cyl_seg.setDistanceThreshold(0.03);
   cyl_seg.setIterations(5000);
   cyl_seg.setRadiousLimit(0.1);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
@@ -97,8 +113,8 @@ void ConcaveHullBorderDetection::process(){
   pcl::ProjectInliers<PointT> proj;
   proj.setModelType (pcl::SACMODEL_PLANE);
   proj.setIndices (inliers_cylinder);
-  proj.setInputCloud (cloud_filtered3);
-  proj.setModelCoefficients (coefficients_plane2);
+  proj.setInputCloud (cloud_filtered2);//3!!!!!!!!!!
+  proj.setModelCoefficients (coefficients_plane);//2!!!!!!
   proj.filter (*cloud_projected);
 
   end = clock();
@@ -161,25 +177,24 @@ void ConcaveHullBorderDetection::generatePath(){
   path_.header.frame_id="/stereo_down";
   path_.header.stamp = ros::Time::now();
   geometry_msgs::PoseStamped mass_center;
-  for (int i = 0; i < border_cloud_->points.size(); ++i)
+  //WATCH OUT with i=10!!!!!!!!!
+  for (int i = 10; i < border_cloud_->points.size(); ++i)
   {
     mass_center.pose.position.x += border_cloud_->points[i].x;
     mass_center.pose.position.y += border_cloud_->points[i].y;
     mass_center.pose.position.z += border_cloud_->points[i].z;
   }
-  mass_center.pose.position.x /= border_cloud_->points.size();
-  mass_center.pose.position.y /= border_cloud_->points.size();
-  mass_center.pose.position.z /= border_cloud_->points.size();
+  mass_center.pose.position.x /= (border_cloud_->points.size()-10);
+  mass_center.pose.position.y /= (border_cloud_->points.size()-10);
+  mass_center.pose.position.z /= (border_cloud_->points.size()-10);
   // @DEBUG path_.poses.push_back(mass_center);
+  //WATCH OUT with i=10!!!!!!!!!
 
-  for (int i = 0; i < border_cloud_->points.size(); ++i)
+  std::stringstream id2,id3;
+  for (int i = 10; i < border_cloud_->points.size(); ++i)
   {
     geometry_msgs::PoseStamped p;
     p.header.frame_id="/stereo_down";
-    //Postion
-    p.pose.position.x = border_cloud_->points[i].x;
-    p.pose.position.y = border_cloud_->points[i].y;
-    p.pose.position.z = border_cloud_->points[i].z;
 
     //Orientation
     double xdiff = mass_center.pose.position.x - border_cloud_->points[i].x;
@@ -202,9 +217,10 @@ void ConcaveHullBorderDetection::generatePath(){
     frame[3][0]=0;        frame[3][1]=0;        frame[3][2]=0;       frame[3][3]=1;
 
     //Aplicamos una rotación y traslación para posicionar la garra mejor
+    vpHomogeneousMatrix trans0(0, 0.05,0,0,0,0);
     vpHomogeneousMatrix trans(0,0,-0.05,0,0,0);
-    vpHomogeneousMatrix rot(0,0,0,-0.74,0,0);
-    frame =  frame * rot *trans;
+    vpHomogeneousMatrix rot(0,0,0,0.74,0,0);
+    frame = frame * trans0 * rot * trans;// * trans0 ;
 
     vpQuaternionVector q;
     frame.extract(q);
@@ -215,21 +231,19 @@ void ConcaveHullBorderDetection::generatePath(){
     p.pose.orientation.w = q.w();
 
     // @ TODO COGER LOS PUNTOS DESPUES DE LA TRASLACION
-    //p.pose.position.x = frame[0][3];
-    //p.pose.position.y = frame[1][3];
-    //p.pose.position.z = frame[2][3];
+    p.pose.position.x = frame[0][3];
+    p.pose.position.y = frame[1][3];
+    p.pose.position.z = frame[2][3];
 
     std::ostringstream name, id;
     name << "name: " << i ;
     id << "id: " << i ;
     vispToTF.addTransform(frame, "/stereo_down", name.str(), id.str());
-
     path_.poses.push_back(p);
   }
 }
 
 void BorderDetection::transformPathFrame(std::string new_frame){
-
   tf::TransformListener listener(ros::Duration(10));
   nav_msgs::Path new_path;
   new_path.header.frame_id=new_frame;
@@ -244,13 +258,30 @@ void BorderDetection::transformPathFrame(std::string new_frame){
       }
     catch (tf::TransformException  & ex){
       ok=false;
-      ROS_ERROR("%s. Retrying... ",ex.what());
+      ROS_DEBUG("%s. Retrying... ",ex.what());
     }
     new_pose.header.frame_id=new_frame;
     new_path.poses.push_back(new_pose);
   }
   path_=new_path;
+}
 
+void BorderDetection::savePathToFile(){
+
+  //Export data in Quaternions
+  std::stringstream path_string_euler, path_string_quat;
+
+  for (int i = 0; i < path_.poses.size(); ++i) {
+    geometry_msgs::PoseStamped p(path_.poses[i]);
+    path_string_quat <<  p.pose.position.x << " " <<  p.pose.position.y << " "<<  p.pose.position.z << " " <<  p.pose.orientation.x << " " <<  p.pose.orientation.y << " " <<  p.pose.orientation.z << " " <<  p.pose.orientation.w << "\n";
+    vpRxyzVector euler_rot(vpRotationMatrix(vpQuaternionVector(p.pose.orientation.x, p.pose.orientation.y,p.pose.orientation.z, p.pose.orientation.w)));
+    path_string_euler <<  p.pose.position.x << " " <<  p.pose.position.y << " "<<  p.pose.position.z << " " <<  euler_rot[0] << " " <<  euler_rot[1] << " " <<  euler_rot[2] <<  "\n";
+  }
+  std::ofstream f_quat("path_quat.txt");
+  f_quat << path_string_quat.rdbuf();
+
+  std::ofstream f_euler("path_euler.txt");
+  f_euler << path_string_euler.rdbuf();
 }
 
 void RangeImageBorderDetection::generatePath(){

@@ -39,11 +39,12 @@ public:
 
   virtual void generatePath(){};
   void publishPath(ros::NodeHandle & n){
-    ros::Publisher path_pub = n.advertise<nav_msgs::Path>("path", 10);
+    ros::Publisher path_pub = n.advertise<nav_msgs::Path>("/path", 10);
     path_pub.publish(path_);
   }
   void transformPathFrame(std::string new_frame);
   nav_msgs::Path getPath(){ return path_;}
+  void savePathToFile();
 
   void getTrajectory(pcl::PointCloud<PointT>::Ptr & trajectory){ trajectory=border_cloud_; }
   virtual ~BorderDetection() {}

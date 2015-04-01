@@ -128,7 +128,6 @@ bool CylinderSegmentation::apply(pcl::PointCloud<PointT>::Ptr cloud_cylinder, pc
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setNormalDistanceWeight (0.1);
   seg.setMaxIterations (num_iterations_);//10000
-  ROS_ERROR_STREAM("Distance"<<distance_threshold_);
   seg.setDistanceThreshold (distance_threshold_);//0.05
   seg.setRadiusLimits (0, radious_limit_);//0, 0.1
   seg.setInputCloud (in_cloud_);

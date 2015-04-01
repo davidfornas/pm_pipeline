@@ -26,7 +26,7 @@ main (int argc, char** argv)
   pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_hull(new pcl::PointCloud<PointT>);
   pcl::PCDReader reader;
 
-  reader.read ("piramide.pcd", *cloud);
+  reader.read ("piramide2.pcd", *cloud);
 //  BorderDetection * border_detector = new ConcaveHullBorderDetection(cloud);
 //  border_detector->process();
 //  border_detector->getTrajectory(cloud_hull);
@@ -35,8 +35,8 @@ main (int argc, char** argv)
   border_detector.getTrajectory(cloud_hull);
   border_detector.generatePath();
   border_detector.transformPathFrame("/world");
-
-  TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
+  border_detector.savePathToFile();
+  //TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
 
 
   // ----  VISUALIZATION  ---
@@ -46,12 +46,11 @@ main (int argc, char** argv)
     //viewer.addCoordinateSystem (1.0f);
     pcl::visualization::PointCloudColorHandlerCustom<PointT> point_cloud_color_handler (cloud, 0, 0, 0);
     viewer.addPointCloud (cloud);//, point_cloud_color_handler, "original point cloud");
-    for (int i=1; i<cloud_hull->points.size(); ++i)
+    for (int i=10; i<cloud_hull->points.size(); ++i)
     {
       std::ostringstream id;
       id << "name: " << i ;
-      std::cout << id;
-      viewer.addLine<PointT>(cloud_hull->points[i-1],cloud_hull->points[i],0,255,0,id.str());
+      viewer.addLine<PointT>(cloud_hull->points[i-1],cloud_hull->points[i],255,0,0,id.str());
     }
 
   // -----Main loop-----
@@ -64,9 +63,12 @@ main (int argc, char** argv)
     border_detector.publishPath(nh);
     border_detector.publishTF();
     pcl_sleep(0.01);
+
+    //if(path_counter%100==0){// execute at 1hz
+    //  trajectory_following.moveToNextWaypoint();
+    //}
     path_counter++;
-    if(path_counter%100==0)// execute at 1hz
-      trajectory_following.moveToNextWaypoint();
+
   }
   return (0);
 }
