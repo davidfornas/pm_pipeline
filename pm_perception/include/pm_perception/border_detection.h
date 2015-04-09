@@ -77,5 +77,4 @@ public:
 
 };
 
-
 #endif /* BORDERDETECTION_H_ */

@@ -178,20 +178,22 @@ void ConcaveHullBorderDetection::generatePath(){
   path_.header.stamp = ros::Time::now();
   geometry_msgs::PoseStamped mass_center;
   //WATCH OUT with i=10!!!!!!!!!
-  for (int i = 10; i < border_cloud_->points.size(); ++i)
+  for (int i = 0; i < border_cloud_->points.size(); ++i)
   {
+    //Move path upwards.
+    border_cloud_->points[i].x+=-plane_normal_[0]*0.15;
+    border_cloud_->points[i].y+=-plane_normal_[1]*0.15;
+    border_cloud_->points[i].z+=-plane_normal_[2]*0.15;
+
     mass_center.pose.position.x += border_cloud_->points[i].x;
     mass_center.pose.position.y += border_cloud_->points[i].y;
     mass_center.pose.position.z += border_cloud_->points[i].z;
   }
-  mass_center.pose.position.x /= (border_cloud_->points.size()-10);
-  mass_center.pose.position.y /= (border_cloud_->points.size()-10);
-  mass_center.pose.position.z /= (border_cloud_->points.size()-10);
-  // @DEBUG path_.poses.push_back(mass_center);
-  //WATCH OUT with i=10!!!!!!!!!
+  mass_center.pose.position.x /= border_cloud_->points.size();
+  mass_center.pose.position.y /= border_cloud_->points.size();
+  mass_center.pose.position.z /= border_cloud_->points.size();
 
-  std::stringstream id2,id3;
-  for (int i = 10; i < border_cloud_->points.size(); ++i)
+  for (int i = 0; i < border_cloud_->points.size(); ++i)
   {
     geometry_msgs::PoseStamped p;
     p.header.frame_id="/stereo_down";
@@ -201,7 +203,7 @@ void ConcaveHullBorderDetection::generatePath(){
     double ydiff = mass_center.pose.position.y - border_cloud_->points[i].y;
     double zdiff = mass_center.pose.position.z - border_cloud_->points[i].z;
 
-    vpColVector zaxis(3);//, xaxis(3);
+    vpColVector zaxis(3);
     zaxis[0] = xdiff;
     zaxis[1] = ydiff;
     zaxis[2] = zdiff;
@@ -220,7 +222,7 @@ void ConcaveHullBorderDetection::generatePath(){
     vpHomogeneousMatrix trans0(0, 0.05,0,0,0,0);
     vpHomogeneousMatrix trans(0,0,-0.05,0,0,0);
     vpHomogeneousMatrix rot(0,0,0,0.74,0,0);
-    frame = frame * trans0 * rot * trans;// * trans0 ;
+    frame = frame * trans0 * rot * trans;
 
     vpQuaternionVector q;
     frame.extract(q);
@@ -229,8 +231,6 @@ void ConcaveHullBorderDetection::generatePath(){
     p.pose.orientation.y = q.y();
     p.pose.orientation.z = q.z();
     p.pose.orientation.w = q.w();
-
-    // @ TODO COGER LOS PUNTOS DESPUES DE LA TRASLACION
     p.pose.position.x = frame[0][3];
     p.pose.position.y = frame[1][3];
     p.pose.position.z = frame[2][3];

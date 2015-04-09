@@ -98,7 +98,7 @@ bool PlaneSegmentation::apply(pcl::PointCloud<PointT>::Ptr out_cloud, pcl::Point
   // Write the planar inliers to disk
   extract.filter (*cloud_plane);
   std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points. Saved." << std::endl;
-  writer.write ("/home/dfornas/data/scene_plane.pcd", *cloud_plane, false); 
+  writer.write ("/home/dfornas/data/scene_plane.pcd", *cloud_plane, false); //DEBUG
 
   // Remove the planar inliers, extract the rest
   extract.setNegative (true);
@@ -157,27 +157,24 @@ bool CylinderSegmentation::apply(pcl::PointCloud<PointT>::Ptr cloud_cylinder, pc
 
 /** Show segmented cloud and plane by coefficients and inliers */
 void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<PointT>::Ptr c2, pcl::ModelCoefficients::Ptr plane_coeffs, pcl::ModelCoefficients::Ptr cylinder_coeffs){
-     //pcl::visualization::PCLVisualizer viewer ("3D Viewer");
-     //viewer.setBackgroundColor (0, 0, 0);
-     //viewer.addPointCloud<PointT> (c1, "sample cloud");
-     //viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-     //viewer.addCoordinateSystem (1.0);
-     //viewer.initCameraParameters ();
-     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("Segmentation Viewer"));
-     viewer->setBackgroundColor (0, 0, 0);
-     pcl::visualization::PointCloudColorHandlerCustom<PointT> single_color(c1, 0, 255, 0);
-     pcl::visualization::PointCloudColorHandlerCustom<PointT> single_color2(c1, 0, 255, 255);
 
-     viewer->addPointCloud<PointT>(c1, single_color,  "sample cloud");
-     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-     viewer->addPointCloud<PointT>(c2, single_color2, "sample cloud2");
-     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud2");
+  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("Segmentation Viewer"));
+     viewer->setBackgroundColor (0, 0, 0);
+     pcl::visualization::PointCloudColorHandlerCustom<PointT> single_color(c1, 20,20,90);
+     pcl::visualization::PointCloudColorHandlerCustom<PointT> single_color2(c1, 20, 200, 20);
+
+     viewer->addPointCloud<PointT>(c1, single_color,  "Plane cloud");
+     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "Plane cloud");
+     viewer->addPointCloud<PointT>(c2, single_color2, "Cylinder cloud");
+     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "Cylinder cloud");
+
      if(plane_coeffs!=0){
-       viewer->addPlane (*plane_coeffs, "plane");
+       viewer->addPlane (*plane_coeffs, "Plane");
      }
      if(cylinder_coeffs!=0){
-       viewer->addCylinder(*cylinder_coeffs, "cylinder");
+       viewer->addCylinder(*cylinder_coeffs, "Cylinder");
      }
+
      //viewer->addCoordinateSystem (0.1);
      viewer->initCameraParameters ();
      while (!viewer->wasStopped ())
@@ -185,7 +182,6 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
        viewer->spinOnce (100);
        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
      }
-     ROS_INFO("TEST");
 }
 
 

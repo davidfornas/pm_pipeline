@@ -27,6 +27,7 @@ main (int argc, char** argv)
   pcl::PCDReader reader;
 
   reader.read ("piramide2.pcd", *cloud);
+//  With polymorphism:
 //  BorderDetection * border_detector = new ConcaveHullBorderDetection(cloud);
 //  border_detector->process();
 //  border_detector->getTrajectory(cloud_hull);
@@ -36,7 +37,7 @@ main (int argc, char** argv)
   border_detector.generatePath();
   border_detector.transformPathFrame("/world");
   border_detector.savePathToFile();
-  //TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
+  TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
 
 
   // ----  VISUALIZATION  ---
@@ -45,17 +46,15 @@ main (int argc, char** argv)
     viewer.setBackgroundColor (1, 1, 1);
     //viewer.addCoordinateSystem (1.0f);
     pcl::visualization::PointCloudColorHandlerCustom<PointT> point_cloud_color_handler (cloud, 0, 0, 0);
-    viewer.addPointCloud (cloud);//, point_cloud_color_handler, "original point cloud");
-    for (int i=10; i<cloud_hull->points.size(); ++i)
+    viewer.addPointCloud (cloud);
+    for (int i=0; i<cloud_hull->points.size()-1; ++i)
     {
       std::ostringstream id;
       id << "name: " << i ;
-      viewer.addLine<PointT>(cloud_hull->points[i-1],cloud_hull->points[i],255,0,0,id.str());
+      viewer.addLine<PointT>(cloud_hull->points[i],cloud_hull->points[i+1],255,255,0,id.str());
     }
 
   // -----Main loop-----
-  //int i=0;
-  //viewer.addSphere(cloud_hull->points[i-1], 0.1, )
   long long path_counter=0;
   while (!viewer.wasStopped ())
   {
@@ -64,9 +63,9 @@ main (int argc, char** argv)
     border_detector.publishTF();
     pcl_sleep(0.01);
 
-    //if(path_counter%100==0){// execute at 1hz
-    //  trajectory_following.moveToNextWaypoint();
-    //}
+    if(path_counter%100==0){// execute at 1hz
+      trajectory_following.moveToNextWaypoint();
+    }
     path_counter++;
 
   }

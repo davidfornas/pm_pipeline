@@ -7,16 +7,10 @@
 
 #include <pm_manipulation/trajectory_following.h>
 
-//To get Yaw from rotation, OSG. @ TODO Replace with more standard library.
-//#include <osg/Quat>
-//#include <osg/Vec3d>
-//#include <osg/Matrix>
-
-//NEEDED TFs
-
+//NEEDED TFs @ TODO Move to roslaucnh
 //rosrun tf static_transform_publisher 0 0 1.08 0 0 1 0 new_base_link kinematic_base 200
 //rosrun tf static_transform_publisher 0 0 1.08 0 0 1 0 base_link kinematic_base 200
-//rosrun tf static_transform_publisher 0.4 -0.06 1.05 -0.176 -0.174 0.685 0.0685 base_link stereo_down 100
+//rosrun tf static_transform_publisher 0.4 -0.06 1.05 -0.176 -0.174 0.685 0.685 base_link stereo_down 100
 //rosrun tf static_transform_publisher 1.184 0 1.825 0 0 0 world base_link 100
 
 void TrajectoryFollowing::moveToNextWaypoint(){
@@ -62,7 +56,6 @@ void TrajectoryFollowing::moveToNextWaypoint(){
   vpHomogeneousMatrix pos=x*y*z*yaw;
   tf::StampedTransform v(VispTools::tfTransFromVispHomog(pos), ros::Time::now(), "/base_link", "/new_base_link");//kinematic_base <=> vehicle
 
-
   broadcaster_->sendTransform(fk);
   broadcaster_->sendTransform(v);
 
@@ -86,9 +79,6 @@ void TrajectoryFollowing::moveToNextWaypoint(){
   vpHomogeneousMatrix yaw2(0,0,0,0,0,joints[3]);
   vpQuaternionVector q;
   yaw2.extract(q);
-  //q.buildFrom(vpRotationMatrix(vpRxyzVector(0,0,joints[3])));
-  //Rz.makeRotate(joints[3],0,0,1);
-  //osg::Quat rot=Rz.getRotate();
 
   nav_msgs::Odometry odom;
   odom.pose.pose.position.x=1.184+joints[0];
