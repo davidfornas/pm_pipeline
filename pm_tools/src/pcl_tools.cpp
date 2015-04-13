@@ -64,6 +64,27 @@ void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<
   std::cerr << "Applying NORMAL ESTIMATION2..." << std::endl;
 }
 
+int PCLTools::nanCount(pcl::PointCloud<PointT>::Ptr p)
+{
+  int count = 0;
+  for (size_t i = 0; i < p->points.size(); ++i)
+    if (pcl::isFinite(p->points[i]))
+      count++;
+  return count;
+}
+
+void PCLTools::mergeOrganizedClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b)
+{
+  //A,B should be organized clouds of the same size... @ TODO CHECK
+  for (size_t i = 0; i < a->points.size(); ++i)
+    if (!pcl::isFinite(a->points[i]) && pcl::isFinite(b->points[i]))
+      a->points[i] = b->points[i];
+}
+
+
+/******************** END OF PCL TOOLS ****************/
+
+
 /** RANSAC plane estimation */
 bool PlaneSegmentation::apply(pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals, pcl::PointCloud<PointT>::Ptr cloud_plane, pcl::ModelCoefficients::Ptr coeffs){
 

@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS  roscpp sensor_msgs pcl_conversions tf v
 
 find_package(PCL REQUIRED)
 find_package(VISP REQUIRED)
+find_package(OpenCV REQUIRED)
 
 
 catkin_package(
@@ -15,11 +16,11 @@ catkin_package(
 )
 include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${VISP_INCLUDE_DIRS}
 )
 
 add_library(pm_tools 
   src/pcl_tools.cpp
   src/visp_tools.cpp
 )
-target_link_libraries(pm_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} )
+target_link_libraries(pm_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
