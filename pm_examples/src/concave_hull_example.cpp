@@ -35,10 +35,10 @@ main (int argc, char** argv)
   border_detector.process();
   border_detector.getTrajectory(cloud_hull);
   border_detector.generatePath();
+  // If world to stereo frame is not publish it will get stuck.
   border_detector.transformPathFrame("/world");
   border_detector.savePathToFile();
   TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
-
 
   // ----  VISUALIZATION  ---
   // -----Open 3D viewer and add point cloud-----
@@ -67,7 +67,6 @@ main (int argc, char** argv)
       trajectory_following.moveToNextWaypoint();
     }
     path_counter++;
-
   }
   return (0);
 }

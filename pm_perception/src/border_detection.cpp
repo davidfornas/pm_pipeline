@@ -42,13 +42,12 @@ void ConcaveHullBorderDetection::process(){
   pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ()), cloud_plane2 (new pcl::PointCloud<PointT> ());
 
   // Build a filter to remove spurious NaNs
-
   clock_t begin = clock();
 
   pcl::PassThrough<PointT> pass;
   pass.setInputCloud (cloud_);
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (-10, 10);
+  pass.setFilterLimits (-10, 10); //Adjust to 0, depth + threshold
   pass.filter (*cloud_filtered);
 
   // Create the segmentation object
@@ -63,31 +62,9 @@ void ConcaveHullBorderDetection::process(){
   ne.compute (*cloud_normals);
 
   PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
-  plane_seg.setDistanceThreshold(0.105);//12
+  plane_seg.setDistanceThreshold(0.105);// Previous value: 12
   plane_seg.setIterations(200);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
-
-  //Double plane segmentation
-  /*PlaneSegmentation plane_seg2(cloud_filtered2, cloud_normals2);
-  plane_seg2.setDistanceThreshold(0.05);
-  plane_seg2.setIterations(200);
-  plane_seg2.apply(cloud_filtered3, cloud_normals3, cloud_plane2, coefficients_plane2);
-
-  plane_normal_.resize(3);
-  plane_normal_[0] = coefficients_plane2->values[0];
-  plane_normal_[1] = coefficients_plane2->values[1];
-  plane_normal_[2] = coefficients_plane2->values[2];
-
-  CylinderSegmentation cyl_seg(cloud_filtered3, cloud_normals3);
-  cyl_seg.setDistanceThreshold(0.02);
-  cyl_seg.setIterations(5000);
-  cyl_seg.setRadiousLimit(0.1);
-  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
-  // @ TODO cleaner solution
-  cyl_seg.getInliers(inliers_cylinder);
-  PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);*/
-
-
 
   plane_normal_.resize(3);
   plane_normal_[0] = coefficients_plane->values[0];
@@ -98,7 +75,7 @@ void ConcaveHullBorderDetection::process(){
   cyl_seg.setDistanceThreshold(0.03);
   cyl_seg.setIterations(5000);
   cyl_seg.setRadiousLimit(0.1);
-  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
+  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
   // @ TODO cleaner solution
   cyl_seg.getInliers(inliers_cylinder);
   PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
@@ -113,8 +90,8 @@ void ConcaveHullBorderDetection::process(){
   pcl::ProjectInliers<PointT> proj;
   proj.setModelType (pcl::SACMODEL_PLANE);
   proj.setIndices (inliers_cylinder);
-  proj.setInputCloud (cloud_filtered2);//3!!!!!!!!!!
-  proj.setModelCoefficients (coefficients_plane);//2!!!!!!
+  proj.setInputCloud (cloud_filtered2);
+  proj.setModelCoefficients (coefficients_plane);
   proj.filter (*cloud_projected);
 
   end = clock();
@@ -142,42 +119,13 @@ void ConcaveHullBorderDetection::process(){
 }
 
 void ConcaveHullBorderDetection::generatePath(){
-  /*ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-  visualization_msgs::Marker trajectory;
-  trajectory.header.frame_id = "/stereo_down";//CAMERA FRAME
-  trajectory.header.stamp = ros::Time::now();
-  trajectory.ns = "points_and_lines";
-  trajectory.action = visualization_msgs::Marker::ADD;
-  trajectory.pose.orientation.w = 1.0;
-  trajectory.id = 0;
-  trajectory.type = visualization_msgs::Marker::LINE_LIST;
-  trajectory.scale.x = 0.3;
-  trajectory.color.r = 1.0;
-  trajectory.color.a = 1.0;
-  // Create the vertices
-     geometry_msgs::Point p, p_old;
-     p_old.x = border_cloud_->points[0].x;
-     p_old.y = border_cloud_->points[0].y;
-     p_old.z = border_cloud_->points[0].z;
-     for (int i = 0; i < border_cloud_->points.size(); ++i)
-     {
-       p.x = border_cloud_->points[i].x;
-       p.y = border_cloud_->points[i].y;
-       p.z = border_cloud_->points[i].z;
-       trajectory.points.push_back(p_old);
-       trajectory.points.push_back(p);
-       p_old.x = border_cloud_->points[i].x;
-       p_old.y = border_cloud_->points[i].y;
-       p_old.z = border_cloud_->points[i].z;
-     }
-     marker_pub.publish(trajectory);
-   */
+
   nav_msgs::Path empty_path;
   path_=empty_path;
   path_.header.frame_id="/stereo_down";
   path_.header.stamp = ros::Time::now();
   geometry_msgs::PoseStamped mass_center;
-  //WATCH OUT with i=10!!!!!!!!!
+
   for (int i = 0; i < border_cloud_->points.size(); ++i)
   {
     //Move path upwards.
