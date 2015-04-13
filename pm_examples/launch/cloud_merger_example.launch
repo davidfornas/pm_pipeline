@@ -1,0 +1,15 @@
+<launch>
+  <arg name="input_basename" default="multibag/a" />  
+  <arg name="clouds_number" default="41" />
+  <arg name="depth" default="1.15" />
+  <arg name="near" default="0.55" />
+  
+  <param name="input_basename" value="$(find pm_examples)/resources/$(arg input_basename)" />
+  <param name="clouds_number" value="$(arg clouds_number)" />  
+  <param name="depth" value="$(arg depth)" />  
+  <param name="near" value="$(arg near)" />  
+  
+  <node name="cloud_merger_example" pkg="pm_examples" type="cloud_merger_example" output="screen" respawn="false"/>
+</launch>
+
+

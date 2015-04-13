@@ -64,10 +64,10 @@ public:
   /** Show segmented cloud and plane by coefficients and inliers */
   static void showClouds(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<PointT>::Ptr, pcl::ModelCoefficients::Ptr, pcl::ModelCoefficients::Ptr);
 
-  /** .. */
+  /** Count number of NaN values present in a point cloud. */
   static int nanCount(pcl::PointCloud<PointT>::Ptr);
 
-  /** .. */
+  /** Fill gaps in cloud A using B.  */
   static void mergeOrganizedClouds(pcl::PointCloud<PointT>::Ptr a, pcl::PointCloud<PointT>::Ptr b);
 
 };
@@ -75,58 +75,19 @@ public:
 
 class CloudMerge{
 
-public:
-
+  //Point counters for each possible point in an organized point cloud with standard resolution.
   int coeffs[307200];
   float  xvar[307200], yvar[307200], zvar[307200];
-  void nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b);
+
+  /** Accumulate point b over a, taking care of NaN values. */
   pcl::PointXYZRGB accumPoints(pcl::PointXYZRGB a, pcl::PointXYZRGB b, int idx);
-  void prefilter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr p, double depth, double near);
+
+public:
+
+  /** Accumulate cloud b over a, filling gaps and averaging when necessary.  */
+  void nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b);
+
 };
-
-
-pcl::PointXYZRGB CloudMerge::accumPoints(pcl::PointXYZRGB a, pcl::PointXYZRGB b, int idx)
-{
-  pcl::PointXYZRGB c(a);
-  c.x = (a.x * coeffs[idx] + b.x) / (coeffs[idx] + 1);
-  c.y = (a.y * coeffs[idx] + b.y) / (coeffs[idx] + 1);
-  c.z = (a.z * coeffs[idx] + b.z) / (coeffs[idx] + 1);
-  xvar[idx] += b.x * b.x;
-  yvar[idx] += b.y * b.y;
-  zvar[idx] += b.z * b.z;
-  return c;
-}
-
-void CloudMerge::nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b)
-{
-  //A,B should be organized clouds of the same size...
-  for (size_t i = 0; i < a->points.size(); ++i){
-    //First time a point is seen count=1;
-    if(pcl::isFinite(a->points[i]) && coeffs[i] == 0){
-      coeffs[i] = 1;
-      xvar[i] = a->points[i].x * a->points[i].x;
-      yvar[i] = a->points[i].y * a->points[i].y;
-      zvar[i] = a->points[i].z * a->points[i].z;
-    }
-
-    if (pcl::isFinite(b->points[i])){
-      if (!pcl::isFinite(a->points[i]))
-      {
-        a->points[i] = b->points[i];
-        //TODO: Search nearest neighbor color..
-        xvar[i] = a->points[i].x * a->points[i].x;
-        yvar[i] = a->points[i].y * a->points[i].y;
-        zvar[i] = a->points[i].z * a->points[i].z;
-        coeffs[i] = 1;
-      }
-      else
-      {
-        a->points[i] = accumPoints(a->points[i], b->points[i], i); //c+d;//=(a->points[i]*coeffs[i]+b->points[i])/(coeffs[i]+1);
-        coeffs[i]++;
-      }
-    }
-  }
-}
 
 class PlaneSegmentation {
   pcl::PointCloud<PointT>::Ptr in_cloud_;
