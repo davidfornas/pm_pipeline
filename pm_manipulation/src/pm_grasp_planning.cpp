@@ -7,6 +7,7 @@
 
 #include <pm_manipulation/pm_grasp_planning.h>
 #include <pm_tools/pcl_tools.h>
+#include <pm_tools/pcl_segmentation.h>
 
 #include <visp/vpHomogeneousMatrix.h>
 

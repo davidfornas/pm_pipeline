@@ -4,6 +4,7 @@
  *      Author: dfornas
  */
 #include <pm_tools/pcl_tools.h>
+#include <pm_tools/pcl_segmentation.h>
 
 #include <pm_perception/background_removal.h>
 #include <pm_perception/object_segmentation.h>

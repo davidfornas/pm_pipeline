@@ -9,6 +9,7 @@
 
 #include <pm_perception/border_detection.h>
 #include <pm_tools/pcl_tools.h>
+#include <pm_tools/pcl_segmentation.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>

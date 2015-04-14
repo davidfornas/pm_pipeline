@@ -4,6 +4,7 @@
  *      Author: dfornas
  */
 #include <pm_tools/pcl_tools.h>
+#include <pm_tools/pcl_merge.h>
 
 #include <ros/ros.h>
 #include <pcl/visualization/pcl_visualizer.h>

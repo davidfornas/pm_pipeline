@@ -21,6 +21,8 @@ include_directories(
 
 add_library(pm_tools 
   src/pcl_tools.cpp
+  src/pcl_segmentation.cpp
+  src/pcl_merge.cpp
   src/visp_tools.cpp
 )
 target_link_libraries(pm_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
