@@ -24,6 +24,7 @@ add_library(pm_perception
   src/background_removal.cpp
   src/object_segmentation.cpp
   src/border_detection.cpp
+  src/pose_estimation.cpp
 )
 
 ## Declare a cpp executable
