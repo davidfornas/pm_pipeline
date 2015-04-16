@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_tools)
 
-find_package(catkin REQUIRED COMPONENTS  roscpp sensor_msgs pcl_conversions tf visualization_msgs)
+find_package(catkin REQUIRED COMPONENTS  roscpp sensor_msgs pcl_conversions tf visualization_msgs sensor_msgs image_transport)
 
 find_package(PCL REQUIRED)
 find_package(VISP REQUIRED)
@@ -11,7 +11,7 @@ find_package(OpenCV REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES pm_tools
-  CATKIN_DEPENDS roscpp sensor_msgs pcl_conversions tf visualization_msgs
+  CATKIN_DEPENDS roscpp sensor_msgs pcl_conversions tf visualization_msgs sensor_msgs image_transport
   DEPENDS PCL VISP
 )
 include_directories(include)
@@ -24,5 +24,6 @@ add_library(pm_tools
   src/pcl_segmentation.cpp
   src/pcl_merge.cpp
   src/visp_tools.cpp
+  src/virtual_image.cpp
 )
 target_link_libraries(pm_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
