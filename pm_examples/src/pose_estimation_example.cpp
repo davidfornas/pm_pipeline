@@ -12,7 +12,7 @@ main (int argc, char** argv)
 {
   ros::init(argc, argv, "pose_estimation_example");
   ros::NodeHandle nh;
-  PoseEstimation pose_est;
+  PoseEstimation pose_est(&nh);
   pose_est.process();
 
   // -----Main loop-----
@@ -22,3 +22,5 @@ main (int argc, char** argv)
   }
   return (0);
 }
+
+

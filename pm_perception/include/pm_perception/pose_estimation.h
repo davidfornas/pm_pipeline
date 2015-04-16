@@ -8,17 +8,23 @@
 #ifndef POSEESTIMATION_H_
 #define POSEESTIMATION_H_
 
+#include<ros/ros.h>
+
 /** Description
  */
 class PoseEstimation {
+
+  ros::NodeHandle * nh_;
+  std::string image_topic_, image_info_topic_;
 
 
     public:
 	/** Constructor.
 	 * @param
 	 * */
-        PoseEstimation(){
-
+        PoseEstimation(ros::NodeHandle * nh): nh_(nh){
+          image_topic_="stereo/left/image_raw";
+          image_info_topic_="stereo/left/camera_info";
 	}
 
 	void process();

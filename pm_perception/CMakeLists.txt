@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_perception)
 
-find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs pm_tools)
+find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs geometry_msgs pm_tools)
 
 find_package(PCL REQUIRED)
 find_package(Boost REQUIRED)
@@ -11,7 +11,7 @@ find_package(OpenCV REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES pm_perception
-  CATKIN_DEPENDS roscpp nav_msgs pm_tools
+  CATKIN_DEPENDS roscpp nav_msgs geometry_msgs pm_tools
   DEPENDS PCL Boost VISP OpenCV
 )
 ## Specify additional locations of header files
