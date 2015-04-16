@@ -126,8 +126,9 @@ void ConcaveHullBorderDetection::generatePath(){
   path_.header.frame_id="/stereo_down";
   path_.header.stamp = ros::Time::now();
   geometry_msgs::PoseStamped mass_center;
+  int starting_point=10;
 
-  for (int i = 0; i < border_cloud_->points.size(); ++i)
+  for (int i = starting_point; i < border_cloud_->points.size(); ++i)
   {
     //Move path upwards.
     border_cloud_->points[i].x+=-plane_normal_[0]*0.15;
@@ -138,19 +139,61 @@ void ConcaveHullBorderDetection::generatePath(){
     mass_center.pose.position.y += border_cloud_->points[i].y;
     mass_center.pose.position.z += border_cloud_->points[i].z;
   }
-  mass_center.pose.position.x /= border_cloud_->points.size();
-  mass_center.pose.position.y /= border_cloud_->points.size();
-  mass_center.pose.position.z /= border_cloud_->points.size();
+  mass_center.pose.position.x /= border_cloud_->points.size()-starting_point;
+  mass_center.pose.position.y /= border_cloud_->points.size()-starting_point;
+  mass_center.pose.position.z /= border_cloud_->points.size()-starting_point;
 
-  for (int i = 0; i < border_cloud_->points.size(); ++i)
+  std::vector<vpColVector> point_list;
+  // First approach to subsampling... generate a new list, then iterate that list.
+  vpColVector previous_point(3);
+  previous_point[0] = border_cloud_->points[starting_point].x;
+  previous_point[1] = border_cloud_->points[starting_point].y;
+  previous_point[2] = border_cloud_->points[starting_point].z;
+  point_list.push_back(previous_point);
+
+  for (int i = starting_point+1; i < border_cloud_->points.size(); ++i)
+  {
+    vpColVector p(3), vect(3);
+    p[0] = border_cloud_->points[i].x;
+    p[1] = border_cloud_->points[i].y;
+    p[2] = border_cloud_->points[i].z;
+
+    vect[0]=p[0] - previous_point[0];
+    vect[1]=p[1] - previous_point[1];
+    vect[2]=p[2] - previous_point[2];
+
+    double distance = sqrt((vect[0])*(vect[0]) + (vect[1])*(vect[1]) + (vect[2])*(vect[2]));
+    ROS_INFO_STREAM("Distance"<<distance);
+    if( distance < subsampling_distance_ )
+      point_list.push_back(p);
+    else{
+      int num_points = (int) floor(distance / subsampling_distance_);
+      ROS_INFO_STREAM(i<<"point." << "distance: "<< distance << "number of points: " << num_points);
+      for(int j=1; j<num_points+1; j++){
+
+        p[0] = previous_point[0]+vect[0]*(j*subsampling_distance_/distance);
+        p[1] = previous_point[1]+vect[1]*(j*subsampling_distance_/distance);
+        p[2] = previous_point[2]+vect[2]*(j*subsampling_distance_/distance);
+        point_list.push_back(p);
+      }
+      p[0] = border_cloud_->points[i].x;
+      p[1] = border_cloud_->points[i].y;
+      p[2] = border_cloud_->points[i].z;
+      point_list.push_back(p);
+    }
+    previous_point=p;
+  }
+  ROS_INFO("Done with that");
+
+  for (int i = 0; i < point_list.size(); ++i)
   {
     geometry_msgs::PoseStamped p;
     p.header.frame_id="/stereo_down";
 
     //Orientation
-    double xdiff = mass_center.pose.position.x - border_cloud_->points[i].x;
-    double ydiff = mass_center.pose.position.y - border_cloud_->points[i].y;
-    double zdiff = mass_center.pose.position.z - border_cloud_->points[i].z;
+    double xdiff = mass_center.pose.position.x - point_list[i][0];
+    double ydiff = mass_center.pose.position.y - point_list[i][1];
+    double zdiff = mass_center.pose.position.z - point_list[i][2];
 
     vpColVector zaxis(3);
     zaxis[0] = xdiff;
@@ -162,9 +205,9 @@ void ConcaveHullBorderDetection::generatePath(){
     vpColVector yaxis=vpColVector::crossProd( zaxis, xaxis ).normalize();
 
     vpHomogeneousMatrix frame;
-    frame[0][0]=xaxis[0]; frame[0][1]=yaxis[0]; frame[0][2]=zaxis[0];frame[0][3]=border_cloud_->points[i].x;
-    frame[1][0]=xaxis[1]; frame[1][1]=yaxis[1]; frame[1][2]=zaxis[1];frame[1][3]=border_cloud_->points[i].y;
-    frame[2][0]=xaxis[2]; frame[2][1]=yaxis[2]; frame[2][2]=zaxis[2];frame[2][3]=border_cloud_->points[i].z;
+    frame[0][0]=xaxis[0]; frame[0][1]=yaxis[0]; frame[0][2]=zaxis[0];frame[0][3]=point_list[i][0];
+    frame[1][0]=xaxis[1]; frame[1][1]=yaxis[1]; frame[1][2]=zaxis[1];frame[1][3]=point_list[i][1];
+    frame[2][0]=xaxis[2]; frame[2][1]=yaxis[2]; frame[2][2]=zaxis[2];frame[2][3]=point_list[i][2];
     frame[3][0]=0;        frame[3][1]=0;        frame[3][2]=0;       frame[3][3]=1;
 
     //Aplicamos una rotación y traslación para posicionar la garra mejor

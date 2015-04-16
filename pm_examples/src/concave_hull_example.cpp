@@ -32,13 +32,14 @@ main (int argc, char** argv)
 //  border_detector->process();
 //  border_detector->getTrajectory(cloud_hull);
   ConcaveHullBorderDetection border_detector(cloud);
+  border_detector.setSubsamplingDistance(0.02);
   border_detector.process();
   border_detector.getTrajectory(cloud_hull);
   border_detector.generatePath();
   // If world to stereo frame is not publish it will get stuck.
-  border_detector.transformPathFrame("/world");
+  //border_detector.transformPathFrame("/world");
   border_detector.savePathToFile();
-  TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
+  //TrajectoryFollowing trajectory_following(border_detector.getPath(), nh, std::string("/uwsim/joint_state"), std::string("/uwsim/joint_state_command"));
 
   // ----  VISUALIZATION  ---
   // -----Open 3D viewer and add point cloud-----
@@ -47,7 +48,7 @@ main (int argc, char** argv)
     //viewer.addCoordinateSystem (1.0f);
     pcl::visualization::PointCloudColorHandlerCustom<PointT> point_cloud_color_handler (cloud, 0, 0, 0);
     viewer.addPointCloud (cloud);
-    for (int i=0; i<cloud_hull->points.size()-1; ++i)
+    for (int i=10; i<cloud_hull->points.size()-1; ++i)
     {
       std::ostringstream id;
       id << "name: " << i ;
@@ -64,7 +65,7 @@ main (int argc, char** argv)
     pcl_sleep(0.01);
 
     if(path_counter%100==0){// execute at 1hz
-      trajectory_following.moveToNextWaypoint();
+      //trajectory_following.moveToNextWaypoint();
     }
     path_counter++;
   }

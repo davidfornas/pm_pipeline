@@ -28,12 +28,13 @@ protected:
   VispToTF vispToTF;
   pcl::PointCloud<PointT>::Ptr cloud_, border_cloud_;
   nav_msgs::Path path_;
+  double subsampling_distance_;
 
 public:
 
   void publishTF(){ vispToTF.publish(); }
 
-  BorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : cloud_(cloud) {}
+  BorderDetection(pcl::PointCloud<PointT>::Ptr cloud) : cloud_(cloud), subsampling_distance_(0) {}
 
   virtual void process(){};
 
@@ -47,6 +48,9 @@ public:
   void savePathToFile();
 
   void getTrajectory(pcl::PointCloud<PointT>::Ptr & trajectory){ trajectory=border_cloud_; }
+
+  /* Distance:0 subsampling off...*/
+  void setSubsamplingDistance(double distance){ subsampling_distance_ = distance; }
   virtual ~BorderDetection() {}
 
 };
