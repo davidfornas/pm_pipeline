@@ -11,7 +11,6 @@
 #include <visp/vpPixelMeterConversion.h>
 #include <visp/vpDisplayX.h>
 
-#include <pm_tools/virtual_image.h>
 #include <pm_tools/visp_tools.h>
 
 #include <geometry_msgs/Transform.h>
@@ -87,74 +86,50 @@ void PoseEstimation::process()
     pose.clearPoint();
 
     ROS_INFO("Give me the points");
-    vpImagePoint clicks[4], cursor;
+    vpImagePoint cursor;
     int nclicks = 0;
-
     while (nclicks < 4)
     {
-      //vpImageConvert::convert(*Ic,*I);
-      vpDisplay::display(Ic);
-      if (nclicks >= 1)
-      {
-        //draw click point
-        vpDisplay::displayCross(Ic, clicks[0], 10, vpColor::red, 3);
-      }
-      if (nclicks >= 2)
-      {
-        //draw 2nd point, Y line and bounding box
-        vpDisplay::displayCross(Ic, clicks[1], 10, vpColor::red, 3);
-        vpDisplay::displayLine(Ic, clicks[0], clicks[1], vpColor::green, 3);
-        //get mouse pointer and draw bounding box
-        //vpDisplay::getPointerPosition(Ic,cursor);
-
-      }
-      if (nclicks >= 3)
-      {
-        //draw 2nd point, Y line and bounding box
-        vpDisplay::displayCross(Ic, clicks[2], 10, vpColor::red, 3);
-        vpDisplay::displayLine(Ic, clicks[1], clicks[2], vpColor::green, 3);
-        //get mouse pointer and draw bounding box
-        //vpDisplay::getPointerPosition(Ic,cursor);
-
-      }
-
-      if (vpDisplay::getClick(Ic, clicks[nclicks], false))
+      if (vpDisplay::getClick(Ic, clicks_[nclicks], false))
       {
         //click done
         nclicks++;
-        if (nclicks == 4)
-        {
-          //draw 2nd point, Y line and bounding box
-          vpDisplay::displayCross(Ic, clicks[3], 10, vpColor::red, 3);
-          vpDisplay::displayLine(Ic, clicks[2], clicks[3], vpColor::green, 3);
-          //get mouse pointer and draw bounding box
-          //vpDisplay::getPointerPosition(Ic,cursor);
-
-        }
       }
+      displayClicks(Ic, nclicks);
       vpDisplay::flush(Ic);
     }
-    ROS_INFO_STREAM(clicks[0]);
-    ROS_INFO_STREAM(clicks[1]);
-    ROS_INFO_STREAM(clicks[2]);
-    ROS_INFO_STREAM(clicks[3]);
+    ROS_INFO_STREAM(clicks_[0]);
+    ROS_INFO_STREAM(clicks_[1]);
+    ROS_INFO_STREAM(clicks_[2]);
+    ROS_INFO_STREAM(clicks_[3]);
 
     //Compute 3D points from image points.
     for (int i = 0; i < 4; i++)
     {
       double x = 0, y = 0;
-      vpPixelMeterConversion::convertPoint(g.K, clicks[i], x, y);
+      vpPixelMeterConversion::convertPoint(g.K, clicks_[i], x, y);
       P[i].set_x(x);
       P[i].set_y(y);
       pose.addPoint(P[i]);
     }
 
-    // Compute template 3D pose
-    pose.computePose(vpPose::LAGRANGE, cMo);
+    // Compute template 3D pose, choose best solver
+    vpHomogeneousMatrix cMo_dem;
+    vpHomogeneousMatrix cMo_lag;
+    pose.computePose(vpPose::DEMENTHON, cMo_dem);
+    pose.computePose(vpPose::LAGRANGE, cMo_lag);
+    double residual_dem = pose.computeResidual(cMo_dem);
+    double residual_lag = pose.computeResidual(cMo_lag);
+    if (residual_dem < residual_lag)
+      cMo = cMo_dem;
+    else
+      cMo = cMo_lag;
+    ROS_INFO_STREAM("Computed pose [score: " << residual_dem <<"] (DEMENTHON): " << cMo_dem);
+    ROS_INFO_STREAM("Computed pose [score: " << residual_lag <<"] (LAGRANGE): " << cMo_lag);
 
     //publish the pose and target detected
     geometry_msgs::Transform cMot;
-    cMot = VispTools::geometryTransFromVispHomog( cMo );
+    cMot = VispTools::geometryTransFromVispHomog(cMo);
     pose_pub.publish(cMot);
 
     ROS_INFO_STREAM("Computed pose (geometry transform): " << cMot);
@@ -162,6 +137,7 @@ void PoseEstimation::process()
 
     if (enable_visualization)
     {
+      displayClicks(Ic, 4);
       vpDisplay::displayFrame(Ic, cMo, g.K, 0.1, vpColor::none, 3);
       //distance to target
       char dtt[32];
@@ -169,9 +145,41 @@ void PoseEstimation::process()
       //vpDisplay::setFont(Ic,"-adobe-courier-*-*-*-*-12-*-*-*-*-*-*-*");
       vpDisplay::displayRectangle(Ic, 0, 0, 90, 20, vpColor::black, true);
       vpDisplay::displayCharString(Ic, 15, 5, dtt, vpColor::white);
+      vpDisplay::flush(Ic);
       ros::Duration(3).sleep();
 
     }
+  }
+
+}
+
+void PoseEstimation::displayClicks(vpImage<vpRGBa> & Ic, int nclicks)
+{
+
+  vpDisplay::display(Ic);
+  if (nclicks >= 1)
+  {
+    //draw click point
+    vpDisplay::displayCross(Ic, clicks_[0], 10, vpColor::red, 3);
+  }
+  if (nclicks >= 2)
+  {
+    //draw 2nd point, Y line
+    vpDisplay::displayCross(Ic, clicks_[1], 10, vpColor::red, 3);
+    vpDisplay::displayLine(Ic, clicks_[0], clicks_[1], vpColor::green, 3);
+  }
+  if (nclicks >= 3)
+  {
+    //draw 3rd point
+    vpDisplay::displayCross(Ic, clicks_[2], 10, vpColor::red, 3);
+    vpDisplay::displayLine(Ic, clicks_[1], clicks_[2], vpColor::green, 3);
+  }
+  if (nclicks == 4)
+  {
+    //draw 4th point
+    vpDisplay::displayCross(Ic, clicks_[3], 10, vpColor::red, 3);
+    vpDisplay::displayLine(Ic, clicks_[2], clicks_[3], vpColor::green, 3);
+    vpDisplay::displayLine(Ic, clicks_[3], clicks_[0], vpColor::green, 3);
   }
 
 }
