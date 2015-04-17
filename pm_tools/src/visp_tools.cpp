@@ -23,18 +23,15 @@ geometry_msgs::Transform VispTools::geometryTransFromVispHomog(vpHomogeneousMatr
 {
   vpQuaternionVector q;
   sMs.extract(q);
-  tf::Quaternion rotation(q.x(), q.y(), q.z(), q.w());
 
   geometry_msgs::Transform t;
-
   t.rotation.x = q.x();
   t.rotation.y = q.y();
   t.rotation.z = q.z();
   t.rotation.w = q.w();
-
   t.translation.x = sMs[0][3];
-  t.translation.x = sMs[1][3];
-  t.translation.x = sMs[2][3];
+  t.translation.y = sMs[1][3];
+  t.translation.z = sMs[2][3];
 
   return t;
 }
