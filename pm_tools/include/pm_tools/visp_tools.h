@@ -11,6 +11,7 @@
 #include <visp/vpHomogeneousMatrix.h>
 #include <string>
 #include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Transform.h>
 
 struct Frame{
 	tf::Transform pose;
@@ -23,6 +24,7 @@ std::ostream& operator<<(std::ostream&, Frame&);
 class VispTools{
 
 public:
+ static geometry_msgs::Transform geometryTransFromVispHomog( vpHomogeneousMatrix );
  static tf::Transform tfTransFromVispHomog( vpHomogeneousMatrix );
  static vpHomogeneousMatrix vispHomogFromTfTransform( tf::Transform );
  static vpHomogeneousMatrix vispHomogFromXyzrpy( double, double, double, double, double, double);
