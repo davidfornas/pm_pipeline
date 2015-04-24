@@ -11,6 +11,8 @@
 #include<ros/ros.h>
 #include <pm_tools/virtual_image.h>
 
+#include <visp/vpHomogeneousMatrix.h>
+
 /** Description
  */
 class PoseEstimation
@@ -19,6 +21,7 @@ class PoseEstimation
   ros::NodeHandle * nh_;
   std::string image_topic_, image_info_topic_;
   vpImagePoint clicks_[4];
+
 
 public:
   /** Constructor.
@@ -34,7 +37,7 @@ public:
   PoseEstimation(ros::NodeHandle * nh, std::string im_topic, std::string im_info_topic) :
       nh_(nh), image_topic_(im_topic), image_info_topic_(im_info_topic){}
 
-  void process();
+  vpHomogeneousMatrix process();
 
   ~PoseEstimation()
   {
@@ -43,6 +46,9 @@ public:
 private:
 
   void displayClicks( vpImage<vpRGBa> & Ic, int num_clicks );
+  void display5Clicks( vpImage<vpRGBa> & Ic, int num_clicks );
+  void display6Clicks( vpImage<vpRGBa> & Ic, int num_clicks );
+
 
 };
 
