@@ -28,6 +28,7 @@ public:
  static tf::Transform tfTransFromVispHomog( vpHomogeneousMatrix );
  static vpHomogeneousMatrix vispHomogFromTfTransform( tf::Transform );
  static vpHomogeneousMatrix vispHomogFromXyzrpy( double, double, double, double, double, double);
+ static vpHomogeneousMatrix weightedAverage( vpHomogeneousMatrix, int, vpHomogeneousMatrix);
 
 };
 
