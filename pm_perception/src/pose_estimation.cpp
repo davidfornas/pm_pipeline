@@ -99,7 +99,6 @@ vpHomogeneousMatrix PoseEstimation::process()
 
   pose.clearPoint();
 
-  ROS_INFO("Give me the points");
   vpImagePoint cursor;
   int nclicks = 0;
   while (nclicks < NUM_POINTS)
@@ -142,14 +141,16 @@ vpHomogeneousMatrix PoseEstimation::process()
   pose.computePose(vpPose::LAGRANGE, cMo_lag);
   double residual_dem = pose.computeResidual(cMo_dem);
   double residual_lag = pose.computeResidual(cMo_lag);
-  if (residual_dem < residual_lag)
+  if (residual_dem < residual_lag){
     cMo = vpHomogeneousMatrix(cMo_dem);
-  else
+    ROS_INFO_STREAM("Computed pose [score: " << residual_dem <<"] (DEMENTHON): ");
+    ROS_INFO_STREAM(cMo_dem);
+  }else{
     cMo = vpHomogeneousMatrix(cMo_lag);
-  ROS_INFO_STREAM("Computed pose [score: " << residual_dem <<"] (DEMENTHON): ");
-  ROS_INFO_STREAM(cMo_dem);
-  ROS_INFO_STREAM("Computed pose [score: " << residual_lag <<"] (LAGRANGE): ");
-  ROS_INFO_STREAM(cMo_lag);
+    ROS_INFO_STREAM("Computed pose [score: " << residual_lag <<"] (LAGRANGE): ");
+    ROS_INFO_STREAM(cMo_lag);
+  }
+
 
   //publish the pose and target detected
   geometry_msgs::Transform cMot;

@@ -99,11 +99,10 @@ vpHomogeneousMatrix VispTools::weightedAverage(vpHomogeneousMatrix old_avg, int 
   vpTranslationVector tt(mean_x, mean_y, mean_z);
   vpQuaternionVector qq(btQ.x(), btQ.y(), btQ.z(), btQ.w());
   vpHomogeneousMatrix new_avg(tt, qq);
-  ROS_INFO_STREAM("Average bMc " << std::endl << new_avg << std::endl << "Decomposition");
+  ROS_INFO_STREAM("Average bMc " << std::endl << new_avg);
 
   vpTranslationVector trans;
   new_avg.extract(trans);
-  std::cout << "X: " << trans[0] << " Y: " << trans[1] << " Z: " << trans[2];
 
   return new_avg;
 }
@@ -174,13 +173,12 @@ void VispToTF::addTransform(tf::Transform sMs, std::string parent, std::string c
 void VispToTF::resetTransform(vpHomogeneousMatrix sMs, std::string id)
 {
 
-  tf::Transform pose = VispTools::tfTransFromVispHomog(sMs);
+  tf::Transform pose = VispTools::tfTransFromVispHomog(vpHomogeneousMatrix(sMs));
   resetTransform(pose, id);
 }
 
 void VispToTF::resetTransform(tf::Transform sMs, std::string id)
 {
-
   if (frames_.count(id) < 1)
   {
     std::cerr << "Can't reset this item. ID [" << id << "] not found." << std::endl;
