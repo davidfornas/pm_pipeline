@@ -13,8 +13,7 @@
 
 #include <visp/vpHomogeneousMatrix.h>
 
-/** Description
- */
+/** Estimates the pose of a box of known dimensions using user clicks. */
 class PoseEstimation
 {
 
@@ -25,7 +24,8 @@ class PoseEstimation
 
 public:
   /** Constructor.
-   * @param
+   * @nh Node handler
+   * @ TODO Add box dimensions and number of points as parameters
    * */
   PoseEstimation(ros::NodeHandle * nh) :
       nh_(nh)
@@ -37,6 +37,7 @@ public:
   PoseEstimation(ros::NodeHandle * nh, std::string im_topic, std::string im_info_topic) :
       nh_(nh), image_topic_(im_topic), image_info_topic_(im_info_topic){}
 
+  /** Get image and user input to compute the box pose **/
   vpHomogeneousMatrix process();
 
   ~PoseEstimation()
@@ -45,11 +46,10 @@ public:
 
 private:
 
+  /** Display user clicks in vpDisplay, different versions based on the number of points **/
   void displayClicks( vpImage<vpRGBa> & Ic, int num_clicks );
   void display5Clicks( vpImage<vpRGBa> & Ic, int num_clicks );
   void display6Clicks( vpImage<vpRGBa> & Ic, int num_clicks );
-
-
 };
 
 #endif /* POSEESTIMATION_H_ */
