@@ -21,7 +21,7 @@ pcl::PointXYZRGB CloudMerge::accumPoints(pcl::PointXYZRGB a, pcl::PointXYZRGB b,
 
 void CloudMerge::nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b)
 {
-  //A,B should be organized clouds of the same size...
+  //A,B should be organized clouds of the same size. @ TODO Check and throw exception.
   for (size_t i = 0; i < a->points.size(); ++i){
     //First time a point is seen count=1;
     if(pcl::isFinite(a->points[i]) && coeffs[i] == 0){
@@ -30,7 +30,6 @@ void CloudMerge::nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZR
       yvar[i] = a->points[i].y * a->points[i].y;
       zvar[i] = a->points[i].z * a->points[i].z;
     }
-
     if (pcl::isFinite(b->points[i])){
       if (!pcl::isFinite(a->points[i]))
       {

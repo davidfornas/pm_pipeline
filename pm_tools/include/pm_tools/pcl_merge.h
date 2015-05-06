@@ -1,5 +1,7 @@
 /*
- * pcl_merge Point cloud processing tools using PCL
+ * pcl_merge Point cloud merging. NaN values are filled with non-NaN values,
+ *           then non-NaN values are averaged in position. Color is taken
+ *           from the first non-NaN value.
  *  Created on: 14/04/2015
  *      Author: dfornas
  */
@@ -30,14 +32,15 @@
 
 /** Usually using color 3D point clouds. B&W clouds are represented by RGB too */
 typedef pcl::PointXYZRGB PointT;
-//Should make pcl::PCLPointCloud2 version if it is interesting
+// @ TODO pcl::PCLPointCloud2 versions if it is interesting
 
+class CloudMerge
+{
 
-class CloudMerge{
-
-  //Point counters for each possible point in an organized point cloud with standard resolution.
+  //Point counters for each possible point in an organized point cloud with 640 x 480 resolution.
+  // @ TODO Implement variable resolution
   int coeffs[307200];
-  float  xvar[307200], yvar[307200], zvar[307200];
+  float xvar[307200], yvar[307200], zvar[307200];
 
   /** Accumulate point b over a, taking care of NaN values. */
   pcl::PointXYZRGB accumPoints(pcl::PointXYZRGB a, pcl::PointXYZRGB b, int idx);
@@ -45,7 +48,8 @@ class CloudMerge{
 public:
 
   /** Accumulate cloud b over a, filling gaps and averaging when necessary.  */
-  void nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b);
+  void nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a,
+                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr b);
 
 };
 

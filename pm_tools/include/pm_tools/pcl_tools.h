@@ -28,46 +28,39 @@
 
 /** Usually using color 3D point clouds. B&W clouds are represented by RGB too */
 typedef pcl::PointXYZRGB PointT;
-//Should make pcl::PCLPointCloud2 version if it is interesting
+
+// @ TODO Write binary pcl::PCLPointCloud2 versions if it is interesting
 
 class PCLTools
 {
 
 public:
 
+  /** Init cloud from a PCD file  */
   static void cloudFromPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName);
 
+  /** Init cloud from a ROS topic  */
   static void cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName);
 
-  /** Pass through fileter in  */
+  /** Pass through filter in  Z AXIS. @ TODO XY axis */
   static void applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, double min, double max);
 
   /** Statistical Outlier Removal filter */
   static void applyStatisticalOutlierRemoval(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out);
 
-  /** Voxel Grid filter filter */
+  /** Voxel grid filter */
   static void applyVoxelGridFilter(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out);
 
-  /** Compute normals */
+  /** Compute point cloud normals */
   static void estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals);
 
-  /** RANSAC plane estimation */
-  /*static pcl::ModelCoefficients::Ptr planeSegmentation(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
-                                                pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
-                                                pcl::PointCloud<PointT>::Ptr, double distanceThreshold = 0.03, int iterations = 100);*/
-
-  /** RANSAC cylinder estimation */
-  static pcl::ModelCoefficients::Ptr cylinderSegmentation(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<pcl::Normal>::Ptr,
-                                                   pcl::PointCloud<PointT>::Ptr, double distanceThreshold = 0.05,
-                                                   int iterations = 20000, double rlimit = 0.1);
-
-  /** Show segmented cloud and plane by coefficients and inliers */
+  /** Display segmented cloud and plane by coefficients and inliers */
   static void showClouds(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<PointT>::Ptr, pcl::ModelCoefficients::Ptr, pcl::ModelCoefficients::Ptr);
 
-  /** Count number of NaN values present in a point cloud. */
+  /** Count number of NaN values present in a point cloud */
   static int nanCount(pcl::PointCloud<PointT>::Ptr);
 
-  /** Fill gaps in cloud A using B.  */
+  /** Fill gaps in cloud A using B  */
   static void mergeOrganizedClouds(pcl::PointCloud<PointT>::Ptr a, pcl::PointCloud<PointT>::Ptr b);
 
 };

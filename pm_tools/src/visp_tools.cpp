@@ -4,8 +4,8 @@
  *  Created on: 24/04/2014
  *      Author: dfornas
  */
+
 #include <pm_tools/visp_tools.h>
-//#include <kdl/frames.hpp>
 #include <tf/transform_broadcaster.h>
 #include <visp/vpHomogeneousMatrix.h>
 #include <stdlib.h>
@@ -99,7 +99,7 @@ vpHomogeneousMatrix VispTools::weightedAverage(vpHomogeneousMatrix old_avg, int 
   vpTranslationVector tt(mean_x, mean_y, mean_z);
   vpQuaternionVector qq(btQ.x(), btQ.y(), btQ.z(), btQ.w());
   vpHomogeneousMatrix new_avg(tt, qq);
-  ROS_INFO_STREAM("Average bMc " << std::endl << new_avg);
+  ROS_DEBUG_STREAM("Average bMc " << std::endl << new_avg);
 
   vpTranslationVector trans;
   new_avg.extract(trans);
@@ -126,19 +126,16 @@ VispToTF::VispToTF()
 
 void VispToTF::addTransform(vpHomogeneousMatrix sMs, std::string parent, std::string child, std::string id)
 {
-
   tf::Transform pose = VispTools::tfTransFromVispHomog(sMs);
   addTransform(pose, parent, child, id);
-
 }
 
 void VispToTF::addTransform(tf::Transform sMs, std::string parent, std::string child, std::string id)
 {
-
   //TODO: It's possible to do further checks.
   if (frames_.count(id) > 0)
   {
-    std::cerr << "ID [" << id << "] already in use. It won't be added." << std::endl;
+    ROS_DEBUG_STREAM("ID [" << id << "] already in use. It won't be added.");
     return;
   }
   // Check for transform duplicates, traverse through the map so keep it small.
@@ -153,11 +150,9 @@ void VispToTF::addTransform(tf::Transform sMs, std::string parent, std::string c
     }
   }
   //Valid tree structure it's not checked. TF does this check, though.
-
   if (duplicate)
   {
-    std::cerr << "Frame from " << child << " to " << parent << " already specified. Reset it with resetTransform(sMs, "
-        << old_id << " )." << std::endl;
+    ROS_DEBUG_STREAM("Frame from " << child << " to " << parent << " already specified. Reset it with resetTransform(sMs, "<< old_id << " ).");
     return;
   }
 
@@ -167,12 +162,10 @@ void VispToTF::addTransform(tf::Transform sMs, std::string parent, std::string c
   f.child = child;
 
   frames_[id] = f;
-
 }
 
 void VispToTF::resetTransform(vpHomogeneousMatrix sMs, std::string id)
 {
-
   tf::Transform pose = VispTools::tfTransFromVispHomog(vpHomogeneousMatrix(sMs));
   resetTransform(pose, id);
 }
@@ -181,18 +174,17 @@ void VispToTF::resetTransform(tf::Transform sMs, std::string id)
 {
   if (frames_.count(id) < 1)
   {
-    std::cerr << "Can't reset this item. ID [" << id << "] not found." << std::endl;
+    ROS_DEBUG_STREAM("Can't reset this item. ID [" << id << "] not found.");
     return;
   }
   frames_[id].pose = sMs;
-
 }
 
 void VispToTF::removeTransform(std::string id)
 {
   if (frames_.count(id) < 1)
   {
-    std::cerr << "Can't delete this item. ID [" << id << "] not found." << std::endl;
+    ROS_DEBUG_STREAM("Can't delete this item. ID [" << id << "] not found.");
     return;
   }
   frames_.erase(id);
@@ -200,22 +192,18 @@ void VispToTF::removeTransform(std::string id)
 
 void VispToTF::publish()
 {
-
   for (std::map<std::string, Frame>::iterator ii = frames_.begin(); ii != frames_.end(); ++ii)
   {
     tf::StampedTransform transform((*ii).second.pose, ros::Time::now(), (*ii).second.parent, (*ii).second.child);
     broadcaster_->sendTransform(transform);
   }
-
 }
 
 void VispToTF::print()
 {
-
   for (std::map<std::string, Frame>::iterator ii = frames_.begin(); ii != frames_.end(); ++ii)
   {
-    std::cout << "ID string: " << (*ii).first << std::endl << "Frame -> " << (*ii).second << std::endl;
+    ROS_INFO_STREAM("ID string: " << (*ii).first << std::endl << "Frame -> " << (*ii).second);
   }
-
 }
 

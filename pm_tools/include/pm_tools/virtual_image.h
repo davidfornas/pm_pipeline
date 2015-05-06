@@ -15,8 +15,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-/** Framegrabber for the simulator camera
-*/
+/** Framegrabber for the simulator camera */
 class VirtualImage: public vpFrameGrabber
 {
 	std::string image_topic, info_topic;

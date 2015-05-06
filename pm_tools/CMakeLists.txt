@@ -12,7 +12,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES pm_tools
   CATKIN_DEPENDS roscpp sensor_msgs pcl_conversions tf visualization_msgs sensor_msgs image_transport
-  DEPENDS PCL VISP
+  DEPENDS PCL VISP OpenCV
 )
 include_directories(include)
 include_directories(
