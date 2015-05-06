@@ -5,14 +5,11 @@
  *      Author: dfornas
  */
 #include <pm_perception/pose_estimation.h>
-
 #include <visp/vpPose.h>
 #include <visp/vpImageConvert.h>
 #include <visp/vpPixelMeterConversion.h>
 #include <visp/vpDisplayX.h>
-
 #include <pm_tools/visp_tools.h>
-
 #include <geometry_msgs/Transform.h>
 
 const double TSIZE_X = 0.140, TSIZE_Y = 0.30, TSIZE_Z = 0.160;
@@ -33,7 +30,7 @@ vpHomogeneousMatrix PoseEstimation::process()
     r.sleep();
   }
   if (!ros::ok())
-    return vpHomogeneousMatrix(0,0,0,0,0,0);
+    return vpHomogeneousMatrix(0, 0, 0, 0, 0, 0);
 
   std::string object_pose_topic = "/pose"; // @ TODO Get from parameter server
   //Advertise object pose
@@ -47,7 +44,7 @@ vpHomogeneousMatrix PoseEstimation::process()
     r.sleep();
   }
   if (!ros::ok())
-    return vpHomogeneousMatrix(0,0,0,0,0,0);
+    return vpHomogeneousMatrix(0, 0, 0, 0, 0, 0);
 
   // Open the framegrabber by loading the first image of the sequence
   g.open(Ic);
@@ -106,9 +103,12 @@ vpHomogeneousMatrix PoseEstimation::process()
       nclicks++;
     }
 
-    if (NUM_POINTS == 4) displayClicks(Ic, nclicks);
-    if (NUM_POINTS == 5) display5Clicks(Ic, nclicks);
-    if (NUM_POINTS == 6) display6Clicks(Ic, nclicks);
+    if (NUM_POINTS == 4)
+      displayClicks(Ic, nclicks);
+    if (NUM_POINTS == 5)
+      display5Clicks(Ic, nclicks);
+    if (NUM_POINTS == 6)
+      display6Clicks(Ic, nclicks);
 
     vpDisplay::flush(Ic);
   }
@@ -137,11 +137,14 @@ vpHomogeneousMatrix PoseEstimation::process()
   pose.computePose(vpPose::LAGRANGE, cMo_lag);
   double residual_dem = pose.computeResidual(cMo_dem);
   double residual_lag = pose.computeResidual(cMo_lag);
-  if (residual_dem < residual_lag){
+  if (residual_dem < residual_lag)
+  {
     cMo = vpHomogeneousMatrix(cMo_dem);
     ROS_INFO_STREAM("Computed pose [score: " << residual_dem <<"] (DEMENTHON): ");
     ROS_INFO_STREAM(cMo_dem);
-  }else{
+  }
+  else
+  {
     cMo = vpHomogeneousMatrix(cMo_lag);
     ROS_INFO_STREAM("Computed pose [score: " << residual_lag <<"] (LAGRANGE): ");
     ROS_INFO_STREAM(cMo_lag);
@@ -158,9 +161,12 @@ vpHomogeneousMatrix PoseEstimation::process()
   //Visualization
   if (enable_visualization)
   {
-    if (NUM_POINTS == 4) displayClicks(Ic, 4);
-    if (NUM_POINTS == 5) display5Clicks(Ic, 5);
-    if (NUM_POINTS == 6) display6Clicks(Ic, 6);
+    if (NUM_POINTS == 4)
+      displayClicks(Ic, 4);
+    if (NUM_POINTS == 5)
+      display5Clicks(Ic, 5);
+    if (NUM_POINTS == 6)
+      display6Clicks(Ic, 6);
     vpDisplay::displayFrame(Ic, cMo, g.K, 0.1, vpColor::none, 3);
     //Display distance to target
     char dtt[32];

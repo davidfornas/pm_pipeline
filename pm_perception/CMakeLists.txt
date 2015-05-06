@@ -26,14 +26,6 @@ add_library(pm_perception
   src/border_detection.cpp
   src/pose_estimation.cpp
 )
-
-## Declare a cpp executable
-# add_executable(pm_perception_node src/pm_perception_node.cpp)
-
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(pm_perception_node pm_perception_generate_messages_cpp)
-
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pm_perception ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} ${OpenCV})
 
