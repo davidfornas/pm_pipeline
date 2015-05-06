@@ -27,13 +27,6 @@ add_library(pm_manipulation
   src/trajectory_following.cpp
 )
 
-## Declare a cpp executable
-# add_executable(pm_manipulation_node src/pm_manipulation_node.cpp)
-
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(pm_manipulation_node pm_manipulation_generate_messages_cpp)
-
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pm_manipulation ${catkin_LIBRARIES}  ${PCL_LIBRARIES} ${VISP_LIBRARIES})
 

@@ -2,13 +2,18 @@
 <package>
 
   <name>pm_manipulation</name>
-  <version>0.0.0</version>
-  <description>The pm_manipulation package</description>
+  <version>0.1.0</version>
+  <description>
+  The pm_manipulation package cointains tools that deal with  arm 
+  control (mainly the ARM5E used by the IRSLab) and grasp specification.
+  For this reason it depends on mar_robot_arm5e from 
+  https://github.com/penalvea/irs-ros-pkg
+  </description>
 
   <maintainer email="dfornas@uji.es">David Fornas</maintainer>
   <license>BSD</license>
 
-  <!-- <url type="website">http://wiki.ros.org/pm_manipulation</url> -->
+  <url type="website">https://github.com/davidfornas/pm_pipeline</url>
   <author email="dfornas@uji.es">David Fornas</author>
 
   <buildtool_depend>catkin</buildtool_depend>

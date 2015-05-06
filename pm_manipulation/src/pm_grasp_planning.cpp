@@ -24,19 +24,14 @@ void PMGraspPlanning::getGraspHypothesis(){
 
 void PMGraspPlanning::perceive() {
 
-  // Datasets
-  pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-  pcl::PointCloud<PointT>::Ptr cloud_filtered2 (new pcl::PointCloud<PointT>);
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>);
+  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
 
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
   pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
-  //Nubes del plano y cilindro.
-  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ());
-  pcl::PointCloud<PointT>::Ptr cloud_plane (new pcl::PointCloud<PointT> ());
 
-  PCLTools::applyZAxisPassthrough(cloud_, cloud_filtered, -1, 1);
-  std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size () << " data points." << std::endl;
+  PCLTools::applyZAxisPassthrough(cloud_, cloud_filtered, -1, 3);
+  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
 
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools::estimateNormals(cloud_filtered, cloud_normals);
@@ -53,28 +48,31 @@ void PMGraspPlanning::perceive() {
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
   PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
-  //Puntos de agarre
-  PointT mean, max, min;  //Puntos que definiran el cilindro.
-  //Punto de origen del cilindro.
+  //Grasp points
+  PointT mean, max, min;
+  //Cylinder origin
   PointT axis_point;
   axis_point.x=coefficients_cylinder->values[0];
   axis_point.y=coefficients_cylinder->values[1];
   axis_point.z=coefficients_cylinder->values[2];
-  //Vectores directores
+
+  //Director vectors: cylinder axis and perpendicular vector.
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();
-  //Vector perpendicular a la dirección, en el plano Z de la cámara (ejesX,Y)
+
   tf::Vector3 perp(coefficients_cylinder->values[4], -coefficients_cylinder->values[3], 0);
   perp=perp.normalize();
-  //Vector ortogonal correspondiente
+
   tf::Vector3 result=tf::tfCross( perp, axis_dir).normalize();
 
   getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir);
-  //Punto medio reposicionado.
+  //Mean point taking into account only a 90% of the points.
   mean.x=(max.x+min.x)/2;mean.y=(max.y+min.y)/2;mean.z=(max.z+min.z)/2;
   coefficients_cylinder->values[0]=mean.x;
   coefficients_cylinder->values[1]=mean.y;
   coefficients_cylinder->values[2]=mean.z;
+
+  //Cylinder properties
   radious=coefficients_cylinder->values[6];
   height=sqrt((max.x-min.x)*(max.x-min.x)+(max.y-min.y)*(max.y-min.y)+(max.z-min.z)*(max.z-min.z));
 
@@ -87,14 +85,14 @@ void PMGraspPlanning::perceive() {
   //std::cout << "result -> x: " << result.x() << " y: " << result.y() << " z: " << result.z() << std::endl;//OK UNIT
   //std::cout << "Dot products" << result.dot(perp) << result.dot(axis_dir) << axis_dir.dot(perp);//OK ZEROS
 
-  //Ahora mismo el end-efector cae dentro del cilindro en vez de en superfície.
+  // @ NOTE Ahora mismo el end-efector cae dentro del cilindro en vez de en superfície.
   //Esto está relativamente bien pero no tenemos en cuenta la penetración. Sin emargo, la
   //tenemos en cuenta luego al separanos el radio así que no hay problema en realidad.
   cMo[0][0]=perp.x(); cMo[0][1]=axis_dir.x(); cMo[0][2]=result.x();cMo[0][3]=mean.x;
   cMo[1][0]=perp.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=result.y();cMo[1][3]=mean.y;
   cMo[2][0]=perp.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=result.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  //ROS_INFO_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
+  ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
   //vispToTF.resetTransform(cMo, "1");
 
   //DEBUG Print MAX and MIN frames
@@ -112,7 +110,9 @@ void PMGraspPlanning::perceive() {
   recalculate_cMg();
 }
 
-//Compute cMg from cMo
+/** Compute cMg from cMo. This function is inherited from MAR where
+ * the repositioning is done using an UI
+ */
 void PMGraspPlanning::recalculate_cMg(){
 
   //Set grasp config values from interface int values.
@@ -120,7 +120,7 @@ void PMGraspPlanning::recalculate_cMg(){
   vpHomogeneousMatrix oMg;
 
   if(aligned_grasp_){
-    //Aplicamos una rotación y traslación para posicionar la garra mejor
+    //Apply rotations and traslation to reposition the grasp frame.
     vpHomogeneousMatrix grMgt0(0,along_,0,0,0,0);
     vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
     vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
@@ -129,7 +129,7 @@ void PMGraspPlanning::recalculate_cMg(){
     oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
     cMg = cMo * oMg ;
   }else{
-    //aplicamos una rotación y traslación para posicionar la garra mejor
+    //Apply rotations and traslation to reposition the grasp frame.
     vpHomogeneousMatrix gMgr(0,0,0,0,angle_,0);
     vpHomogeneousMatrix grMgt0(rad_,0,0,0,0,0);
     vpHomogeneousMatrix grMgt1(0,along_,0,0,0,0);
@@ -212,11 +212,11 @@ void PMGraspPlanning::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstP
   p.y = axis_point.y + normal->y() * t;
   p.z = axis_point.z + normal->z() * t;
   *min_pt=p;
-  ///@todo MAke a list with this points and show it.
+  ///@ TODO MAke a list with this points and show it.
 
 }
 
-/// @todo Add d,a,r as parameters.
+/// @ TODO  Add d,a,r as parameters.
 void PMGraspPlanning::generateGraspList()
 {
   for (double d = -0.2; d <= 0.2; d += 0.04)
@@ -242,6 +242,7 @@ void PMGraspPlanning::generateGraspList()
 }
 
 //As a kinematic filter will be applied, I prefer to do it externally to avoid adding more deps.
+// @ TODO Improve this function
 void PMGraspPlanning::filterGraspList(){
 
   std::list<vpHomogeneousMatrix>::iterator i = cMg_list.begin();

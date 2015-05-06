@@ -1,5 +1,7 @@
 /*
- * PCGraspPlanning.h
+ * PCGraspPlanning.h Complete point cloud grasp planning from
+ * MAR (https://github.com/penalvea/irs-ros-pkg). It has been
+ * divided in modular components but this is the full version.
  *
  *  Created on: 03/03/2014
  *      Author: dfornas
@@ -24,9 +26,9 @@
 
 typedef pcl::PointXYZRGB PointT;
 
-/** Description
- */
+/** Point cloud grasp planning full */
 class PMGraspPlanning {
+
   pcl::PointCloud<PointT>::Ptr cloud_;
   //Grasping params (to allow different grasps and radious (for grasp penetration)).
   double angle_, rad_, along_;
@@ -42,15 +44,20 @@ public:
 
   vpHomogeneousMatrix cMg, cMo; ///< Grasp frame with respect to the camera after planning
   double radious, height;
+
   //With integuers to use trackbars
   int iangle, irad, ialong, ialigned_grasp;
 
+  //Segmentation components. @ TODO Currently they are not used.
   BackgroundRemoval * background_remover_;
   ObjectSegmentation * segmentator_;
   HypothesisGeneration * hypothesis_generation_;
 
+  std::list<vpHomogeneousMatrix> cMg_list;
+
+
   /** Constructor.
-   * @param cloud, background_remover, segmentator, hypothesis_generator
+   * @params: cloud, background_remover, segmentator, hypothesis_generator
    * */
   PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, BackgroundRemoval * background_remover,
                   ObjectSegmentation * segmentator, HypothesisGeneration * hypothesis_generation){
@@ -70,15 +77,17 @@ public:
     hypothesis_generation_ = hypothesis_generation;
   }
 
+  /** @ TODO To implement. Place holder. */
   void proccessScene();
-  std::list<vpHomogeneousMatrix> cMg_list;
-  void generateGraspList();
-  void filterGraspList();
-  /** Description */
+
+  /** @ TODO To implement. Place holder. */
   void getGraspHypothesis();
 
+  /** Generate not only a grasp but a list */
+  void generateGraspList();
 
-  ~PMGraspPlanning() {}
+  /** Evaluate and rank grasp list*/
+  void filterGraspList();
 
   /** Main function where segmentation is done */
   void perceive();
@@ -86,10 +95,17 @@ public:
   /** Set whether to perform a grasp aligned with the cylinder axis or not **/
   void setAlignedGrasp(bool a) {aligned_grasp_=a;}
 
+  /** Set plane segmentation parameters: distance to the inliers to the plane
+   * and number of iterations.
+   */
   void setPlaneSegmentationParams(double distanceThreshold = 0.03, int iterations = 100){
     plane_distance_threshold_=distanceThreshold;
     plane_iterations_=iterations;
   }
+
+  /** Set cylinder segmentation parameters: distance to the inliers to the plane,
+   * number of iterations and radious limit.
+   */
   void setCylinderSegmentationParams(double distanceThreshold = 0.05,int iterations = 20000, double rlimit = 0.1){
     cylinder_distance_threshold_=distanceThreshold;
     cylinder_iterations_=iterations;
@@ -108,6 +124,8 @@ public:
    */
   vpHomogeneousMatrix get_bMg(vpHomogeneousMatrix bMc) {return bMc*cMg;}
 
+  ~PMGraspPlanning() {}
+
 private:
 
   /** Comparer used in the sort function */
@@ -118,7 +136,6 @@ private:
 
   /** Configure the camera based in int slider parameters */
   void intToConfig();
-
 
 };
 #endif /* PMGRASPPLANNING_H_ */
