@@ -15,22 +15,23 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   CloudMerge merger;
 
-
   int clouds_number;
-  double depth=2, near=0;
+  double depth = 2, near = 0;
   std::string input_basename("cloud");
   nh.getParam("input_basename", input_basename);
   nh.getParam("clouds_number", clouds_number);
   nh.getParam("depth", depth);
   nh.getParam("near", near);
-    if (clouds_number < 2)
+  if (clouds_number < 2)
     return -1;
 
-  //Point Cloud load
+  //Point Cloud loading and filtering
   std::string point_cloud_file(input_basename + std::string("1.pcd"));
-  pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_filtered(new pcl::PointCloud<PointT>),  cloud2(new pcl::PointCloud<PointT>);
-  PCLTools::applyZAxisPassthrough(cloud, cloud_filtered, depth, near);
+  pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_filtered(new pcl::PointCloud<PointT>), cloud2(
+      new pcl::PointCloud<PointT>);
   PCLTools::cloudFromPCD(cloud, point_cloud_file);
+  //Optional: PCLTools::applyZAxisPassthrough(cloud, cloud_filtered, depth, near);
+
   std::cout << PCLTools::nanCount(cloud) << std::endl;
 
   // Cloud viewer to watch the cloud as it grows.
@@ -41,7 +42,7 @@ int main(int argc, char** argv)
     seq_number << input_basename << i << std::string(".pcd");
     PCLTools::cloudFromPCD(cloud2, seq_number.str());
     merger.nanAwareOrganizedConcatenateMean(cloud, cloud2);
-    std::cout << "First PointCloud current NaN number:" << PCLTools::nanCount(cloud) << std::endl;
+    ROS_DEBUG_STREAM("First PointCloud current NaN number:" << PCLTools::nanCount(cloud));
 
     viewer.removePointCloud("Cloud");
     viewer.addPointCloud(cloud, "Cloud");
@@ -51,9 +52,11 @@ int main(int argc, char** argv)
   pcl::PCDWriter writer;
   writer.write(input_basename + std::string("_out.pcd"), *cloud, false);
 
+  ros::Rate r(10);
   while (!viewer.wasStopped())
   {
-    // Do nothing but wait.
+    //Do nothing but wait.
+    r.sleep();
   }
 
   return (0);

@@ -15,12 +15,12 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   //Average pose from various left and right images.
-  int counter = 0, left_weight=0, right_weight=0;
-  int num_images=3; // @ TODO Get it from ROS param or cmd line.
+  int counter = 0, left_weight = 0, right_weight = 0;
+  int num_images = 3; // @ TODO Get it from ROS param or cmd line.
   vpHomogeneousMatrix left_avg, right_avg;
   vpHomogeneousMatrix left, right;
 
-  while (ros::ok() && counter < 2*num_images)
+  while (ros::ok() && counter < 2 * num_images)
   {
     if (counter % 2 == 0)
     {
@@ -28,8 +28,10 @@ int main(int argc, char** argv)
       PoseEstimation pose_est(&nh, "stereo/left/image_rect", "stereo/left/camera_info");
       left = pose_est.process();
 
-      if (left_weight==0) left_avg=left;
-      else left_avg=VispTools::weightedAverage(left_avg, left_weight, left);
+      if (left_weight == 0)
+        left_avg = left;
+      else
+        left_avg = VispTools::weightedAverage(left_avg, left_weight, left);
       left_weight++;
     }
 
@@ -39,8 +41,10 @@ int main(int argc, char** argv)
       PoseEstimation pose_est_r(&nh, "stereo/right/image_rect", "stereo/right/camera_info");
       right = pose_est_r.process();
 
-      if (right_weight==0) right_avg=right;
-      else right_avg=VispTools::weightedAverage(right_avg, left_weight, right);
+      if (right_weight == 0)
+        right_avg = right;
+      else
+        right_avg = VispTools::weightedAverage(right_avg, left_weight, right);
       right_weight++;
     }
     counter++;
@@ -57,7 +61,8 @@ int main(int argc, char** argv)
   v.addTransform(right_avg, "stereo_right", "right_average", "4");
 
   ros::Rate r(5);
-  while(ros::ok()){
+  while (ros::ok())
+  {
     v.publish();
     r.sleep();
   }
