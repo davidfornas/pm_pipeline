@@ -23,6 +23,7 @@ add_library(pm_tools
   src/pcl_tools.cpp
   src/pcl_segmentation.cpp
   src/pcl_merge.cpp
+  src/pcl_clustering.cpp
   src/visp_tools.cpp
   src/virtual_image.cpp
 )
