@@ -16,6 +16,12 @@ void PCLTools::cloudFromPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string file
   std::cerr << "PointCloud loaded: " << cloud->points.size() << " data points." << std::endl;
 }
 
+void PCLTools::cloudToPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName){
+  pcl::PCDWriter writer;
+  writer.write(fileName, *cloud, false);
+  std::cerr << "PointCloud saved." << std::endl;
+}
+
 void PCLTools::cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName){
   sensor_msgs::PointCloud2::ConstPtr message = ros::topic::waitForMessage< sensor_msgs::PointCloud2 >(topicName);
   pcl::PCLPointCloud2 pcl_pc;
@@ -30,7 +36,7 @@ void PCLTools::applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::Point
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud (in);
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (-10, 10);
+  pass.setFilterLimits (min, max);
   pass.filter (*out);
 }
 

@@ -42,6 +42,9 @@ public:
   /** Init cloud from a ROS topic  */
   static void cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName);
 
+  /** Save cloud to a PCD file  */
+  static void cloudToPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName);
+
   /** Pass through filter in  Z AXIS. @ TODO XY axis */
   static void applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, double min, double max);
 
