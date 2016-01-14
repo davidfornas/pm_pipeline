@@ -5,6 +5,7 @@
  *      Author: dfornas
  */
 #include <pm_tools/pcl_clustering.h>
+#include <ros/ros.h>
 
 #include <pcl/point_types.h>
 #include <pcl/ModelCoefficients.h>
@@ -23,12 +24,13 @@ typedef pcl::PointXYZRGB PointT;
 
 void CloudClustering::apply()
 {
-  // Read in the cloud data
-  pcl::PCDReader reader;
-  pcl::PointCloud<PointT>::Ptr cloud0 (new pcl::PointCloud<PointT>), cloud (new pcl::PointCloud<PointT>), cloud_f (new pcl::PointCloud<PointT>);
-  std::cout << "PointCloud before filtering has: " << in_cloud_->points.size () << " data points." << std::endl; //*
-  PCLTools::applyZAxisPassthrough(in_cloud_, cloud0, 0.2, 1.8);
 
+  pcl::PointCloud<PointT>::Ptr cloud0 (new pcl::PointCloud<PointT>), cloud (new pcl::PointCloud<PointT>), cloud_f (new pcl::PointCloud<PointT>);
+
+  ROS_DEBUG_STREAM("PointCloud before filtering has: " << in_cloud_->points.size () << " data points.");
+
+  //Filtering
+  PCLTools::applyZAxisPassthrough(in_cloud_, cloud0, 0.2, 1.8);
   std::vector <int> idx;
   pcl::removeNaNFromPointCloud (*cloud0, *cloud, idx);
 
