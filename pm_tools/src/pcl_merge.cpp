@@ -6,7 +6,6 @@
  */
 #include <pm_tools/pcl_merge.h>
 
-
 pcl::PointXYZRGB CloudMerge::accumPoints(pcl::PointXYZRGB a, pcl::PointXYZRGB b, int idx)
 {
   pcl::PointXYZRGB c(a);

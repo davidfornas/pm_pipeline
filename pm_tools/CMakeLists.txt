@@ -28,3 +28,10 @@ add_library(pm_tools
   src/virtual_image.cpp
 )
 target_link_libraries(pm_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
+
+add_executable(registration_example src/registration_example.cpp)
+target_link_libraries(registration_example pm_tools ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
+#add_dependencies(conver ${arm5_controller_EXPORTED_TARGETS})
+
+add_executable(convert src/conversions.cpp)
+target_link_libraries(convert ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )

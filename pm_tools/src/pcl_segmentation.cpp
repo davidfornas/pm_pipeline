@@ -7,6 +7,7 @@
 #include <pm_tools/pcl_segmentation.h>
 #include <ros/ros.h>
 
+
 /** RANSAC plane estimation */
 bool PlaneSegmentation::apply(pcl::PointCloud<PointT>::Ptr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals,
                               pcl::PointCloud<PointT>::Ptr cloud_plane, pcl::ModelCoefficients::Ptr coeffs)
