@@ -1,5 +1,5 @@
 /** 
- * This program is used to filter and modify point clouds easily.
+ * This program is used to register a pair of point clouds.
  *  Created on: 25/01/2016
  *      Author: dfornas
  */

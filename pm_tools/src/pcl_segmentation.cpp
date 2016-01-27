@@ -134,7 +134,7 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
   }
 }
 
-/** Remove the plane from the cloud, easy to use method.  */
+/** Remove the plane from the cloud, easy to use method. ZPassthrough used.  */
 void PlaneSegmentation::removeBackground(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, int iterations, double threshold){
 
 	  pcl::PointCloud<PointT>::Ptr plane(new pcl::PointCloud<PointT>), in_filtered(new pcl::PointCloud<PointT>);
@@ -142,8 +142,10 @@ void PlaneSegmentation::removeBackground(pcl::PointCloud<PointT>::Ptr in, pcl::P
 	  pcl::PointCloud<pcl::Normal>::Ptr in_cloud_normals (new pcl::PointCloud<pcl::Normal>), out_cloud_normals (new pcl::PointCloud<pcl::Normal>);
 	  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients);
 
+	  // TODO: This filter may be applied externaly or optionaly.
 	  PCLTools::applyZAxisPassthrough(in, in_filtered, -2, 2);
 	  PCLTools::estimateNormals(in_filtered, in_cloud_normals);
+
 	  PlaneSegmentation plane_seg(in_filtered, in_cloud_normals);
 	  plane_seg.setDistanceThreshold(threshold);
 	  plane_seg.setIterations(iterations);
