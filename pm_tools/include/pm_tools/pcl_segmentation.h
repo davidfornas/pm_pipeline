@@ -68,6 +68,10 @@ public:
   ~PlaneSegmentation()
   {
   }
+
+  /** Remove the plane from the cloud, easy to use method.  */
+  static void removeBackground(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, int iteration=100, double threshold=0.06);
+
 };
 
 class CylinderSegmentation

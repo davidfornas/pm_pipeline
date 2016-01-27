@@ -14,13 +14,13 @@
 void PCLTools::cloudFromPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName){
   pcl::PCDReader reader;
   reader.read(fileName, *cloud);
-  std::cerr << "PointCloud loaded: " << cloud->points.size() << " data points." << std::endl;
+  ROS_DEBUG_STREAM("PointCloud loaded: " << cloud->points.size() << " data points." << std::endl);
 }
 
 void PCLTools::cloudToPCD(pcl::PointCloud<PointT>::Ptr cloud, std::string fileName){
   pcl::PCDWriter writer;
   writer.write(fileName, *cloud, false);
-  std::cerr << "PointCloud saved." << std::endl;
+  ROS_DEBUG_STREAM(std::cerr << "PointCloud saved." << std::endl);
 }
 
 void PCLTools::cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string topicName){
@@ -29,7 +29,7 @@ void PCLTools::cloudFromTopic(pcl::PointCloud<PointT>::Ptr cloud, std::string to
   pcl_conversions::toPCL(*message, pcl_pc);
   //PCL Generic cloud to XYZRGB strong type.
   pcl::fromPCLPointCloud2(pcl_pc, *cloud);
-  std::cerr << "PointCloud loaded: " << cloud->points.size() << " data points." << std::endl;
+  ROS_DEBUG_STREAM("PointCloud loaded: " << cloud->points.size() << " data points." << std::endl);
 }
 
 void PCLTools::applyZAxisPassthrough(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, double min, double max){
@@ -60,7 +60,7 @@ void PCLTools::applyVoxelGridFilter(pcl::PointCloud<PointT>::Ptr in, pcl::PointC
 
 /** Compute normals */
 void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals){
-  std::cerr << "Applying NORMAL ESTIMATION..." << std::endl;
+  ROS_DEBUG_STREAM("Applying normal estimation" << std::endl);
   pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
   pcl::NormalEstimation<PointT, pcl::Normal> ne;
   // Estimate point normals
@@ -68,7 +68,6 @@ void PCLTools::estimateNormals(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<
   ne.setInputCloud (in);
   ne.setKSearch (50);
   ne.compute (*cloud_normals);
-  std::cerr << "Applying NORMAL ESTIMATION2..." << std::endl;
 }
 
 int PCLTools::nanCount(pcl::PointCloud<PointT>::Ptr p)
@@ -80,6 +79,22 @@ int PCLTools::nanCount(pcl::PointCloud<PointT>::Ptr p)
   return count;
 }
 
+
+void PCLTools::removeNanPoints(pcl::PointCloud<PointT>::Ptr p, pcl::PointCloud<PointT>::Ptr copy){
+
+	int new_size = PCLTools::nanCount(p);
+    copy->width    = new_size;
+	copy->height   = 1;
+	copy->is_dense = false;
+	copy->points.resize (copy->width * copy->height);
+
+	int idx=0;
+	  for (size_t i = 0; i < p->points.size(); ++i)
+	    if (pcl::isFinite(p->points[i]))
+	    	copy->points[idx++] = p->points[i];
+	  ROS_DEBUG_STREAM("New size:" << idx);
+}
+
 void PCLTools::mergeOrganizedClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pcl::PointCloud<pcl::PointXYZRGB>::Ptr b)
 {
   //A,B should be organized clouds of the same size... @ TODO CHECK
@@ -87,4 +102,6 @@ void PCLTools::mergeOrganizedClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a, pc
     if (!pcl::isFinite(a->points[i]) && pcl::isFinite(b->points[i]))
       a->points[i] = b->points[i];
 }
+
+
 

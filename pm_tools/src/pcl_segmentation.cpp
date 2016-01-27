@@ -43,9 +43,8 @@ bool PlaneSegmentation::apply(pcl::PointCloud<PointT>::Ptr out_cloud, pcl::Point
 
   // Write the planar inliers to disk
   extract.filter(*cloud_plane);
-  ROS_INFO_STREAM(
-      "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points. Saved.");
-  writer.write("/home/dfornas/data/scene_plane.pcd", *cloud_plane, false); //DEBUG
+  ROS_INFO_STREAM("PointCloud representing the planar component: " << cloud_plane->points.size () << " data points. Not saved.");
+  //writer.write("/home/dfornas/data/scene_plane.pcd", *cloud_plane, false); //DEBUG
 
   // Remove the planar inliers, extract the rest
   extract.setNegative(true);
@@ -134,4 +133,22 @@ void PCLTools::showClouds(pcl::PointCloud<PointT>::Ptr c1, pcl::PointCloud<Point
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
   }
 }
+
+/** Remove the plane from the cloud, easy to use method.  */
+void PlaneSegmentation::removeBackground(pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, int iterations, double threshold){
+
+	  pcl::PointCloud<PointT>::Ptr plane(new pcl::PointCloud<PointT>), in_filtered(new pcl::PointCloud<PointT>);
+
+	  pcl::PointCloud<pcl::Normal>::Ptr in_cloud_normals (new pcl::PointCloud<pcl::Normal>), out_cloud_normals (new pcl::PointCloud<pcl::Normal>);
+	  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients);
+
+	  PCLTools::applyZAxisPassthrough(in, in_filtered, -2, 2);
+	  PCLTools::estimateNormals(in_filtered, in_cloud_normals);
+	  PlaneSegmentation plane_seg(in_filtered, in_cloud_normals);
+	  plane_seg.setDistanceThreshold(threshold);
+	  plane_seg.setIterations(iterations);
+	  plane_seg.apply(out, out_cloud_normals, plane, coefficients_plane);
+
+}
+
 

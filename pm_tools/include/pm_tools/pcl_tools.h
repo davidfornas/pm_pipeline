@@ -63,6 +63,9 @@ public:
   /** Count number of NaN values present in a point cloud */
   static int nanCount(pcl::PointCloud<PointT>::Ptr);
 
+  /** Remove NaN points */
+  static void removeNanPoints(pcl::PointCloud<PointT>::Ptr, pcl::PointCloud<PointT>::Ptr);
+
   /** Fill gaps in cloud A using B  */
   static void mergeOrganizedClouds(pcl::PointCloud<PointT>::Ptr a, pcl::PointCloud<PointT>::Ptr b);
 
