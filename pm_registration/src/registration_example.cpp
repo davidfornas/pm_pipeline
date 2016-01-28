@@ -65,13 +65,15 @@ int main (int argc, char** argv)
   //pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler(cloud2_filtered, 250, 100, 0);
   //viewer.addPointCloud(cloud2_filtered,  "target");
 
-  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler(cloud2_vis, 250, 100, 0);
+  //pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler(cloud2_vis, 250, 100, 0);
   viewer.addPointCloud(cloud2_vis,  "target");
 
-  //Show cloud 1 transformet to target. Filtered or not
+  //Show cloud 1 transformed to target. Filtered or not
   pcl::transformPointCloud (*cloud1_vis, *cloud1_transformed, transformation);
-  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler2(cloud1_transformed, 100, 250, 0);
+  //pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler2(cloud1_transformed, 100, 250, 0);
   viewer.addPointCloud(cloud1_transformed, "origin_transformed");
+
+  std::cerr<<"REBUILD";
 
   //Final should be the same
   //pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_ptr(&Final);
