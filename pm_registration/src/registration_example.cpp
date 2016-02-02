@@ -16,26 +16,27 @@
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/pcl_segmentation.h>
 
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloud;
+
 int main (int argc, char** argv)
 {
   //Load and remove NaN from clouds.
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 (new pcl::PointCloud<pcl::PointXYZRGB>), cloud1_filtered (new pcl::PointCloud<pcl::PointXYZRGB>),
-                                         cloud2 (new pcl::PointCloud<pcl::PointXYZRGB>), cloud2_filtered (new pcl::PointCloud<pcl::PointXYZRGB>),
-                                         cloud1_aux (new pcl::PointCloud<pcl::PointXYZRGB>), cloud2_aux (new pcl::PointCloud<pcl::PointXYZRGB>),
-                                         cloud1_transformed(new pcl::PointCloud<pcl::PointXYZRGB>);
+	PointCloud::Ptr cloud1 (new PointCloud), cloud1_filtered (new PointCloud), cloud2 (new PointCloud), cloud2_filtered (new PointCloud),
+                                         cloud1_aux (new PointCloud), cloud2_aux (new PointCloud), cloud1_transformed(new PointCloud);
 
-  PCLTools::cloudFromPCD(cloud1, std::string(argv[1]) + std::string(".pcd"));
-  PCLTools::cloudFromPCD(cloud2, std::string(argv[2]) + std::string(".pcd"));
+  PCLTools<PointT>::cloudFromPCD(cloud1, std::string(argv[1]) + std::string(".pcd"));
+  PCLTools<PointT>::cloudFromPCD(cloud2, std::string(argv[2]) + std::string(".pcd"));
   
-  PCLTools::removeNanPoints(cloud1, cloud1_aux);
-  PCLTools::removeNanPoints(cloud2, cloud2_aux);
+  PCLTools<PointT>::removeNanPoints(cloud1, cloud1_aux);
+  PCLTools<PointT>::removeNanPoints(cloud2, cloud2_aux);
 
-  PlaneSegmentation::removeBackground(cloud1_aux, cloud1_filtered, 100, 0.06);
-  PlaneSegmentation::removeBackground(cloud2_aux, cloud2_filtered, 100, 0.06);
+  PlaneSegmentation<PointT>::removeBackground(cloud1_aux, cloud1_filtered, 100, 0.06);
+  PlaneSegmentation<PointT>::removeBackground(cloud2_aux, cloud2_filtered, 100, 0.06);
 
 
   //Perform ICP
-  pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+  pcl::IterativeClosestPoint<PointT, PointT> icp;
   icp.setMaximumIterations(200);
   icp.setRANSACIterations(10000);
   icp.setRANSACOutlierRejectionThreshold(0.05);
@@ -43,7 +44,7 @@ int main (int argc, char** argv)
   //TODO: FInde better/worse values
   icp.setInputSource(cloud1_filtered);
   icp.setInputTarget(cloud2_filtered);
-  pcl::PointCloud<pcl::PointXYZRGB> Final;
+  pcl::PointCloud<PointT> Final;
   icp.align(Final);
   std::cout << "Has converged:" << icp.hasConverged() << " score!: " <<
   icp.getFitnessScore() << std::endl;
@@ -56,9 +57,9 @@ int main (int argc, char** argv)
   viewer.setBackgroundColor(1, 1, 1);
 
   //Remove far points
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1_vis (new pcl::PointCloud<pcl::PointXYZRGB>), cloud2_vis (new pcl::PointCloud<pcl::PointXYZRGB>);
-  PCLTools::applyZAxisPassthrough(cloud2, cloud2_vis, -2, 2);
-  PCLTools::applyZAxisPassthrough(cloud1, cloud1_vis, -2, 2);
+  PointCloud::Ptr cloud1_vis (new PointCloud), cloud2_vis (new PointCloud);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud2, cloud2_vis, -2, 2);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud1, cloud1_vis, -2, 2);
 
   //Show cloud 2. Filtered or not
 

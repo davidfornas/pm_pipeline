@@ -17,22 +17,22 @@ int main(int argc, char** argv)
 
   pcl::PointCloud<PointType>::Ptr point_cloud_ptr(new pcl::PointCloud<PointType>), point_cloud_ptr2(new pcl::PointCloud<PointType>) ,
       point_cloud_ptr3(new pcl::PointCloud<PointType>),  plane(new pcl::PointCloud<PointType>);
-  PCLTools::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
+  PCLTools<PointType>::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
   pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
 
-  PCLTools::applyZAxisPassthrough(point_cloud_ptr, point_cloud_ptr2, atoi(argv[2]), atoi(argv[3]));
+  PCLTools<PointType>::applyZAxisPassthrough(point_cloud_ptr, point_cloud_ptr2, atoi(argv[2]), atoi(argv[3]));
 
-  PCLTools::estimateNormals(point_cloud_ptr2, cloud_normals);
+  PCLTools<PointType>::estimateNormals(point_cloud_ptr2, cloud_normals);
 
-  PlaneSegmentation plane_seg(point_cloud_ptr2, cloud_normals);
+  PlaneSegmentation<PointType> plane_seg(point_cloud_ptr2, cloud_normals);
   plane_seg.setDistanceThreshold(atof(argv[4]));
   plane_seg.setIterations(100);
   plane_seg.apply(point_cloud_ptr3, cloud_normals2, plane, coefficients_plane);
 
-  PCLTools::cloudToPCD(point_cloud_ptr3, std::string(argv[1]) + std::string("_processed.pcd"));
-  PCLTools::cloudToPCD(plane, std::string(argv[1]) + std::string("_plane.pcd"));
+  PCLTools<PointType>::cloudToPCD(point_cloud_ptr3, std::string(argv[1]) + std::string("_processed.pcd"));
+  PCLTools<PointType>::cloudToPCD(plane, std::string(argv[1]) + std::string("_plane.pcd"));
 
   return (0);
 }

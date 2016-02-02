@@ -8,6 +8,8 @@
 
 #include <ros/ros.h>
 
+typedef pcl::PointXYZRGB PointT;
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pcl_clustering_example");
@@ -16,9 +18,9 @@ int main(int argc, char** argv)
   //std::string(argv[1])READ CLOUD FROM std::string(argv[1])
   //READ WITH PCLTOOLS
   pcl::PointCloud<PointT>::Ptr point_cloud_ptr (new pcl::PointCloud<PointT>);
-  PCLTools::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
+  PCLTools<PointT>::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
 
-  CloudClustering cluster(point_cloud_ptr);
+  CloudClustering<PointT> cluster(point_cloud_ptr);
   cluster.apply();
 
   ros::Rate r(10);

@@ -30,10 +30,7 @@
 
 #include <pcl/search/kdtree.h>
 
-/** Usually using color 3D point clouds. B&W clouds are represented by RGB too */
-typedef pcl::PointXYZRGB PointT;
-// @ TODO pcl::PCLPointCloud2 versions if it is interesting
-
+template <typename PointT>
 class CloudMerge
 {
 
@@ -43,14 +40,59 @@ class CloudMerge
   float xvar[307200], yvar[307200], zvar[307200];
 
   /** Accumulate point b over a, taking care of NaN values. */
-  pcl::PointXYZRGB accumPoints(pcl::PointXYZRGB a, pcl::PointXYZRGB b, int idx);
+  PointT accumPoints(PointT a, PointT b, int idx);
 
 public:
 
   /** Accumulate cloud b over a, filling gaps and averaging when necessary.  */
-  void nanAwareOrganizedConcatenateMean(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a,
-                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr b);
+  void nanAwareOrganizedConcatenateMean(typename pcl::PointCloud<PointT>::Ptr a, typename pcl::PointCloud<PointT>::Ptr b);
 
 };
+
+template<typename PointT>
+PointT CloudMerge<PointT>::accumPoints(PointT a, PointT b, int idx)
+{
+  PointT c(a);
+  c.x = (a.x * coeffs[idx] + b.x) / (coeffs[idx] + 1);
+  c.y = (a.y * coeffs[idx] + b.y) / (coeffs[idx] + 1);
+  c.z = (a.z * coeffs[idx] + b.z) / (coeffs[idx] + 1);
+  xvar[idx] += b.x * b.x;
+  yvar[idx] += b.y * b.y;
+  zvar[idx] += b.z * b.z;
+  return c;
+}
+
+template<typename PointT>
+void CloudMerge<PointT>::nanAwareOrganizedConcatenateMean(typename pcl::PointCloud<PointT>::Ptr a, typename pcl::PointCloud<PointT>::Ptr b)
+{
+  //A,B should be organized clouds of the same size. @ TODO Check and throw exception.
+  for (size_t i = 0; i < a->points.size(); ++i){
+    //First time a point is seen count=1;
+    if(pcl::isFinite(a->points[i]) && coeffs[i] == 0){
+      coeffs[i] = 1;
+      xvar[i] = a->points[i].x * a->points[i].x;
+      yvar[i] = a->points[i].y * a->points[i].y;
+      zvar[i] = a->points[i].z * a->points[i].z;
+    }
+    if (pcl::isFinite(b->points[i])){
+      if (!pcl::isFinite(a->points[i]))
+      {
+        //Point in B not found in A, add it.
+        a->points[i] = b->points[i];
+        //TODO: Search nearest neighbor color. Right now color is empty.
+        xvar[i] = a->points[i].x * a->points[i].x;
+        yvar[i] = a->points[i].y * a->points[i].y;
+        zvar[i] = a->points[i].z * a->points[i].z;
+        coeffs[i] = 1;
+      }
+      else
+      {
+        //Point found on both clouds. Weighted average.
+        a->points[i] = accumPoints(a->points[i], b->points[i], i); //c+d;//=(a->points[i]*coeffs[i]+b->points[i])/(coeffs[i]+1);
+        coeffs[i]++;
+      }
+    }
+  }
+}
 
 #endif

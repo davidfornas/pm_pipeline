@@ -30,7 +30,7 @@ int main(int argc, char **argv)
       new pcl::PointCloud<pcl::PointXYZRGB>);
   std::string input_basename("in");
   nh.getParam("input_basename", input_basename);
-  PCLTools::cloudFromPCD(scene, input_basename + std::string(".pcd")); //Load from PCDReader or from topic
+  PCLTools<pcl::PointXYZRGB>::cloudFromPCD(scene, input_basename + std::string(".pcd")); //Load from PCDReader or from topic
   //From a topic instead: PCLTools::cloudFromTopic(scene, "/stereo/points2");
 
   //Optional filtering: PCLTools::applyZAxisPassthrough(scene, scene2, 0, 3); ///Input and output can not be the same.

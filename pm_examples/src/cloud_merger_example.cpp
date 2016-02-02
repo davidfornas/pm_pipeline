@@ -9,11 +9,13 @@
 #include <ros/ros.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
+typedef pcl::PointXYZRGB PointT;
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pcl_merger_example");
   ros::NodeHandle nh;
-  CloudMerge merger;
+  CloudMerge<PointT> merger;
 
   int clouds_number;
   double depth = 2, near = 0;
@@ -29,10 +31,10 @@ int main(int argc, char** argv)
   std::string point_cloud_file(input_basename + std::string("1.pcd"));
   pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_filtered(new pcl::PointCloud<PointT>), cloud2(
       new pcl::PointCloud<PointT>);
-  PCLTools::cloudFromPCD(cloud, point_cloud_file);
+  PCLTools<PointT>::cloudFromPCD(cloud, point_cloud_file);
   //Optional: PCLTools::applyZAxisPassthrough(cloud, cloud_filtered, depth, near);
 
-  std::cout << PCLTools::nanCount(cloud) << std::endl;
+  std::cout << PCLTools<PointT>::nanCount(cloud) << std::endl;
 
   // Cloud viewer to watch the cloud as it grows.
   pcl::visualization::PCLVisualizer viewer("Accumulated cloud");
@@ -40,9 +42,9 @@ int main(int argc, char** argv)
   {
     std::ostringstream seq_number;
     seq_number << input_basename << i << std::string(".pcd");
-    PCLTools::cloudFromPCD(cloud2, seq_number.str());
+    PCLTools<PointT>::cloudFromPCD(cloud2, seq_number.str());
     merger.nanAwareOrganizedConcatenateMean(cloud, cloud2);
-    ROS_DEBUG_STREAM("First PointCloud current NaN number:" << PCLTools::nanCount(cloud));
+    ROS_DEBUG_STREAM("First PointCloud current NaN number:" << PCLTools<PointT>::nanCount(cloud));
 
     viewer.removePointCloud("Cloud");
     viewer.addPointCloud(cloud, "Cloud");

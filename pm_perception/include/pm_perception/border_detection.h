@@ -12,7 +12,10 @@
 #include <pcl/io/pcd_io.h>
 #include <nav_msgs/Path.h>
 
+#include <pm_tools/pcl_tools.h>
+#include <pm_tools/pcl_segmentation.h>
 #include <pm_tools/visp_tools.h>
+
 #include <visp/vpHomogeneousMatrix.h>
 
 typedef pcl::PointXYZRGB PointT;

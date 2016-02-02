@@ -8,8 +8,6 @@
 #include <tf/transform_listener.h>
 
 #include <pm_perception/border_detection.h>
-#include <pm_tools/pcl_tools.h>
-#include <pm_tools/pcl_segmentation.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
@@ -67,7 +65,7 @@ void ConcaveHullBorderDetection::process()
   ne.setKSearch(50);
   ne.compute(*cloud_normals);
 
-  PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
+  PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
   plane_seg.setDistanceThreshold(0.105); // Previous value: 12
   plane_seg.setIterations(200);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
@@ -77,14 +75,14 @@ void ConcaveHullBorderDetection::process()
   plane_normal_[1] = coefficients_plane->values[1];
   plane_normal_[2] = coefficients_plane->values[2];
 
-  CylinderSegmentation cyl_seg(cloud_filtered2, cloud_normals2);
+  CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(0.03);
   cyl_seg.setIterations(5000);
   cyl_seg.setRadiousLimit(0.1);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
   // @ TODO cleaner solution
   cyl_seg.getInliers(inliers_cylinder);
-  PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+  PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
   clock_t end = clock();
   ROS_DEBUG_STREAM("Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC);
@@ -296,6 +294,7 @@ void BorderDetection::savePathToFile()
 void RangeImageBorderDetection::generatePath()
 {
   // @ TODO Implement.
+
 }
 
 void RangeImageBorderDetection::process()

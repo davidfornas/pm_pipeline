@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_examples)
 
-find_package(catkin REQUIRED COMPONENTS roscpp pm_manipulation pm_perception pm_tools)
+find_package(catkin REQUIRED COMPONENTS roscpp pm_manipulation pm_tools pm_perception)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp pm_manipulation pm_perception pm_tools
+  CATKIN_DEPENDS roscpp pm_manipulation pm_tools pm_perception 
 )
 
 ## Specify additional locations of header files

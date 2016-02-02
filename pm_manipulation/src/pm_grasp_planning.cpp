@@ -15,6 +15,8 @@
 #include <vector>
 #include <algorithm>
 
+typedef pcl::PointXYZRGB PointT;
+
 void PMGraspPlanning::proccessScene(){
 
 }
@@ -30,23 +32,23 @@ void PMGraspPlanning::perceive() {
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
   pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
 
-  PCLTools::applyZAxisPassthrough(cloud_, cloud_filtered, -1, 3);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, -1, 3);
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
 
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
-  PCLTools::estimateNormals(cloud_filtered, cloud_normals);
+  PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
 
-  PlaneSegmentation plane_seg(cloud_filtered, cloud_normals);
+  PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
   plane_seg.setDistanceThreshold(plane_distance_threshold_);
   plane_seg.setIterations(plane_iterations_);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
 
-  CylinderSegmentation cyl_seg(cloud_filtered2, cloud_normals2);
+  CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
   cyl_seg.setIterations(cylinder_iterations_);
   cyl_seg.setRadiousLimit(radious_limit_);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
-  PCLTools::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+  PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
   //Grasp points
   PointT mean, max, min;
