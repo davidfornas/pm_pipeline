@@ -26,7 +26,7 @@ using pcl::visualization::PointCloudColorHandlerGenericField;
 using pcl::visualization::PointCloudColorHandlerCustom;
 
 //convenient typedefs
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointNormal PointNormalT;
 typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
@@ -54,7 +54,6 @@ struct PCDComparator
   }
 };
 
-
 // Define a new point representation for < x, y, z, curvature >
 class MyPointRepresentation : public pcl::PointRepresentation <PointNormalT>
 {
@@ -77,8 +76,7 @@ public:
   }
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////VISUALIZACION//////////////////////////////////////////
 /** \brief Display source and target on the first viewport of the visualizer
  *
  */
@@ -87,6 +85,7 @@ void showCloudsLeft(const PointCloud::Ptr cloud_target, const PointCloud::Ptr cl
   p->removePointCloud ("vp1_target");
   p->removePointCloud ("vp1_source");
 
+  //Podría mostrarlas en RGB
   PointCloudColorHandlerCustom<PointT> tgt_h (cloud_target, 0, 255, 0);
   PointCloudColorHandlerCustom<PointT> src_h (cloud_source, 255, 0, 0);
   p->addPointCloud (cloud_target, tgt_h, "vp1_target", vp_1);
@@ -95,7 +94,6 @@ void showCloudsLeft(const PointCloud::Ptr cloud_target, const PointCloud::Ptr cl
   PCL_INFO ("Press q to begin the registration.\n");
   p-> spin();
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /** \brief Display source and target on the second viewport of the visualizer
