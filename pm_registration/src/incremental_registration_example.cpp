@@ -163,9 +163,8 @@ void loadData (int argc, char **argv, std::vector<PCD, Eigen::aligned_allocator<
   * \param output the resultant aligned source PointCloud
   * \param final_transform the resultant transform between source and target
   */
-void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt, PointCloud::Ptr output, Eigen::Matrix4f &final_transform, bool downsample = false)
+void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt, PointCloud::Ptr output, Eigen::Matrix4f &final_transform, bool downsample = false)//Like downsample allow for other filters...
 {
-  //
   // Downsample for consistency and speed
   // \note enable this for large datasets
   PointCloud::Ptr src (new PointCloud);
@@ -185,14 +184,14 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
     src = cloud_src;
     tgt = cloud_tgt;
   }
-
+  //Other filters...
 
   // Compute surface normals and curvature
   PointCloudWithNormals::Ptr points_with_normals_src (new PointCloudWithNormals);
   PointCloudWithNormals::Ptr points_with_normals_tgt (new PointCloudWithNormals);
 
   pcl::NormalEstimation<PointT, PointNormalT> norm_est;
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+  pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
   norm_est.setSearchMethod (tree);
   norm_est.setKSearch (30);
 
@@ -217,7 +216,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   reg.setTransformationEpsilon (1e-6);
   // Set the maximum distance between two correspondences (src<->tgt) to 10cm
   // Note: adjust this based on the size of your datasets
-  reg.setMaxCorrespondenceDistance (0.1);
+  reg.setMaxCorrespondenceDistance (0.03);
   // Set the point representation
   reg.setPointRepresentation (boost::make_shared<const MyPointRepresentation> (point_representation));
 
@@ -230,8 +229,8 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   // Run the same optimization in a loop and visualize the results
   Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
   PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
-  reg.setMaximumIterations (2);
-  for (int i = 0; i < 30; ++i)
+  reg.setMaximumIterations (4);
+  for (int i = 0; i < 200; ++i)
   {
     PCL_INFO ("Iteration Nr. %d.\n", i);
 
@@ -330,7 +329,7 @@ int main (int argc, char** argv)
 
 		//save aligned pair, transformed into the first cloud's frame
     std::stringstream ss;
-    ss << i << ".pcd";
+    ss << i << "_aligned.pcd";
     pcl::io::savePCDFile (ss.str (), *result, true);
 
   }

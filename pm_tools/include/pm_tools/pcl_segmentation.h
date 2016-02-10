@@ -32,6 +32,7 @@ template <typename PointT>
 class PlaneSegmentation
 {
   typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
+  typedef typename pcl::PointCloud<PointT> Cloud;
 
   CloudPtr in_cloud_;
   pcl::PointCloud<pcl::Normal>::Ptr in_normals_;
@@ -71,6 +72,7 @@ public:
 
   /** Remove the plane from the cloud, easy to use method.  */
   static void removeBackground(CloudPtr in, CloudPtr out, int iteration=100, double threshold=0.06);
+  static void removeBackground(CloudPtr & in, int iteration=100, double threshold=0.06);
 
 };
 
@@ -123,7 +125,7 @@ public:
 template<typename PointT>
 void PlaneSegmentation<PointT>::removeBackground(CloudPtr in, CloudPtr out, int iterations, double threshold){
 
-	CloudPtr plane(new typename pcl::PointCloud<PointT>), in_filtered(new typename pcl::PointCloud<PointT>);
+	CloudPtr plane(new Cloud), in_filtered(new Cloud);
 
 	  pcl::PointCloud<pcl::Normal>::Ptr in_cloud_normals (new pcl::PointCloud<pcl::Normal>), out_cloud_normals (new pcl::PointCloud<pcl::Normal>);
 	  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients);
@@ -137,6 +139,12 @@ void PlaneSegmentation<PointT>::removeBackground(CloudPtr in, CloudPtr out, int 
 	  plane_seg.setIterations(iterations);
 	  plane_seg.apply(out, out_cloud_normals, plane, coefficients_plane);
 
+}
+template<typename PointT>
+void PlaneSegmentation<PointT>::removeBackground(CloudPtr & in, int iterations, double threshold){
+	CloudPtr result( new Cloud );
+	removeBackground(in, result, iterations, threshold);
+	in = result;
 }
 
 /** RANSAC cylinder estimation */

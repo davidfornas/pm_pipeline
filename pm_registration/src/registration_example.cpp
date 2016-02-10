@@ -41,6 +41,7 @@ int main (int argc, char** argv)
   icp.setRANSACIterations(10000);
   icp.setRANSACOutlierRejectionThreshold(0.05);
   icp.setMaxCorrespondenceDistance(0.04);//1best 0.05+0.04; 2best 0.1+0.05
+  //icp.setTransformationEpsilon ((1e-6)*2);
   //TODO: FInde better/worse values
   icp.setInputSource(cloud1_filtered);
   icp.setInputTarget(cloud2_filtered);
@@ -54,12 +55,15 @@ int main (int argc, char** argv)
   // ----  VISUALIZATION  ---
   // -----Open 3D viewer and add point clouds-----
   pcl::visualization::PCLVisualizer viewer("ICP Registration");
+  int vp_1, vp_2;
+  viewer.createViewPort (0.0, 0, 0.5, 1.0, vp_1);
+  viewer.createViewPort (0.5, 0, 1.0, 1.0, vp_2);
   viewer.setBackgroundColor(1, 1, 1);
 
   //Remove far points
   PointCloud::Ptr cloud1_vis (new PointCloud), cloud2_vis (new PointCloud);
-  PCLTools<PointT>::applyZAxisPassthrough(cloud2, cloud2_vis, -2, 2);
-  PCLTools<PointT>::applyZAxisPassthrough(cloud1, cloud1_vis, -2, 2);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud1, cloud2_vis, -2, 2);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud2, cloud1_vis, -2, 2);
 
   //Show cloud 2. Filtered or not
 
@@ -67,14 +71,21 @@ int main (int argc, char** argv)
   //viewer.addPointCloud(cloud2_filtered,  "target");
 
   //pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler(cloud2_vis, 250, 100, 0);
-  viewer.addPointCloud(cloud2_vis,  "target");
+  viewer.addPointCloud(cloud2_vis,  "target", vp_1);
 
   //Show cloud 1 transformed to target. Filtered or not
   pcl::transformPointCloud (*cloud1_vis, *cloud1_transformed, transformation);
   //pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> point_cloud_color_handler2(cloud1_transformed, 100, 250, 0);
-  viewer.addPointCloud(cloud1_transformed, "origin_transformed");
+  viewer.addPointCloud(cloud1_transformed, "origin_transformed", vp_1);
 
-  std::cerr<<"REBUILD";
+  PointCloud::Ptr cloud1_vis2 (new PointCloud), cloud2_vis2 (new PointCloud);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud1_filtered, cloud2_vis2, -2, 2);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud2_filtered, cloud1_vis2, -2, 2);
+
+  viewer.addPointCloud(cloud2_vis2,  "target2", vp_2);
+  pcl::transformPointCloud (*cloud1_vis2, *cloud1_transformed, transformation);
+  viewer.addPointCloud(cloud1_transformed, "origin_transformed2", vp_2);
+
 
   //Final should be the same
   //pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_ptr(&Final);
@@ -82,12 +93,13 @@ int main (int argc, char** argv)
   //viewer.addPointCloud(final_ptr, "taget");
   //PCLTools::cloudToPCD(final_ptr, std::string("result.pcd"));
 
+  viewer.spin();
   // -----Main loop-----
-  long long path_counter = 0;
+  /*long long path_counter = 0;
   while (!viewer.wasStopped())
   {
     viewer.spinOnce();
-  }
+  }*/
 
   return (0);
 }
