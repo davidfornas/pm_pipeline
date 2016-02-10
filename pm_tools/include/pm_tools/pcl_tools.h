@@ -33,6 +33,7 @@
 template <typename PointT>
 class PCLTools
 {
+	typedef typename pcl::PointCloud<PointT> Cloud;
 	typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
 
 public:
@@ -46,7 +47,7 @@ public:
 	static void cloudToPCD(CloudPtr cloud, std::string fileName){
 	  pcl::PCDWriter writer;
 	  writer.write(fileName, *cloud, false);
-	  ROS_DEBUG_STREAM(std::cerr << "PointCloud saved." << std::endl);
+	  ROS_DEBUG_STREAM("PointCloud saved." << cloud->points.size() << " data points."  << std::endl);
 	}
 
 	static void cloudFromTopic(CloudPtr cloud, std::string topicName){
@@ -59,29 +60,45 @@ public:
 	}
 
 	static void applyZAxisPassthrough(CloudPtr in, CloudPtr out, double min, double max){
-		typename pcl::PassThrough<PointT> pass;
+	  typename pcl::PassThrough<PointT> pass;
 	  // Build a passthrough filter to remove spurious NaNs
 	  pass.setInputCloud (in);
 	  pass.setFilterFieldName ("z");
 	  pass.setFilterLimits (min, max);
 	  pass.filter (*out);
 	}
-
-	/** Statistical Outlier Removal filter */
-	static void applyStatisticalOutlierRemoval(CloudPtr in, CloudPtr out){
-	  typename pcl::VoxelGrid<PointT> vg;
-	  vg.setInputCloud (in);
-	  vg.setLeafSize (0.01, 0.01, 0.01);
-	  vg.filter (*out);
+	//In place filter version
+	static void applyZAxisPassthrough(CloudPtr & in, double min, double max){
+	  CloudPtr result( new Cloud );
+	  applyZAxisPassthrough(in, result, min, max);
+	  in = result;
 	}
 
 	/** Voxel Grid filter filter */
-	static void applyVoxelGridFilter(CloudPtr in, CloudPtr out){
+	static void applyVoxelGridFilter(CloudPtr in, CloudPtr out,  float size = 0.03){
+	  typename pcl::VoxelGrid<PointT> vg;
+	  vg.setInputCloud (in);
+	  vg.setLeafSize (size, size, size);
+	  vg.filter (*out);
+	}
+	static void applyVoxelGridFilter(CloudPtr & in,  float size = 0.03){
+	  CloudPtr result( new Cloud );
+	  applyVoxelGridFilter(in, result, size);
+	  in = result;
+	}
+
+	/** Statistical Outlier Removal filter */
+	static void applyStatisticalOutlierRemoval(CloudPtr in, CloudPtr out){
 	  typename pcl::StatisticalOutlierRemoval<PointT> sor;
 	  sor.setInputCloud (in);
 	  sor.setMeanK (50);
 	  sor.setStddevMulThresh (1.0);
 	  sor.filter(*out);
+	}
+	static void applyStatisticalOutlierRemoval(CloudPtr & in){
+	  CloudPtr result( new Cloud );
+	  applyVoxelGridFilter(in, result);
+	  in = result;
 	}
 
 	/** Compute normals */
@@ -106,7 +123,6 @@ public:
 	}
 
 	static void removeNanPoints(CloudPtr p, CloudPtr copy){
-
 		int new_size = PCLTools<PointT>::nanCount(p);
 	    copy->width    = new_size;
 		copy->height   = 1;
