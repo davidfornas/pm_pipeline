@@ -88,16 +88,16 @@ public:
 	}
 
 	/** Statistical Outlier Removal filter */
-	static void applyStatisticalOutlierRemoval(CloudPtr in, CloudPtr out){
+	static void applyStatisticalOutlierRemoval(CloudPtr in, CloudPtr out, int meanK = 50, float StdThresh = 1.0){
 	  typename pcl::StatisticalOutlierRemoval<PointT> sor;
 	  sor.setInputCloud (in);
-	  sor.setMeanK (50);
-	  sor.setStddevMulThresh (1.0);
+	  sor.setMeanK (meanK);
+	  sor.setStddevMulThresh (StdThresh);
 	  sor.filter(*out);
 	}
-	static void applyStatisticalOutlierRemoval(CloudPtr & in){
+	static void applyStatisticalOutlierRemoval(CloudPtr & in, int meanK = 50, float StdThresh = 1.0){
 	  CloudPtr result( new Cloud );
-	  applyVoxelGridFilter(in, result);
+	  applyStatisticalOutlierRemoval(in, result, meanK, StdThresh);
 	  in = result;
 	}
 
