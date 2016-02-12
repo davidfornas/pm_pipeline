@@ -216,7 +216,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   reg.setTransformationEpsilon (1e-6);
   // Set the maximum distance between two correspondences (src<->tgt) to 10cm
   // Note: adjust this based on the size of your datasets
-  reg.setMaxCorrespondenceDistance (0.03);
+  reg.setMaxCorrespondenceDistance (0.15);
   // Set the point representation
   reg.setPointRepresentation (boost::make_shared<const MyPointRepresentation> (point_representation));
 
@@ -230,7 +230,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
   PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
   reg.setMaximumIterations (4);
-  for (int i = 0; i < 200; ++i)
+  for (int i = 0; i < 300; ++i)
   {
     PCL_INFO ("Iteration Nr. %d.\n", i);
 
@@ -319,7 +319,7 @@ int main (int argc, char** argv)
 
     PointCloud::Ptr temp (new PointCloud);
     PCL_INFO ("Aligning %s (%d) with %s (%d).\n", data[i-1].f_name.c_str (), source->points.size (), data[i].f_name.c_str (), target->points.size ());
-    pairAlign (source, target, temp, pairTransform, true);
+    pairAlign (source, target, temp, pairTransform, false); //SET FALSE
 
     //transform current pair into the global transform
     pcl::transformPointCloud (*temp, *result, GlobalTransform);
