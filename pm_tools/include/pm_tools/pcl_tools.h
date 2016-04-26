@@ -113,7 +113,7 @@ public:
 	  ne.compute (*cloud_normals);
 	}
 
-	static int nanCount(CloudPtr p)
+	static int nanAwareCount(CloudPtr p)
 	{
 	  int count = 0;
 	  for (size_t i = 0; i < p->points.size(); ++i)
@@ -123,7 +123,7 @@ public:
 	}
 
 	static void removeNanPoints(CloudPtr p, CloudPtr copy){
-		int new_size = PCLTools<PointT>::nanCount(p);
+		int new_size = PCLTools<PointT>::nanAwareCount(p);
 	    copy->width    = new_size;
 		copy->height   = 1;
 		copy->is_dense = false;
