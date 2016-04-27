@@ -62,5 +62,6 @@ int main(int argc, char** argv)
   while (!viewer.wasStopped() )
     viewer.spinOnce();
   merger.logResults();
+  PCLTools<PointT>::cloudToPCD(global_cloud, "/tmp/cloud.pcd");
   return (0);
 }
