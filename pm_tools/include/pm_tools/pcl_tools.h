@@ -113,6 +113,8 @@ public:
 	  ne.compute (*cloud_normals);
 	}
 
+
+
 	static int nanAwareCount(CloudPtr p)
 	{
 	  int count = 0;

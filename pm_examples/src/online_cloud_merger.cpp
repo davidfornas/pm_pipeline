@@ -12,7 +12,7 @@
 
 #include <pcl/visualization/pcl_visualizer.h>
 
-#define THRESHOLD 100
+#define THRESHOLD 1000
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -62,6 +62,6 @@ int main(int argc, char** argv)
   while (!viewer.wasStopped() )
     viewer.spinOnce();
   merger.logResults();
-  PCLTools<PointT>::cloudToPCD(global_cloud, "/tmp/cloud.pcd");
+  PCLTools<PointT>::cloudToPCD(global_cloud, "/home/dfornas/ros_ws/tmp/cloud.pcd");
   return (0);
 }

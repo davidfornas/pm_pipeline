@@ -26,6 +26,7 @@ add_library(${PROJECT_NAME}
   src/object_segmentation.cpp
   src/border_detection.cpp
   src/pose_estimation.cpp
+  src/cluster_measure.cpp
 )
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} ${OpenCV})

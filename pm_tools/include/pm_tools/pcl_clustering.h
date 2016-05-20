@@ -18,6 +18,10 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/region_growing.h>
+#include <pcl/segmentation/region_growing_rgb.h>
+
+#include <pcl/visualization/pcl_visualizer.h>
 
 #include <pm_tools/pcl_tools.h>
 
@@ -30,9 +34,18 @@ class CloudClustering
 
   CloudPtr cloud_;
 
+  /** Store the clusters in a vector of clouds  */
+  void extract();
+
+
+  void getColoredCloud();
+
 public:
 
   std::vector<pcl::PointIndices> cluster_indices;
+  std::vector<CloudPtr> cloud_clusters;
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud;
 
   CloudClustering(CloudPtr in_cloud) :
       cloud_(in_cloud)
@@ -40,71 +53,205 @@ public:
   }
 
   /** Apply Euclidian clustering http://pointclouds.org/documentation/tutorials/cluster_extraction.php */
-  void applyEuclidianClustering();
+  void applyEuclidianClustering(float tolerance, int minSize, int maxSize);
 
   /** Apply Conditional Euclidian clustering http://pointclouds.org/documentation/tutorials/conditional_euclidean_clustering.php */
   void applyConditionalEuclidianClustering();
 
   /** Apply Region Growing clustering pointclouds.org/documentation/tutorials/region_growing_segmentation.php */
-  void applyRegionGrowingClustering();
+  void applyRegionGrowingClustering( float smoothnessTh, float curvTh, int minSize, int maxSize, int neighbours );
 
-  // ?? pointclouds.org/documentation/tutorials/region_growing_rgb_segmentation.php
+  /** Apply RGB Region Growing clustering pointclouds.org/documentation/tutorials/region_growing_rgb_segmentation.php */
+  void applyRGBRegionGrowingClustering( float distance, float pointColorTh, float regionColorTh, int minSize);
+
+  /** Save clusters to ~/ros_ws/tmp/name+id+.pcd */
+  void save( std::string name );
 
   /** Display result  */
   void display();
 
+  /** Display result  */
+  void displayColoured();
+
 };
+
+template<typename PointT>
+void CloudClustering<PointT>::save( std::string name )
+{
+	for (int i = 0; i < cloud_clusters.size(); ++i){
+		std::stringstream ss;
+		ss << "/home/dfornas/ros_ws/tmp/" << name << i << ".pcd" ;
+		PCLTools<PointT>::cloudToPCD(cloud_clusters[i], ss.str());
+	}
+}
 
 template<typename PointT>
 void CloudClustering<PointT>::display()
 {
-	/*int j = 0;
+	pcl::visualization::PCLVisualizer viewer("Cluster viewer");
+	for (int i = 0; i < cloud_clusters.size(); ++i){
+		std::stringstream ss;
+		ss << "id" << i ;
+		viewer.addPointCloud(cloud_clusters[i], ss.str());
+	}
+	while (!viewer.wasStopped() )
+		viewer.spinOnce();
+}
+
+template<typename PointT>
+void CloudClustering<PointT>::displayColoured()
+{
+	pcl::visualization::PCLVisualizer viewer("Cluster viewer coloured");
+	if (!cloud_clusters.empty ()) viewer.addPointCloud(colored_cloud, "id");
+	while (!viewer.wasStopped() )
+		viewer.spinOnce();
+}
+
+template<typename PointT>
+void CloudClustering<PointT>::extract()
+{
+	cloud_clusters.clear();
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 	{
-		Cloud::Ptr cloud_cluster (Cloud);
+      CloudPtr cloud_cluster ( new Cloud);
 	  for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
-	  cloud_cluster->points.push_back (cloud_->points[*pit]); //*
-	  cloud_cluster->width = cloud_->points.size ();
+		  cloud_cluster->points.push_back (cloud_->points[*pit]); //*
+	  cloud_cluster->width = it->indices.size();
 	  cloud_cluster->height = 1;
 	  cloud_cluster->is_dense = true;
-
+	  cloud_clusters.push_back(cloud_cluster);
 	  std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
-	  //std::stringstream ss;
-	  //ss << "clusters/cloud_cluster_" << j << ".pcd";
-	  //writer.write<PointT> (ss.str (), *cloud_cluster, false); //*
-	  j++;
-	}*/
+	}
 }
 
 
 template<typename PointT>
-void CloudClustering<PointT>::applyEuclidianClustering()
+void CloudClustering<PointT>::applyEuclidianClustering( float tolerance = 0.02, int minSize = 50, int maxSize = 20000 )
 {
-  //std::vector <int> idx;
-  //pcl::removeNaNFromPointCloud<Cloud>(*cloud0, *cloud, idx);
 
   // Creating the KdTree object for the search method of the extraction
   typename pcl::search::KdTree<PointT>::Ptr tree (new typename pcl::search::KdTree<PointT>);
   tree->setInputCloud (cloud_);
 
   pcl::EuclideanClusterExtraction<PointT> ec;
-  ec.setClusterTolerance (0.02); // 2cm
-  ec.setMinClusterSize (100);
-  ec.setMaxClusterSize (25000);
+  ec.setClusterTolerance (tolerance); // 2cm
+  ec.setMinClusterSize (minSize);
+  ec.setMaxClusterSize (maxSize);
   ec.setSearchMethod (tree);
   ec.setInputCloud (cloud_);
   ec.extract (cluster_indices);
+
+  extract();
+  getColoredCloud();
+
 }
 
 template<typename PointT>
 void CloudClustering<PointT>::applyConditionalEuclidianClustering()
 {
-
+	// @TODO Copy from tutorial & use condition usefully
 }
 
 template<typename PointT>
-void CloudClustering<PointT>::applyRegionGrowingClustering()
+void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh = 3.0, float curvTh = 3.0, int minSize = 50, int maxSize = 20000, int neighbours = 30 )
 {
+  //Normal estimation
+  typename pcl::search::Search<PointT>::Ptr tree =
+		  boost::shared_ptr<typename pcl::search::Search<PointT> > (new pcl::search::KdTree<PointT>);
+  pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
+  typename pcl::NormalEstimation<PointT, pcl::Normal> normal_estimator;
+  normal_estimator.setSearchMethod (tree);
+  normal_estimator.setInputCloud (cloud_);
+  normal_estimator.setKSearch (50);
+  normal_estimator.compute (*normals);
+  //Apply region growing
+  typename pcl::RegionGrowing<PointT, pcl::Normal> reg;
+  reg.setMinClusterSize (minSize);
+  reg.setMaxClusterSize (maxSize);
+
+  reg.setSearchMethod (tree);
+  reg.setNumberOfNeighbours (neighbours);
+  reg.setInputCloud (cloud_);
+  //reg.setIndices (indices);
+  reg.setInputNormals (normals);
+  reg.setSmoothnessThreshold (smoothnessTh / 180.0 * M_PI);
+  reg.setCurvatureThreshold (curvTh);
+  reg.extract (cluster_indices);
+
+  colored_cloud = reg.getColoredCloud ();
+  extract();
+}
+
+template<typename PointT>
+void CloudClustering<PointT>::applyRGBRegionGrowingClustering( float distance = 10, float pointColorTh = 6, float regionColorTh = 5, int minSize = 200 )
+{
+	typename pcl::search::Search<PointT>::Ptr tree =
+			boost::shared_ptr<typename pcl::search::Search<PointT> > (new pcl::search::KdTree<PointT>);
+	pcl::RegionGrowingRGB<PointT> reg;
+	reg.setInputCloud (cloud_);
+	reg.setSearchMethod (tree);
+	reg.setDistanceThreshold (distance);
+	reg.setPointColorThreshold (pointColorTh);
+	reg.setRegionColorThreshold (regionColorTh);
+	reg.setMinClusterSize (minSize);
+	reg.extract (cluster_indices);
+
+	colored_cloud = reg.getColoredCloud ();
+	extract();
+}
+
+
+
+
+
+
+template <typename PointT>
+void CloudClustering<PointT>::getColoredCloud()
+{
+  if (!cloud_clusters.empty ())
+  {
+    colored_cloud = (new pcl::PointCloud<pcl::PointXYZRGB>)->makeShared ();
+
+    srand (static_cast<unsigned int> (time (0)));
+    std::vector<unsigned char> colors;
+    for (size_t i_segment = 0; i_segment < cloud_clusters.size (); i_segment++)
+    {
+      colors.push_back (static_cast<unsigned char> (rand () % 256));
+      colors.push_back (static_cast<unsigned char> (rand () % 256));
+      colors.push_back (static_cast<unsigned char> (rand () % 256));
+    }
+
+    colored_cloud->width = cloud_->width;
+    colored_cloud->height = cloud_->height;
+    colored_cloud->is_dense = cloud_->is_dense;
+    for (size_t i_point = 0; i_point < cloud_->points.size (); i_point++)
+    {
+      pcl::PointXYZRGB point;
+      point.x = cloud_->points[i_point].x;
+      point.y = cloud_->points[i_point].y;
+      point.z = cloud_->points[i_point].z;
+      point.r = 255;
+      point.g = 0;
+      point.b = 0;
+      colored_cloud->points.push_back (point);
+    }
+
+    std::vector< pcl::PointIndices >::iterator i_segment;
+    int next_color = 0;
+    for (i_segment = cluster_indices.begin (); i_segment != cluster_indices.end (); i_segment++)
+    {
+      std::vector<int>::iterator i_point;
+      for (i_point = i_segment->indices.begin (); i_point != i_segment->indices.end (); i_point++)
+      {
+        int index;
+        index = *i_point;
+        colored_cloud->points[index].r = colors[3 * next_color];
+        colored_cloud->points[index].g = colors[3 * next_color + 1];
+        colored_cloud->points[index].b = colors[3 * next_color + 2];
+      }
+      next_color++;
+    }
+  }
 
 }
 

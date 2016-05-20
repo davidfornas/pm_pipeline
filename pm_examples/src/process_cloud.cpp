@@ -19,16 +19,16 @@ int main(int argc, char** argv)
 
   if(argc < 4 || argc > 8){
 	  std::cerr << "rosrun pm_examples process_cloud <filename> <passMinZ> <passMaxZ> <meanK> <stdThresh> <leafSize> <planeThr>" << std::endl;
-	  std::cerr << "Example: <filename> 0 2 50 1.0 0.03 0.06 <meanK> <stdThresh> <leafSize> <planeThr>" << std::endl;
+	  std::cerr << "Example: <filename> 0 2 50 1.0 0.03 0.06" << std::endl;
 	  return 0;
   }
 
   CPtr cloud(new Cloud);
   PCLTools<PointType>::cloudFromPCD(cloud, std::string(argv[1]) + std::string(".pcd"));
   PCLTools<PointType>::applyZAxisPassthrough(cloud, atof(argv[2]), atof(argv[3]));
-  if(argc > 4) PCLTools<PointType>::applyStatisticalOutlierRemoval(cloud, atoi(argv[4]), atof(argv[5]));
-  if(argc > 6) PCLTools<PointType>::applyVoxelGridFilter(cloud, atof(argv[6]));
-  if(argc > 7) PlaneSegmentation<PointType>::removeBackground(cloud, 100, atof(argv[7]));
+  if(argc > 4 && atoi(argv[4]) > 0  && atof(argv[5]) > 0) PCLTools<PointType>::applyStatisticalOutlierRemoval(cloud, atoi(argv[4]), atof(argv[5]));
+  if(argc > 6 && atof(argv[6]) > 0) PCLTools<PointType>::applyVoxelGridFilter(cloud, atof(argv[6]));
+  if(argc > 7 && atof(argv[7]) > 0) PlaneSegmentation<PointType>::removeBackground(cloud, 100, atof(argv[7]));
 
   PCLTools<PointType>::cloudToPCD(cloud, std::string(argv[1]) + std::string("_processed.pcd"));
 
