@@ -7,7 +7,4 @@
 
 #include <pm_manipulation/hypothesis_generation.h>
 
-void HypothesisGeneration::doStuff(){
-
-}
 

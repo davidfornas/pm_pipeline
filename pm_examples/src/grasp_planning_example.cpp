@@ -3,6 +3,8 @@
  * At the moment it is no really testing all of them beacuse the implementation is
  * not finished.
  *
+ *This program is dummy, most implementations are not done, only structure
+ *
  *  Created on: 03/03/2014
  *      Author: dfornas
  */
@@ -35,14 +37,14 @@ int main(int argc, char **argv)
 
   //Optional filtering: PCLTools::applyZAxisPassthrough(scene, scene2, 0, 3); ///Input and output can not be the same.
 
-  BackgroundRemoval * background_remover;
-  ObjectSegmentation * segmentator;
-  HypothesisGeneration * hypothesis_generation; //NEWS!!!!!!!
-
-  PMGraspPlanning planner(scene, background_remover, segmentator, hypothesis_generation);
-
-  planner.perceive();
-  planner.get_cMg();
+//  BackgroundRemoval * background_remover;
+//  ObjectSegmentation * segmentator;
+//  HypothesisGeneration * hypothesis_generation; //NEWS!!!!!!!
+//
+//  PMGraspPlanning planner(scene, background_remover, segmentator, hypothesis_generation);
+//
+//  planner.perceive();
+//  planner.get_cMg();
   // @ TODO planner.proccessScene();
 
   GraspHypothesisEvaluation ghyval; // @ TODO  from planner.getGraspHypothesis;

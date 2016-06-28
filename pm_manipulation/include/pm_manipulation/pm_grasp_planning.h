@@ -49,9 +49,9 @@ public:
   int iangle, irad, ialong, ialigned_grasp;
 
   //Segmentation components. @ TODO Currently they are not used.
-  BackgroundRemoval * background_remover_;
-  ObjectSegmentation * segmentator_;
-  HypothesisGeneration * hypothesis_generation_;
+  //BackgroundRemoval * background_remover_;
+  //ObjectSegmentation * segmentator_;
+  //HypothesisGeneration * hypothesis_generation_;
 
   std::list<vpHomogeneousMatrix> cMg_list;
 
@@ -59,8 +59,8 @@ public:
   /** Constructor.
    * @params: cloud, background_remover, segmentator, hypothesis_generator
    * */
-  PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, BackgroundRemoval * background_remover,
-                  ObjectSegmentation * segmentator, HypothesisGeneration * hypothesis_generation){
+  PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){//, BackgroundRemoval * background_remover,
+                  //ObjectSegmentation * segmentator, HypothesisGeneration * hypothesis_generation){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
@@ -72,9 +72,9 @@ public:
 
     cloud_ = cloud;
 
-    background_remover_ = background_remover;
-    segmentator_ = segmentator;
-    hypothesis_generation_ = hypothesis_generation;
+//    background_remover_ = background_remover;
+//    segmentator_ = segmentator;
+//    hypothesis_generation_ = hypothesis_generation;
   }
 
   /** @ TODO To implement. Place holder. */

@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 
   if(argc < 4 || argc > 8){
 	  std::cerr << "rosrun pm_examples process_cloud <filename> <passMinZ> <passMaxZ> <meanK> <stdThresh> <leafSize> <planeThr>" << std::endl;
-	  std::cerr << "Example: <filename> 0 2 50 1.0 0.03 0.06" << std::endl;
+	  std::cerr << "Example: <filename> 0 2 50 1.0 0.03 0.06 -> result in <filename>_processed.pcd" << std::endl;
 	  return 0;
   }
 

@@ -24,31 +24,38 @@ class ClusterMeasure
   typedef typename Cloud::iterator CloudIt;
 
   CloudPtr cloud_;
+  bool visualize_;
 
 public:
 
-  ClusterMeasure(CloudPtr in_cloud) :
-      cloud_(in_cloud)
+  ClusterMeasure(CloudPtr in_cloud, bool visualize = true) :
+      cloud_(in_cloud), visualize_(visualize)
   {
   }
 
-  ClusterMeasure(std::string in_cloud_file)
+  ClusterMeasure(std::string in_cloud_file, bool visualize = true)
   {
 	  PCLTools<PointT>::cloudFromPCD(cloud_, in_cloud_file);
+	  visualize_ = visualize;
   }
 
-  void get_centroid();
-  void get_axis();
-  void get_bb();
+  /** Return the cluster centroid  */
+  Eigen::Vector4f getCentroid();
+
+  /** Visualize PCA axis */
+  void getAxis();
+
+  /** Return the object aligned Bounding Box (minimal) */
+  void getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth);
 
   /** Display result  */
-  void display();
+  void displayCluster();
 
 
 };
 
 template<typename PointT>
-void ClusterMeasure<PointT>::display()
+void ClusterMeasure<PointT>::displayCluster()
 {
 	pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
     viewer.addPointCloud(cloud_);
@@ -56,20 +63,27 @@ void ClusterMeasure<PointT>::display()
 }
 
 template<typename PointT>
-void ClusterMeasure<PointT>::get_centroid()
+Eigen::Vector4f ClusterMeasure<PointT>::getCentroid()
 {
 	Eigen::Vector4f centroid;
 	pcl::compute3DCentroid<PointT>(*cloud_, centroid);
-	pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
-    viewer.addPointCloud(cloud_);
-    PointT p; p.x = centroid[0]; p.y = centroid[1]; p.z = centroid[2];
-    viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
-    viewer.spin();
 
+	if(visualize_){
+		pcl::visualization::PCLVisualizer viewer("Cluster centroid viewer");
+	    viewer.addPointCloud(cloud_);
+	    PointT p;
+	    p.x = centroid[0];
+	    p.y = centroid[1];
+	    p.z = centroid[2];
+	    viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
+	    viewer.spin();
+	}
+
+	return centroid;
 }
 
 template<typename PointT>
-void ClusterMeasure<PointT>::get_axis()
+void ClusterMeasure<PointT>::getAxis()
 {
 	Eigen::Vector4f centroid;
 	pcl::compute3DCentroid<PointT>(*cloud_, centroid);
@@ -82,8 +96,6 @@ void ClusterMeasure<PointT>::get_axis()
 
 	pcl::PCA<PointT> pca;
 	pca.setInputCloud(cloud_);
-	//ROS_INFO_STREAM("Test");
-	//ROS_INFO_STREAM();
     pca.getEigenValues();
 	pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
     viewer.addPointCloud(cloud_);
@@ -108,7 +120,7 @@ void ClusterMeasure<PointT>::get_axis()
 
 //AO BB
 template<typename PointT>
-void ClusterMeasure<PointT>::get_bb()
+void ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth)
 {
     // compute principal direction
     Eigen::Vector4f centroid;
@@ -132,14 +144,21 @@ void ClusterMeasure<PointT>::get_bb()
     const Eigen::Vector3f mean_diag = 0.5f*(max_pt.getVector3fMap() + min_pt.getVector3fMap());
 
     // final transform
-    const Eigen::Quaternionf qfinal(eigDx);
-    const Eigen::Vector3f tfinal = eigDx*mean_diag + centroid.head<3>();
+    Eigen::Quaternionf qf(eigDx);
+    qfinal = qf;
+    tfinal = eigDx*mean_diag + centroid.head<3>();
 
-    // draw the cloud and the box
-    pcl::visualization::PCLVisualizer viewer;
-    viewer.addPointCloud(cloud_);
-    viewer.addCube(tfinal, qfinal, max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z);
-    viewer.spin();
+    width = max_pt.x - min_pt.x;
+    height = max_pt.y - min_pt.y;
+    depth = max_pt.z - min_pt.z;
+
+    if(visualize_){
+		// draw the cloud and the box
+		pcl::visualization::PCLVisualizer viewer;
+		viewer.addPointCloud(cloud_);
+		viewer.addCube(tfinal, qfinal, width, height, depth);
+		viewer.spin();
+    }
 
 }
 

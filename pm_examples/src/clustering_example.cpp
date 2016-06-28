@@ -20,8 +20,7 @@ int main(int argc, char** argv)
   Cloud::Ptr point_cloud_ptr (new pcl::PointCloud<PointT>);
   PCLTools<PointT>::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
 
-  //One time clustering...
-  //CloudClustering<PointT> cluster(point_cloud_ptr);
+  CloudClustering<PointT> cluster(point_cloud_ptr);
 
   /*
   cluster.applyEuclidianClustering();
@@ -33,16 +32,24 @@ int main(int argc, char** argv)
   cluster.save("growing");
   */
 
-  CloudClustering<PointT> cluster(point_cloud_ptr);
   cluster.applyRGBRegionGrowingClustering();
   cluster.displayColoured();
 
-  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
-  cm.get_centroid();
-  cm.get_axis();
-  cm.get_bb();
+  //The selection of the cluster can be done using a image of the environment
+  // and selecting the corresponding 3D cluster (Toni).
 
-  /*
+  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
+  cm.getCentroid();
+  cm.getAxis();
+
+  Eigen::Quaternionf q;
+  Eigen::Vector3f t;
+  float width, height, depth;
+
+  cm.getOABBox( q, t, width, height, depth );
+
+  /*  PARAMETER TUNNING
+
   //Iterating to tune parameters... EUCLIDEAN
   for( float i = 0.003; i < 0.025; i += 0.004 ){
 	  CloudClustering<PointT> cluster(point_cloud_ptr);
@@ -50,10 +57,7 @@ int main(int argc, char** argv)
 	  ROS_INFO_STREAM("Tolerance:" << i);
 	  cluster.displayColoured();
   }
-  */
 
-
-  /*
   //Iterating to tune parameters... REGION GROWING
   for( float i = 1.4; i < 7.0; i += 0.4 ){
 	  CloudClustering<PointT> cluster(point_cloud_ptr);
