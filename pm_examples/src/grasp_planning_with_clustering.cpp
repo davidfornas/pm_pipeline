@@ -26,8 +26,8 @@ int main(int argc, char **argv)
   CloudPtr scene(new Cloud);
   PCLTools<PointType>::cloudFromPCD(scene, std::string(argv[1]) + std::string(".pcd"));
 
-  HypothesisGeneration<PointType> hyp_gen(scene); //NEWS!!!!!!!
-  //hyp_gen.getGraspCandidate();
+  HypothesisGeneration<PointType> hyp_gen(scene, false);
+  hyp_gen.getGraspCandidate();
 
   /*PMGraspPlanning planner(scene, background_remover, segmentator, hypothesis_generation);
 

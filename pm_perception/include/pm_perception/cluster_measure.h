@@ -43,7 +43,7 @@ public:
   Eigen::Vector4f getCentroid();
 
   /** Visualize PCA axis */
-  void getAxis();
+  Eigen::Matrix3f getAxis();
 
   /** Return the object aligned Bounding Box (minimal) */
   void getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth);
@@ -76,14 +76,14 @@ Eigen::Vector4f ClusterMeasure<PointT>::getCentroid()
 	    p.y = centroid[1];
 	    p.z = centroid[2];
 	    viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
-	    viewer.spin();
+	    if(visualize_) viewer.spin();
 	}
 
 	return centroid;
 }
 
 template<typename PointT>
-void ClusterMeasure<PointT>::getAxis()
+Eigen::Matrix3f ClusterMeasure<PointT>::getAxis()
 {
 	Eigen::Vector4f centroid;
 	pcl::compute3DCentroid<PointT>(*cloud_, centroid);
@@ -115,7 +115,9 @@ void ClusterMeasure<PointT>::getAxis()
     viewer.addLine(v2,p,0,1,0,"Y");
     viewer.addLine(v3,p,0,0,1,"Z");
 
-    viewer.spin();
+    if(visualize_) viewer.spin();
+
+    return m;
 }
 
 //AO BB
