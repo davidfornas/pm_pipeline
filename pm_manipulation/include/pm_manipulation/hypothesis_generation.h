@@ -47,25 +47,35 @@ vpHomogeneousMatrix HypothesisGeneration<PointT>::getGraspCandidate(){
 
 	  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], visualize_);
 	  Eigen::Vector4f centroid = cm.getCentroid();
-	  Eigen::Matrix3f axis = cm.getAxis();
+	  Eigen::Matrix4f axis = cm.getAxis();
 
+	  //OABB, unused
 	  Eigen::Quaternionf q;
 	  Eigen::Vector3f t;
 	  float width, height, depth;
-
 	  cm.getOABBox( q, t, width, height, depth );
 
 	  pcl::visualization::PCLVisualizer viewer("Hypothesis Generation Viewer");
 	  viewer.addPointCloud(cloud_);
-	  PointT p;
-	  p.x = centroid[0];
-	  p.y = centroid[1];
-	  p.z = centroid[2];
-	  viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
-	  Eigen::Affine3f tr;
-	  viewer.addCoordinateSystem(1.0, tr);
-	  viewer.spin();
 
+
+
+	  Eigen::Affine3f tr;
+	  tr = axis;
+	  viewer.addCoordinateSystem(0.15, tr);
+	  //viewer.addText3D("PCA",p,0.02,0,0,1,"t1");
+
+	  Eigen::Affine3f tr2(q);
+	  tr2.translation() = t;
+	  viewer.addCoordinateSystem(0.25, tr2);
+	  //viewer.addText3D("OABBox",p,0.02,0,0,1,"t2");
+
+/*
+	  std::ostringstream out;
+	  out << "name: " << name << ", age: " << age;
+	  std::cout << out.str() << '\n';*/
+
+	  viewer.spin();
 
 	  vpHomogeneousMatrix m;
 	  return m;

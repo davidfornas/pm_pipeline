@@ -43,7 +43,7 @@ public:
   Eigen::Vector4f getCentroid();
 
   /** Visualize PCA axis */
-  Eigen::Matrix3f getAxis();
+  Eigen::Matrix4f getAxis();
 
   /** Return the object aligned Bounding Box (minimal) */
   void getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth);
@@ -83,26 +83,31 @@ Eigen::Vector4f ClusterMeasure<PointT>::getCentroid()
 }
 
 template<typename PointT>
-Eigen::Matrix3f ClusterMeasure<PointT>::getAxis()
+Eigen::Matrix4f ClusterMeasure<PointT>::getAxis()
 {
 	Eigen::Vector4f centroid;
 	pcl::compute3DCentroid<PointT>(*cloud_, centroid);
 
-	for(CloudIt it = cloud_->points.begin(); it < cloud_->points.end(); it++){
+	CloudPtr cloud(new Cloud());
+	*cloud=*cloud_;
+
+	//Modificamos cloud_. Esto podria dar problemas
+	for(CloudIt it = cloud->points.begin(); it < cloud->points.end(); it++){
 		it->x -= centroid[0];
 		it->y -= centroid[1];
 		it->z -= centroid[2];
 	}
 
+	//PCA
 	pcl::PCA<PointT> pca;
-	pca.setInputCloud(cloud_);
+	pca.setInputCloud(cloud);
     pca.getEigenValues();
 	pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
-    viewer.addPointCloud(cloud_);
+    viewer.addPointCloud(cloud);
     PointT p; p.x = centroid[0]; p.y = centroid[1]; p.z = centroid[2];
     viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
     p.x=0; p.y=0; p.z=0;
-    viewer.addSphere(p, 0.01, 0, 255, 0, "center");
+    viewer.addSphere(p, 0.01, 0, 255, 0, "image_center");
 
     PointT v1, v2, v3;
     Eigen::Matrix3f m = pca.getEigenVectors();
@@ -110,14 +115,30 @@ Eigen::Matrix3f ClusterMeasure<PointT>::getAxis()
     v2.x=m(1,0);v2.y=m(1,1);v2.z=m(1,2);
     v3.x=m(2,0);v3.y=m(2,1);v3.z=m(2,2);
 
-    //Showing UNIT vectors
+    Eigen::Vector3f vc1, vc2;
+    vc1 << m(0,0), m(0,1), m(0,2);
+    vc2 << m(1,0), m(1,1), m(1,2);
+    vc1.normalize();
+    vc2.normalize();
+
+    //Showing PCA result. Not necessarily a left handed ref system.
     viewer.addLine(v1,p,1,0,0,"X");
     viewer.addLine(v2,p,0,1,0,"Y");
     viewer.addLine(v3,p,0,0,1,"Z");
 
     if(visualize_) viewer.spin();
 
-    return m;
+    //Form transform matrix
+    Eigen::Matrix4f t(Eigen::Matrix4f::Identity());
+    t.col(0).head<3>() = vc1;
+    t.col(1).head<3>() = vc2;
+    t.col(2).head<3>() = vc1.cross(vc2);
+
+    t(0,3) = centroid[0];
+    t(1,3) = centroid[1];
+    t(2,3) = centroid[2];
+
+    return t;
 }
 
 //AO BB
