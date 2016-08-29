@@ -45,15 +45,16 @@ vpHomogeneousMatrix HypothesisGeneration<PointT>::getGraspCandidate(){
 	  cluster.save("grasping");
 	  if (visualize_) cluster.displayColoured();
 
-	  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], visualize_);
+	  ClusterMeasure<PointT> cm(cluster.cloud_clusters[1], visualize_);
 	  Eigen::Vector4f centroid = cm.getCentroid();
+	  //Do not draw it
 	  Eigen::Matrix4f axis = cm.getAxis();
 
 	  //OABB, unused
 	  Eigen::Quaternionf q;
 	  Eigen::Vector3f t;
 	  float width, height, depth;
-	  cm.getOABBox( q, t, width, height, depth );
+	  Eigen::Matrix4f box_origin = cm.getOABBox( q, t, width, height, depth );
 
 	  pcl::visualization::PCLVisualizer viewer("Hypothesis Generation Viewer");
 	  viewer.addPointCloud(cloud_);
@@ -65,10 +66,12 @@ vpHomogeneousMatrix HypothesisGeneration<PointT>::getGraspCandidate(){
 	  viewer.addCoordinateSystem(0.15, tr);
 	  //viewer.addText3D("PCA",p,0.02,0,0,1,"t1");
 
-	  Eigen::Affine3f tr2(q);
-	  tr2.translation() = t;
-	  viewer.addCoordinateSystem(0.25, tr2);
-	  //viewer.addText3D("OABBox",p,0.02,0,0,1,"t2");
+	  Eigen::Affine3f box(box_origin);
+	  viewer.addCoordinateSystem(0.25, box);
+
+	  Eigen::Affine3f tt(Eigen::Translation3f(0.1,0,0));
+
+	  viewer.addCoordinateSystem(0.25, tt*box);
 
 /*
 	  std::ostringstream out;

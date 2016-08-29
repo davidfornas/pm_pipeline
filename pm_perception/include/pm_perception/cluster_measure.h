@@ -46,7 +46,7 @@ public:
   Eigen::Matrix4f getAxis();
 
   /** Return the object aligned Bounding Box (minimal) */
-  void getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth);
+  Eigen::Matrix4f getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth);
 
   /** Display result  */
   void displayCluster();
@@ -88,62 +88,39 @@ Eigen::Matrix4f ClusterMeasure<PointT>::getAxis()
 	Eigen::Vector4f centroid;
 	pcl::compute3DCentroid<PointT>(*cloud_, centroid);
 
-	CloudPtr cloud(new Cloud());
-	*cloud=*cloud_;
-
-	//Modificamos cloud_. Esto podria dar problemas
-	for(CloudIt it = cloud->points.begin(); it < cloud->points.end(); it++){
-		it->x -= centroid[0];
-		it->y -= centroid[1];
-		it->z -= centroid[2];
-	}
-
-	//PCA
-	pcl::PCA<PointT> pca;
-	pca.setInputCloud(cloud);
-    pca.getEigenValues();
 	pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
-    viewer.addPointCloud(cloud);
-    PointT p; p.x = centroid[0]; p.y = centroid[1]; p.z = centroid[2];
-    viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
-    p.x=0; p.y=0; p.z=0;
-    viewer.addSphere(p, 0.01, 0, 255, 0, "image_center");
+    viewer.addPointCloud(cloud_);
 
-    PointT v1, v2, v3;
-    Eigen::Matrix3f m = pca.getEigenVectors();
-    v1.x=m(0,0);v1.y=m(0,1);v1.z=m(0,2);
-    v2.x=m(1,0);v2.y=m(1,1);v2.z=m(1,2);
-    v3.x=m(2,0);v3.y=m(2,1);v3.z=m(2,2);
+    //Eigen::Matrix3f m = pca.getEigenVectors();
+    Eigen::Matrix3f covariance;
+    computeCovarianceMatrixNormalized(*cloud_, centroid, covariance);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f m = eigen_solver.eigenvectors();
 
     Eigen::Vector3f vc1, vc2;
     vc1 << m(0,0), m(0,1), m(0,2);
     vc2 << m(1,0), m(1,1), m(1,2);
-    vc1.normalize();
-    vc2.normalize();
-
-    //Showing PCA result. Not necessarily a left handed ref system.
-    viewer.addLine(v1,p,1,0,0,"X");
-    viewer.addLine(v2,p,0,1,0,"Y");
-    viewer.addLine(v3,p,0,0,1,"Z");
-
-    if(visualize_) viewer.spin();
 
     //Form transform matrix
     Eigen::Matrix4f t(Eigen::Matrix4f::Identity());
     t.col(0).head<3>() = vc1;
     t.col(1).head<3>() = vc2;
     t.col(2).head<3>() = vc1.cross(vc2);
-
     t(0,3) = centroid[0];
     t(1,3) = centroid[1];
     t(2,3) = centroid[2];
+
+    if(visualize_){
+  	  viewer.addCoordinateSystem(0.15, Eigen::Affine3f(t));
+      viewer.spin();
+    }
 
     return t;
 }
 
 //AO BB
 template<typename PointT>
-void ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth)
+Eigen::Matrix4f ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth)
 {
     // compute principal direction
     Eigen::Vector4f centroid;
@@ -159,6 +136,7 @@ void ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vecto
     p2w.block<3,3>(0,0) = eigDx.transpose();
     p2w.block<3,1>(0,3) = -1.f * (p2w.block<3,3>(0,0) * centroid.head<3>());
     pcl::PointCloud<PointT> cPoints;
+    //THIS MODIFIES THE CLOUD, the cluster in my example @ TODO FIX
     pcl::transformPointCloud(*cloud_, cPoints, p2w);
 
     //Obtain mean diag, which is the center of the BB and the object (not the same as centroid)
@@ -182,6 +160,11 @@ void ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vecto
 		viewer.addCube(tfinal, qfinal, width, height, depth);
 		viewer.spin();
     }
+
+    Eigen::Matrix4f t(Eigen::Matrix4f::Identity());
+        t.topLeftCorner<3,3>() = eigDx;
+        t.col(3).head<3>() = tfinal;
+        return t;
 
 }
 
