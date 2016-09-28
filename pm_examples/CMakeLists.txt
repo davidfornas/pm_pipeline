@@ -26,6 +26,7 @@ add_executable(online_cloud_merger src/online_cloud_merger.cpp)
 add_executable(pose_estimation_example src/pose_estimation_example.cpp)
 add_executable(clustering_example src/clustering_example.cpp)
 add_executable(process_cloud src/process_cloud.cpp)
+add_executable(remove_nan src/remove_nan.cpp)
 
 
 ## Specify libraries to link a library or executable target against
@@ -39,3 +40,5 @@ target_link_libraries(online_cloud_merger ${catkin_LIBRARIES} )
 target_link_libraries(pose_estimation_example ${catkin_LIBRARIES} )
 target_link_libraries(clustering_example ${catkin_LIBRARIES} )
 target_link_libraries(process_cloud ${catkin_LIBRARIES} )
+target_link_libraries(remove_nan ${catkin_LIBRARIES} )
+
