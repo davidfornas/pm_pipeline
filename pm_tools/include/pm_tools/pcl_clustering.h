@@ -53,16 +53,16 @@ public:
   }
 
   /** Apply Euclidian clustering http://pointclouds.org/documentation/tutorials/cluster_extraction.php */
-  void applyEuclidianClustering(float tolerance, int minSize, int maxSize);
+  void applyEuclidianClustering( float tolerance = 0.02, int minSize = 50, int maxSize = 20000 );
 
   /** Apply Conditional Euclidian clustering http://pointclouds.org/documentation/tutorials/conditional_euclidean_clustering.php */
   void applyConditionalEuclidianClustering();
 
   /** Apply Region Growing clustering pointclouds.org/documentation/tutorials/region_growing_segmentation.php */
-  void applyRegionGrowingClustering( float smoothnessTh, float curvTh, int minSize, int maxSize, int neighbours );
+  void applyRegionGrowingClustering( float smoothnessTh = 3.0, float curvTh = 3.0, int minSize = 50, int maxSize = 20000, int neighbours = 30 );
 
   /** Apply RGB Region Growing clustering pointclouds.org/documentation/tutorials/region_growing_rgb_segmentation.php */
-  void applyRGBRegionGrowingClustering( float distance, float pointColorTh, float regionColorTh, int minSize);
+  void applyRGBRegionGrowingClustering( float distance = 10, float pointColorTh = 6, float regionColorTh = 5, int minSize = 200);
 
   /** Save clusters to ~/ros_ws/tmp/name+id+.pcd */
   void save( std::string name );
@@ -126,7 +126,7 @@ void CloudClustering<PointT>::extract()
 
 
 template<typename PointT>
-void CloudClustering<PointT>::applyEuclidianClustering( float tolerance = 0.02, int minSize = 50, int maxSize = 20000 )
+void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int minSize, int maxSize )
 {
 
   // Creating the KdTree object for the search method of the extraction
@@ -153,7 +153,7 @@ void CloudClustering<PointT>::applyConditionalEuclidianClustering()
 }
 
 template<typename PointT>
-void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh = 3.0, float curvTh = 3.0, int minSize = 50, int maxSize = 20000, int neighbours = 30 )
+void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh, float curvTh, int minSize, int maxSize, int neighbours )
 {
   //Normal estimation
   typename pcl::search::Search<PointT>::Ptr tree =
@@ -183,7 +183,7 @@ void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh =
 }
 
 template<typename PointT>
-void CloudClustering<PointT>::applyRGBRegionGrowingClustering( float distance = 10, float pointColorTh = 6, float regionColorTh = 5, int minSize = 200 )
+void CloudClustering<PointT>::applyRGBRegionGrowingClustering( float distance, float pointColorTh, float regionColorTh, int minSize )
 {
 	typename pcl::search::Search<PointT>::Ptr tree =
 			boost::shared_ptr<typename pcl::search::Search<PointT> > (new pcl::search::KdTree<PointT>);
