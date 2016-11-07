@@ -137,6 +137,12 @@ public:
 		    	copy->points[idx++] = p->points[i];
 		  ROS_DEBUG_STREAM("New size:" << idx);
 	}
+	// In place NaN remove
+	static void removeNanPoints(CloudPtr & p){
+	  CloudPtr result( new Cloud );
+	  removeNanPoints(p, result);
+	  p = result;
+	}
 
 	static void mergeOrganizedClouds(CloudPtr a, CloudPtr b)
 	{

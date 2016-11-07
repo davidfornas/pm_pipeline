@@ -20,24 +20,32 @@ int main(int argc, char** argv)
   Cloud::Ptr point_cloud_ptr (new pcl::PointCloud<PointT>);
   PCLTools<PointT>::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
 
+  //Load from UWSim
+  //PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, "/stereo_down/points2");
+  //PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
+
   CloudClustering<PointT> cluster(point_cloud_ptr);
 
-  /*
+  ROS_INFO_STREAM("CLUSTERING...");
+
   cluster.applyEuclidianClustering();
   cluster.displayColoured();
   cluster.save("euclidian");
-
+/*
   cluster.applyRegionGrowingClustering();
   cluster.displayColoured();
   cluster.save("growing");
-  */
+
 
   cluster.applyRGBRegionGrowingClustering();
   cluster.displayColoured();
+ */
 
   //The selection of the cluster can be done using a image of the environment
   // and selecting the corresponding 3D cluster (Toni).
 
+
+  return (0);
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
   cm.getCentroid();
   cm.getAxis();
