@@ -28,6 +28,8 @@ add_executable(clustering_example src/clustering_example.cpp)
 add_executable(process_cloud src/process_cloud.cpp)
 add_executable(remove_nan src/remove_nan.cpp)
 add_executable(hobbit_grasping src/hobbit_grasping.cpp)
+add_executable(particlef_template_tracking_tutorial src/particlef_template_tracking_tutorial.cpp)
+add_executable(tutorial src/tutorial.cpp)
 
 
 ## Specify libraries to link a library or executable target against
@@ -43,4 +45,6 @@ target_link_libraries(clustering_example ${catkin_LIBRARIES} )
 target_link_libraries(process_cloud ${catkin_LIBRARIES} )
 target_link_libraries(remove_nan ${catkin_LIBRARIES} )
 target_link_libraries(hobbit_grasping ${catkin_LIBRARIES} )
+target_link_libraries(particlef_template_tracking_tutorial ${catkin_LIBRARIES} )
+target_link_libraries(tutorial ${catkin_LIBRARIES} )
 

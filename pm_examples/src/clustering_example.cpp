@@ -9,7 +9,7 @@
 
 #include <ros/ros.h>
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 int main(int argc, char** argv)
@@ -18,12 +18,14 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   Cloud::Ptr point_cloud_ptr (new pcl::PointCloud<PointT>);
-  PCLTools<PointT>::cloudFromPCD(point_cloud_ptr, std::string(argv[1]) + std::string(".pcd")); //Load from PCDReader or from topic
+  PCLTools<PointT>::cloudFromPCD(point_cloud_ptr, std::string(argv[1])); //Load from PCDReader or from topic
 
   //Load from UWSim
   //PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, "/stereo_down/points2");
-  //PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
 
+  PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
+
+  ROS_INFO_STREAM("PointCloud loaded without NaN: " << point_cloud_ptr->points.size() << " data points.");
   CloudClustering<PointT> cluster(point_cloud_ptr);
 
   ROS_INFO_STREAM("CLUSTERING...");
@@ -39,14 +41,14 @@ int main(int argc, char** argv)
 
   cluster.applyRGBRegionGrowingClustering();
   cluster.displayColoured();
- */
+*/
 
   //The selection of the cluster can be done using a image of the environment
   // and selecting the corresponding 3D cluster (Toni).
 
 
-  return (0);
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
+  PCLTools<PointT>::cloudToPCD(cluster.cloud_clusters[0], std::string("fist_cluster.pcd"));
   cm.getCentroid();
   cm.getAxis();
 

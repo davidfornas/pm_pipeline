@@ -46,7 +46,8 @@ public:
 
 	static void cloudToPCD(CloudPtr cloud, std::string fileName){
 	  pcl::PCDWriter writer;
-	  writer.write(fileName, *cloud, false);
+	  //Binary format is used to avoid problems with Kinect, switch if necessary.
+	  writer.writeBinary(fileName, *cloud);
 	  ROS_DEBUG_STREAM("PointCloud saved." << cloud->points.size() << " data points."  << std::endl);
 	}
 
