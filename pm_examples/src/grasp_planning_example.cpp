@@ -42,10 +42,14 @@ int main(int argc, char **argv)
 //  HypothesisGeneration * hypothesis_generation; //NEWS!!!!!!!
 //
 //  PMGraspPlanning planner(scene, background_remover, segmentator, hypothesis_generation);
-//
-//  planner.perceive();
-//  planner.get_cMg();
-  // @ TODO planner.proccessScene();
+
+    PMGraspPlanning planner(scene);
+    planner.perceive();
+    planner.get_cMg();
+
+    //SHOW RESULT HOW()
+
+    // @ TODO planner.proccessScene();
 
   GraspHypothesisEvaluation ghyval; // @ TODO  from planner.getGraspHypothesis;
   ghyval.getBestGrasp();

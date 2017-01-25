@@ -1,0 +1,9 @@
+<launch>
+  <arg name="input_basename" default="cloud.pcd" />
+  <param name="input_basename" value="$(find pm_grasp_visualization)/launch/$(arg input_basename)" />
+
+  <arg name="scene" default="arm5e_arm.xml" />
+
+  <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
+  <node name="grasp_vis" pkg="pm_grasp_visualization" type="grasp_vis" output="screen" respawn="false"/>
+</launch>

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_examples)
 
-find_package(catkin REQUIRED COMPONENTS roscpp pm_manipulation pm_tools pm_perception)
+find_package(catkin REQUIRED COMPONENTS roscpp pm_manipulation pm_tools pm_perception mar_perception)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp pm_manipulation pm_tools pm_perception 
+  CATKIN_DEPENDS roscpp pm_manipulation pm_tools pm_perception mar_perception
 )
 
 ## Specify additional locations of header files
@@ -28,6 +28,8 @@ add_executable(clustering_example src/clustering_example.cpp)
 add_executable(process_cloud src/process_cloud.cpp)
 add_executable(remove_nan src/remove_nan.cpp)
 
+#for MERBOTS MANIPULATION
+add_executable(grasp_testing src/grasp_testing.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planning_example ${catkin_LIBRARIES} )
@@ -41,4 +43,7 @@ target_link_libraries(pose_estimation_example ${catkin_LIBRARIES} )
 target_link_libraries(clustering_example ${catkin_LIBRARIES} )
 target_link_libraries(process_cloud ${catkin_LIBRARIES} )
 target_link_libraries(remove_nan ${catkin_LIBRARIES} )
+
+
+target_link_libraries(grasp_testing ${catkin_LIBRARIES} )
 
