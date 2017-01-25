@@ -8,8 +8,10 @@
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/pcl_segmentation.h>
 
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType> Cloud;
+#include <pcl/console/parse.h>
+
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CPtr;
 
 int main(int argc, char** argv)
@@ -17,20 +19,43 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "pcl_processing");
   ros::NodeHandle nh;
 
-  if(argc < 4 || argc > 8){
-	  std::cerr << "rosrun pm_examples process_cloud <filename> <passMinZ> <passMaxZ> <meanK> <stdThresh> <leafSize> <planeThr>" << std::endl;
-	  std::cerr << "Example: <filename> 0 2 50 1.0 0.03 0.06 -> result in <filename>_processed.pcd" << std::endl;
+  if(argc < 4){
+	  std::cerr << "rosrun pm_examples process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
+	  std::cerr << "Example: -f <filename> -p 0 2 -r 50 1.0 -d 0.03 -s 0.06 -> result in <filename>_processed.pcd" << std::endl;	  std::cerr << "rosrun pm_examples process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
+	  std::cerr << "Example: Also with -t <topic> instead." << std::endl;
 	  return 0;
   }
+  std::string source("");
+  float passthroughMinZ = 0, passthroughMaxZ = 0, outRemMeanK = 0, outRemStdTh = 0, leafSize = 0, planeTh = 0;
 
   CPtr cloud(new Cloud);
-  PCLTools<PointType>::cloudFromPCD(cloud, std::string(argv[1]) + std::string(".pcd"));
-  PCLTools<PointType>::applyZAxisPassthrough(cloud, atof(argv[2]), atof(argv[3]));
-  if(argc > 4 && atoi(argv[4]) > 0  && atof(argv[5]) > 0) PCLTools<PointType>::applyStatisticalOutlierRemoval(cloud, atoi(argv[4]), atof(argv[5]));
-  if(argc > 6 && atof(argv[6]) > 0) PCLTools<PointType>::applyVoxelGridFilter(cloud, atof(argv[6]));
-  if(argc > 7 && atof(argv[7]) > 0) PlaneSegmentation<PointType>::removeBackground(cloud, 100, atof(argv[7]));
 
-  PCLTools<PointType>::cloudToPCD(cloud, std::string(argv[1]) + std::string("_processed.pcd"));
+
+  if (pcl::console::find_argument (argc, argv, "-f") > 0){
+	  pcl::console::parse_argument (argc, argv, "-f", source);
+	  PCLTools<PointT>::cloudFromPCD(cloud, source + std::string(".pcd")); std::cerr << "LOADED FROM FILE" << std::endl;
+  }
+  if (pcl::console::find_argument (argc, argv, "-t") > 0){
+	  pcl::console::parse_argument (argc, argv, "-t", source);
+	  PCLTools<PointT>::cloudFromTopic(cloud, source); // From UWSim
+	  std::cerr << "LOADED FROM TOPIC" << std::endl;
+  }
+
+
+  pcl::console::parse_2x_arguments (argc, argv, "-p", passthroughMinZ, passthroughMaxZ);
+  pcl::console::parse_2x_arguments (argc, argv, "-r", outRemMeanK, outRemStdTh);
+  pcl::console::parse_argument (argc, argv, "-d", leafSize);
+  pcl::console::parse_argument (argc, argv, "-s", planeTh);
+
+  //REMOVE NaN if needed
+  PCLTools<PointT>::removeNanPoints(cloud);
+
+  if(passthroughMinZ != 0 && passthroughMaxZ != 0) 	PCLTools<PointT>::applyZAxisPassthrough(cloud, passthroughMinZ, passthroughMaxZ);
+  if(outRemMeanK != 0 && outRemStdTh != 0) 			PCLTools<PointT>::applyStatisticalOutlierRemoval(cloud, outRemMeanK, outRemStdTh);
+  if(leafSize != 0)  	PCLTools<PointT>::applyVoxelGridFilter(cloud, leafSize);
+  if(planeTh != 0) 		PlaneSegmentation<PointT>::removeBackground(cloud, 100, planeTh);
+
+  PCLTools<PointT>::cloudToPCD(cloud, /*std::string() +*/ std::string("_processed.pcd"));
 
   return (0);
 }

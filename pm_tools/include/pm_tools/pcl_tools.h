@@ -46,7 +46,8 @@ public:
 
 	static void cloudToPCD(CloudPtr cloud, std::string fileName){
 	  pcl::PCDWriter writer;
-	  writer.write(fileName, *cloud, false);
+	  //Binary format is used to avoid problems with Kinect, switch if necessary.
+	  writer.writeBinary(fileName, *cloud);
 	  ROS_DEBUG_STREAM("PointCloud saved." << cloud->points.size() << " data points."  << std::endl);
 	}
 
@@ -136,6 +137,12 @@ public:
 		    if (pcl::isFinite(p->points[i]))
 		    	copy->points[idx++] = p->points[i];
 		  ROS_DEBUG_STREAM("New size:" << idx);
+	}
+	// In place NaN remove
+	static void removeNanPoints(CloudPtr & p){
+	  CloudPtr result( new Cloud );
+	  removeNanPoints(p, result);
+	  p = result;
 	}
 
 	static void mergeOrganizedClouds(CloudPtr a, CloudPtr b)
