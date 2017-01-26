@@ -12,6 +12,7 @@
 #include <string>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Transform.h>
+#include <geometry_msgs/Pose.h>
 
 struct Frame
 {
@@ -26,9 +27,11 @@ class VispTools
 {
 
 public:
+  static geometry_msgs::Pose geometryPoseFromVispHomog(vpHomogeneousMatrix);
   static geometry_msgs::Transform geometryTransFromVispHomog(vpHomogeneousMatrix);
   static tf::Transform tfTransFromVispHomog(vpHomogeneousMatrix);
   static vpHomogeneousMatrix vispHomogFromTfTransform(tf::Transform);
+  static vpHomogeneousMatrix vispHomogFromGeometryPose(geometry_msgs::Pose);
   static vpHomogeneousMatrix vispHomogFromXyzrpy(double, double, double, double, double, double);
   static vpHomogeneousMatrix weightedAverage(vpHomogeneousMatrix, int, vpHomogeneousMatrix);
 

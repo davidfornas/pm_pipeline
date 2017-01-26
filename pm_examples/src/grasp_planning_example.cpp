@@ -3,7 +3,7 @@
  * At the moment it is no really testing all of them beacuse the implementation is
  * not finished.
  *
- *This program is dummy, most implementations are not done, only structure
+ * Without visualization, only usage is tested.
  *
  *  Created on: 03/03/2014
  *      Author: dfornas

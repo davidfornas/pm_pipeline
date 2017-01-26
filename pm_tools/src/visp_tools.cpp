@@ -23,7 +23,6 @@ geometry_msgs::Transform VispTools::geometryTransFromVispHomog(vpHomogeneousMatr
 {
   vpQuaternionVector q;
   sMs.extract(q);
-
   geometry_msgs::Transform t;
   t.rotation.x = q.x();
   t.rotation.y = q.y();
@@ -33,6 +32,21 @@ geometry_msgs::Transform VispTools::geometryTransFromVispHomog(vpHomogeneousMatr
   t.translation.y = sMs[1][3];
   t.translation.z = sMs[2][3];
 
+  return t;
+}
+
+geometry_msgs::Pose VispTools::geometryPoseFromVispHomog(vpHomogeneousMatrix sMs)
+{
+  vpQuaternionVector q;
+  sMs.extract(q);
+  geometry_msgs::Pose t;
+  t.orientation.x = q.x();
+  t.orientation.y = q.y();
+  t.orientation.z = q.z();
+  t.orientation.w = q.w();
+  t.position.x = sMs[0][3];
+  t.position.y = sMs[1][3];
+  t.position.z = sMs[2][3];
   return t;
 }
 
@@ -54,6 +68,13 @@ vpHomogeneousMatrix VispTools::vispHomogFromTfTransform(tf::Transform transform)
   vpTranslationVector t(transform.getOrigin()[0], transform.getOrigin()[1], transform.getOrigin()[2]);
   vpQuaternionVector q(transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z(),
                        transform.getRotation().w());
+  return vpHomogeneousMatrix(t, q);
+}
+
+vpHomogeneousMatrix VispTools::vispHomogFromGeometryPose(geometry_msgs::Pose pose)
+{
+  vpTranslationVector t(pose.position.x,pose.position.y, pose.position.z);
+  vpQuaternionVector q(pose.orientation.x, pose.orientation.y ,pose.orientation.z, pose.orientation.w);
   return vpHomogeneousMatrix(t, q);
 }
 
