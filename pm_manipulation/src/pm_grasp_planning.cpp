@@ -121,34 +121,15 @@ void PMGraspPlanning::recalculate_cMg(){
   intToConfig();
   vpHomogeneousMatrix oMg;
 
-  if(aligned_grasp_){
-    //Apply rotations and traslation to reposition the grasp frame.
-    vpHomogeneousMatrix grMgt0(0,along_,0,0,0,0);
-    vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
-    vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
-    vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle_);
-    vpHomogeneousMatrix grMgt(rad_,0,0,0,0,0);
-    oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
-    cMg = cMo * oMg ;
-  }else{
-    //NOW I WILL USE THE INTERACTIVE MARKER SO THIS CHUNK DOES THE SAME; SHOULD BE REMOVED
-    /*
-    //Apply rotations and traslation to reposition the grasp frame.
-    vpHomogeneousMatrix gMgr(0,0,0,0,angle_,0);
-    vpHomogeneousMatrix grMgt0(rad_,0,0,0,0,0);
-    vpHomogeneousMatrix grMgt1(0,along_,0,0,0,0);
-    oMg = gMgr * grMgt0 * grMgt1;
-    cMg = cMo  * oMg ;
-    */
-    // @TODO REMOVE IF OF COURSE
-    vpHomogeneousMatrix grMgt0(0,along_,0,0,0,0);
-    vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
-    vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
-    vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle_);
-    vpHomogeneousMatrix grMgt(rad_,0,0,0,0,0);
-    oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
-    cMg = cMo * oMg ;
-  }
+  //Apply rotations and traslation to reposition the grasp frame.
+  vpHomogeneousMatrix grMgt0(0,along_,0,0,0,0);
+  vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
+  vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
+  vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle_);
+  vpHomogeneousMatrix grMgt(rad_,0,0,0,0,0);
+  oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
+  cMg = cMo * oMg ;
+
   vpHomogeneousMatrix rot(0,0,0,0,1.57,0);
   cMg=cMg*rot;
 
@@ -165,14 +146,6 @@ void PMGraspPlanning::recalculate_cMg(){
 void PMGraspPlanning::intToConfig(){
   bool old=aligned_grasp_;
   aligned_grasp_=ialigned_grasp==1?true:false;
-
-  // @todo: Move defaults to other place.
-  /*
-  if(old!=aligned_grasp_){
-    if(aligned_grasp_){iangle=45;irad=48;ialong=31;}
-    else{ iangle=226;irad=50;ialong=20;}
-  }
-  */
 
   angle_=iangle*(2.0*M_PI/360.0);
   rad_=-irad/100.0;
@@ -263,10 +236,10 @@ void PMGraspPlanning::filterGraspList(){
   std::list<vpHomogeneousMatrix>::iterator i = cMg_list.begin();
   while (i != cMg_list.end())
   {
-      if (!false)//Replace with desired condition
-      {
-        cMg_list.erase(i++);  // alternatively, i = items.erase(i);
-      }
+    if (!false)//Replace with desired condition
+    {
+      cMg_list.erase(i++);  // alternatively, i = items.erase(i);
+    }
   }
 }
 

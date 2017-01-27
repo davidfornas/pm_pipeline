@@ -10,20 +10,19 @@
 
 #include <pm_tools/visp_tools.h>
 
-//Quick GUI form OpoenCV
+//Quick GUI form OpoenCV, should change it to Qt.
 #include <vector>
 #include <opencv2/highgui/highgui.hpp>
 
 #include <geometry_msgs/Pose.h>
 #include <interactive_markers/interactive_marker_server.h>
 
-
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 vpHomogeneousMatrix worldToMarkerInitPose;
 
-//Class that holds the eef position publisher and the interactive marker feedback
+//Class that publishes eef position from marker feedback to UWSim
 class EefFollower
 {
 private:
@@ -36,12 +35,10 @@ public:
   //Interactive marker feedback class (calls the publisher)
   void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback )
   {
-    std::cout<< feedback->marker_name << " is now at "<< feedback->pose.position.x << ", " << feedback->pose.position.y
+    /*std::cout<< feedback->marker_name << " is now at "<< feedback->pose.position.x << ", " << feedback->pose.position.y
              << ", " << feedback->pose.position.z << std::endl;
-
     std::cout<< feedback->marker_name << " orientation is " << feedback->pose.orientation.x << ", " << feedback->pose.orientation.y
-             << ", " << feedback->pose.orientation.z  << ", " << feedback->pose.orientation.w <<std::endl;
-
+             << ", " << feedback->pose.orientation.z  << ", " << feedback->pose.orientation.w <<std::endl;*/
     vpHomogeneousMatrix markerInitPoseToCurrentMarkerPose;
     markerInitPoseToCurrentMarkerPose = VispTools::vispHomogFromGeometryPose(feedback->pose);
 
@@ -49,8 +46,6 @@ public:
     ros::spinOnce();
   }
 };
-
-
 
 /** Plans a grasp on a point cloud and visualizes it using UWSim externally.
  * Expects the following params to be set in the ROS parameter server: @TODO CHANGE
@@ -68,8 +63,6 @@ int main(int argc, char **argv)
 
   EefFollower follower("/gripperPose", nh);//(std::string)argv[1]);
 
-  //Listen for rechable frame
-  //tf::TransformListener listener;
 
   ros::Publisher position_pub;
   position_pub=nh.advertise<geometry_msgs::Pose>("/gripperPose",1);
