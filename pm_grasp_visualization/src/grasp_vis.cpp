@@ -39,6 +39,7 @@ int main(int argc, char **argv)
   //Variables de configuración: ángulo de agarre, distancias...
   double angle, rad, along;
   bool alignedGrasp;
+  int ialigned_grasp = 1;
   std::string input_basename("output");
   nh.getParam("input_basename", input_basename);
   nh.param("alignedGrasp", alignedGrasp, false);
@@ -66,13 +67,13 @@ int main(int argc, char **argv)
     cv::createTrackbar("Radius", "Grasp configuration", &(planner.irad), 100);
     cv::createTrackbar("Angle", "Grasp configuration", &(planner.iangle), 360);
     cv::createTrackbar("Distance", "Grasp configuration", &(planner.ialong), 100);
-    cv::createTrackbar("Aligned grasp?", "Grasp configuration", &(planner.ialigned_grasp), 1);
+    cv::createTrackbar("Aligned grasp?", "Grasp configuration", &ialigned_grasp, 1);
 
     //Compute new grasp frame with the slides
     planner.recalculate_cMg();
     cMg = planner.get_cMg();
 
-    planner.ialigned_grasp==1 ? follower.setMarkerStatus(false) : follower.setMarkerStatus(true) ;
+    ialigned_grasp==1 ? follower.setMarkerStatus(false) : follower.setMarkerStatus(true) ;
     follower.loop(cMg);
 
     ros::spinOnce();

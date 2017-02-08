@@ -34,7 +34,6 @@ class PMGraspPlanning {
   double angle_, rad_, along_;
   //Punto central del cilindro y la direccion.
   PointT axis_point_g; tf::Vector3 normal_g;
-  bool aligned_grasp_;
   //VispToTF vispToTF;
   //MarkerPublisher * cylPub;
   double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
@@ -46,7 +45,7 @@ public:
   double radious, height;
 
   //With integuers to use trackbars
-  int iangle, irad, ialong, ialigned_grasp;
+  int iangle, irad, ialong;
 
   //Segmentation components. @ TODO Currently they are not used.
   //BackgroundRemoval * background_remover_;
@@ -64,7 +63,6 @@ public:
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
-    setAlignedGrasp(true);ialigned_grasp=1;
     //vispToTF.addTransform(cMg, "/stereo", "/cMo", "1");
     //vispToTF.addTransform(cMg, "/stereo", "/cMg", "2");
     setPlaneSegmentationParams();
@@ -91,9 +89,6 @@ public:
 
   /** Main function where segmentation is done */
   void perceive();
-
-  /** Set whether to perform a grasp aligned with the cylinder axis or not **/
-  void setAlignedGrasp(bool a) {aligned_grasp_=a;}
 
   /** Set plane segmentation parameters: distance to the inliers to the plane
    * and number of iterations.

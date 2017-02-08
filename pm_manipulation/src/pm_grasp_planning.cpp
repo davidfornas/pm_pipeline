@@ -144,9 +144,6 @@ void PMGraspPlanning::recalculate_cMg(){
 
 /// Set config values: from int sliders to float values.
 void PMGraspPlanning::intToConfig(){
-  bool old=aligned_grasp_;
-  aligned_grasp_=ialigned_grasp==1?true:false;
-
   angle_=iangle*(2.0*M_PI/360.0);
   rad_=-irad/100.0;
   along_=(ialong-20)/100.0;//to allow 20 cm negative.... should allow a range based on minMax distance
