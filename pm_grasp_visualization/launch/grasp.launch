@@ -1,5 +1,5 @@
 <launch>
-  <arg name="input_basename" default="cloud.pcd" />
+  <arg name="input_basename" default="cloud2.pcd" />
   <param name="input_basename" value="$(find pm_grasp_visualization)/launch/$(arg input_basename)" />
 
   <arg name="scene" default="arm5e_arm.xml" />

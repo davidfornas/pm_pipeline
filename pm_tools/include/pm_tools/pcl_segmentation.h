@@ -186,7 +186,7 @@ bool CylinderSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoef
   {
     ROS_INFO_STREAM(
         "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points.");
-    writer.write("/home/dfornas/data/scene_cylinder.pcd", *cloud_cylinder, false);
+    writer.write("scene_cylinder.pcd", *cloud_cylinder, false);
   }
   return true;
 }
