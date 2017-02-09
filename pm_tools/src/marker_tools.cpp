@@ -7,7 +7,25 @@
 
 #include <pm_tools/marker_tools.h>
 
-
+void EefFollower::paramsCallback(const std_msgs::Float32MultiArray &msg){
+  if(msg.data.size()==4){
+    irad = msg.data[0];
+    iangle = msg.data[1];
+    ialong = msg.data[2];
+    //hand_opening = msg.data[3];//Hand opening
+  }else{
+    /*
+    a = msg.data[0];
+    b = msg.data[1];
+    c = msg.data[2];
+    d = msg.data[3];
+    e = msg.data[4];
+    f = msg.data[5];
+    g = msg.data[6];//Hand opening
+    */
+  }
+  //Same names lead to memory loss of the last position, need to solve this better.
+}
 
 //Interactive marker feedback class (calls the publisher)
 void EefFollower::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback )

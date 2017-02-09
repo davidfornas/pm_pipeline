@@ -8,7 +8,10 @@
 #define MARKERTOOLS_H_
 
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/Float32MultiArray.h>
+
 #include <interactive_markers/interactive_marker_server.h>
+
 #include <visp/vpHomogeneousMatrix.h>
 #include <pm_tools/visp_tools.h>
 
@@ -16,7 +19,10 @@
 class EefFollower
 {
 private:
-  ros::Publisher pos_pub;
+
+  ros::Publisher pos_pub, params_pub;
+  ros::Subscriber params_sub;
+
   bool show_marker, marker_created;
 
   // create an interactive marker server on the topic namespace uwsim_marker
@@ -24,10 +30,16 @@ private:
   vpHomogeneousMatrix worldToMarkerInitPose;
 
 public:
+
+  //Guided mode values
+  int irad, ialong, iangle;
+
   EefFollower(std::string topic, ros::NodeHandle &nh )
-    : server("uwsim_marker"), show_marker(false), marker_created(false)
+    : server("uwsim_marker"), show_marker(false), marker_created(false), irad(0), ialong(0), iangle(0)
   {
     pos_pub = nh.advertise<geometry_msgs::Pose>(topic, 1); //"/gripperPose"
+    params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params", 1);
+    params_sub = nh.subscribe("/specification_params", 1, &EefFollower::paramsCallback, this);
   }
 
   void setMarkerStatus( bool value ){
@@ -37,8 +49,9 @@ public:
   //Interactive marker feedback class (calls the publisher)
   void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback );
 
-  void loop(vpHomogeneousMatrix cMg);
+  void paramsCallback(const std_msgs::Float32MultiArray &msg);
 
+  void loop(vpHomogeneousMatrix cMg);
 
 };
 
