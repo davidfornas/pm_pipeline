@@ -13,23 +13,38 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Float32MultiArray.h>
 
+#include <boost/thread/thread.hpp>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 vpHomogeneousMatrix cMg;
-bool markerStatus;
-int a,b,c;
+bool markerStatus, compute_initial_cMg;
+int a,b,c,d,e,f,g;
 
-void floatArraySubs(const std_msgs::Float32MultiArray &msg){
-  a = msg.data[0];
-  b = msg.data[1];
-  c = msg.data[2];
+void paramsCallback(const std_msgs::Float32MultiArray &msg){
+  if(msg.data.size()==4){
+    a = msg.data[0];
+    b = msg.data[1];
+    c = msg.data[2];
+    g = msg.data[3];//Hand opening
+  }else{
+    a = msg.data[0];
+    b = msg.data[1];
+    c = msg.data[2];
+    d = msg.data[3];
+    e = msg.data[4];
+    f = msg.data[5];
+    g = msg.data[6];//Hand opening
+  }
+  //Same names lead to memory loss of the last position, need to solve this better.
 }
 
 void stringCallback(const std_msgs::String &msg ){
-  markerStatus = (msg.data == "init" ?  false : true );
-  //msg->data == "init" ? follower.setMarkerStatus(false) : follower.setMarkerStatus(true) ;
+  if( msg.data == "init"){
+    compute_initial_cMg = true;
+  }else
+    markerStatus = (msg.data == "guided" ?  false : true );
 }
 
 
@@ -43,13 +58,13 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "grasp_server");
   ros::NodeHandle nh;
 
-  bool compute_initial_cMg = false;
+  compute_initial_cMg = false;
 
-  //SETUP GUI SUBSCRIBERS.....
-  //pos_pub = nh.advertise<geometry_msgs::Pose>(topic, 1);
-  //pos_pub = nh.advertise<geometry_msgs::Pose>(topic, 1);
-//ros::Subscriber sub = n.subscribe("chatter", 1000, chatterCallback);
+  //SETUP GUI SUBSCRIBERS.....specification_status
+  ros::Publisher param_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params", 1);
 
+  ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
+  ros::Subscriber param_sub = nh.subscribe("/specification_params", 1, paramsCallback);
 
   EefFollower follower("/gripperPose", nh);
 
@@ -63,16 +78,14 @@ int main(int argc, char **argv)
 
   //Point Cloud load
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
-  PCLTools<PointT>::cloudFromPCD(cloud, input_basename); //Load from PCDReader or from topic
+  PCLTools<PointT>::cloudFromPCD(cloud, input_basename);
   ROS_DEBUG_STREAM("PointCloud has: " << cloud->points.size() << " data points.");
 
   //WAIT FOR INIT MESSAGE
-
+//CHANGE THIS
   while (!compute_initial_cMg)
   {
-    std_msgs::String::ConstPtr message = ros::topic::waitForMessage< std_msgs::String >("/grasp");
-    if( message->data == "init" ) compute_initial_cMg = true;
-    //ros::spinOnce();
+    ros::spinOnce();
   }
 
   //Init planner
@@ -80,8 +93,9 @@ int main(int argc, char **argv)
   planner.perceive();
   cMg = planner.get_cMg();
 
-  //TODO CHange this
+  //TODO CHange this somehow
   a=0;b=0;c=0;
+  markerStatus=false;
 
   while (ros::ok())
   {
@@ -91,6 +105,7 @@ int main(int argc, char **argv)
     //Compute new grasp frame with the slides
     planner.recalculate_cMg();
     cMg = planner.get_cMg();
+    follower.setMarkerStatus(markerStatus);
     follower.loop(cMg);
     ros::spinOnce();
   }
