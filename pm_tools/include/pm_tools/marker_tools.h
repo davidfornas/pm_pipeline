@@ -24,10 +24,12 @@ private:
   ros::Subscriber params_sub;
 
   bool show_marker, marker_created;
+  double hand_opening;
 
   // create an interactive marker server on the topic namespace uwsim_marker
   interactive_markers::InteractiveMarkerServer server;
-  vpHomogeneousMatrix worldToMarkerInitPose;
+  vpHomogeneousMatrix marker_creation_pose, marker_current_pose;
+  vpHomogeneousMatrix marker_sliding_reference_pose;
 
 public:
 
@@ -38,8 +40,8 @@ public:
     : server("uwsim_marker"), show_marker(false), marker_created(false), irad(0), ialong(0), iangle(0)
   {
     pos_pub = nh.advertise<geometry_msgs::Pose>(topic, 1); //"/gripperPose"
-    params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params", 1);
-    params_sub = nh.subscribe("/specification_params", 1, &EefFollower::paramsCallback, this);
+    params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1);
+    params_sub = nh.subscribe("/specification_params_to_uwsim", 1, &EefFollower::paramsCallback, this);
   }
 
   void setMarkerStatus( bool value ){
@@ -52,6 +54,13 @@ public:
   void paramsCallback(const std_msgs::Float32MultiArray &msg);
 
   void loop(vpHomogeneousMatrix cMg);
+
+  void addMarker(vpHomogeneousMatrix cMg);
+
+  void removeMarker();
+
+  void resetMarker();
+
 
 };
 

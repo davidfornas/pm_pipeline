@@ -34,6 +34,8 @@ public:
   static vpHomogeneousMatrix vispHomogFromGeometryPose(geometry_msgs::Pose);
   static vpHomogeneousMatrix vispHomogFromXyzrpy(double, double, double, double, double, double);
   static vpHomogeneousMatrix weightedAverage(vpHomogeneousMatrix, int, vpHomogeneousMatrix);
+  static void rpyFromQuaternion(double, double, double, double, double&, double&, double&);
+  static void quaternionFromRpy(double, double, double, double&, double&, double&, double&);
 
 };
 

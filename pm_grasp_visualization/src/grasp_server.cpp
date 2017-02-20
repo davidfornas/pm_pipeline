@@ -16,13 +16,16 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 
-bool markerStatus, compute_initial_cMg;
+bool markerStatus, compute_initial_cMg, resetMarker;
 
 void stringCallback(const std_msgs::String &msg ){
   if( msg.data == "init"){
     compute_initial_cMg = true;
-  }else
+  }else if( msg.data != "markerReset"){
     markerStatus = (msg.data == "guided" ?  false : true );
+  }else{
+    resetMarker = true;
+  }
 }
 
 /** Plans a grasp on a point cloud and visualizes it using UWSim externally.
@@ -35,6 +38,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   compute_initial_cMg = false;
+  resetMarker = false;
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
@@ -79,6 +83,10 @@ int main(int argc, char **argv)
     follower.setMarkerStatus(markerStatus);
     follower.loop(cMg);
     ros::spinOnce();
+    if(resetMarker){
+      resetMarker = false;
+      follower.resetMarker();
+    }
   }
   return 0;
 }

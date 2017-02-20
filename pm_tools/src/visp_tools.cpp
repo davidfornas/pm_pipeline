@@ -128,6 +128,22 @@ vpHomogeneousMatrix VispTools::weightedAverage(vpHomogeneousMatrix old_avg, int 
   return new_avg;
 }
 
+
+void VispTools::rpyFromQuaternion(double x, double y, double z, double w, double& r, double& p, double& yaw){
+  tf::Quaternion rotation(x, y, z, w);
+  tf::Matrix3x3 m(rotation);
+  m.getRPY(r, p, yaw);
+}
+
+void VispTools::quaternionFromRpy(double r, double p, double yaw, double& x, double& y, double& z, double& w){
+  tf::Quaternion q;
+  q = tf::createQuaternionFromRPY(r, p, yaw);
+  x = q.x();
+  y = q.y();
+  z = q.z();
+  w = q.w();
+}
+
 VispToTF::VispToTF(vpHomogeneousMatrix sMs, std::string parent, std::string child)
 {
   broadcaster_ = new tf::TransformBroadcaster();
