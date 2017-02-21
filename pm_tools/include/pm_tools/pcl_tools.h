@@ -60,6 +60,20 @@ public:
 	  ROS_DEBUG_STREAM("PointCloud loaded: " << cloud->points.size() << " data points." << std::endl);
 	}
 
+  static void cloudToTopic(CloudPtr cloud, std::string topicName){
+
+    ros::NodeHandle n;
+    ros::Publisher cloud_pub = n.advertise<sensor_msgs::PointCloud2>(topicName, 1000);
+    sensor_msgs::PointCloud2 message;
+
+    pcl::PCLPointCloud2 pcl_pc;
+    //PointT strong type to PCL Generic cloud.
+    pcl::toPCLPointCloud2(*cloud, pcl_pc);
+    pcl_conversions::fromPCL(pcl_pc, message);
+    cloud_pub.publish(message);
+    ros::spinOnce();
+  }
+
 	static void applyZAxisPassthrough(CloudPtr in, CloudPtr out, double min, double max){
 	  typename pcl::PassThrough<PointT> pass;
 	  // Build a passthrough filter to remove spurious NaNs
