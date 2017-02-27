@@ -1,8 +1,7 @@
 <launch>
-  <arg name="input_basename" default="cloud2.pcd" />
-  <param name="input_basename" value="$(find pm_grasp_visualization)/launch/$(arg input_basename)" />
+  <param name="input_topic" value="/stereo_down/points2" />
 
-  <arg name="scene" default="arm5e_arm.xml" />
+  <arg name="scene" default="specification_scene.xml" />
 
   <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
   <node name="grasp_server" pkg="pm_grasp_visualization" type="grasp_server" output="screen" respawn="false"/>

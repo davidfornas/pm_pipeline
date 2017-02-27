@@ -48,7 +48,9 @@ void PMGraspPlanning::perceive() {
   cyl_seg.setIterations(cylinder_iterations_);
   cyl_seg.setRadiousLimit(radious_limit_);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
-  PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+
+  // DEBUG
+  //PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
   //Grasp points
   PointT mean, max, min;
@@ -77,15 +79,6 @@ void PMGraspPlanning::perceive() {
   //Cylinder properties
   radious=coefficients_cylinder->values[6];
   height=sqrt((max.x-min.x)*(max.x-min.x)+(max.y-min.y)*(max.y-min.y)+(max.z-min.z)*(max.z-min.z));
-
-  //DEBUG, check if they are ortogonal.
-  //std::cout << "Mean -> x: " << mean.x << " y: " << mean.y << " z: " << mean.z << std::endl;
-  //std::cout << "Max -> x: " << max.x << " y: " << max.y << " z: " << max.z << std::endl;
-  //std::cout << "Min -> x: " << min.x << " y: " << min.y << " z: " << min.z << std::endl;
-  //std::cout << "AxisDir -> x: " << axis_dir.x() << " y: " << axis_dir.y() << " z: " << axis_dir.z() << std::endl;
-  //std::cout << "perp -> x: " << perp.x() << " y: " <<perp.y() << " z: " <<perp.z() << std::endl;
-  //std::cout << "result -> x: " << result.x() << " y: " << result.y() << " z: " << result.z() << std::endl;//OK UNIT
-  //std::cout << "Dot products" << result.dot(perp) << result.dot(axis_dir) << axis_dir.dot(perp);//OK ZEROS
 
   // @ NOTE Ahora mismo el end-efector cae dentro del cilindro en vez de en superfície.
   //Esto está relativamente bien pero no tenemos en cuenta la penetración. Sin emargo, la

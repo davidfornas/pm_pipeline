@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle nh;
 
-  EefFollower follower("/gripperPose", nh);//(std::string)argv[1]);
+  EefFollower follower("/gripper_pose", nh);//(std::string)argv[1]);
 
   //Variables de configuración: ángulo de agarre, distancias...
   double angle, rad, along;
