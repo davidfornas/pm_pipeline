@@ -10,6 +10,8 @@
 #include <pm_tools/marker_tools.h>
 
 #include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float32MultiArray.h>
@@ -37,7 +39,7 @@ bool transformPose(const geometry_msgs::PoseStamped& pose_in, geometry_msgs::Pos
 {
 
   try{
-    listener_->transformPose(target_frame_id, ros::Time(0), pose_in, "/stereo_down", pose_out);
+    listener_->transformPose(target_frame_id, ros::Time(0), pose_in, "/sense3d", pose_out);
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
@@ -67,6 +69,8 @@ int main(int argc, char **argv)
 
   listener_ = new tf::TransformListener();
 
+  tf::TransformBroadcaster *broadcaster;
+
   //Variables de configuración: ángulo de agarre, distancias...
   //GET FROM GUI
   double angle = 0, rad = 0, along = 0;
@@ -77,6 +81,9 @@ int main(int argc, char **argv)
   //Point Cloud load
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
   PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.005
+
+                                         );
   ROS_DEBUG_STREAM("PointCloud has: " << cloud->points.size() << " data points.");
 
   //WAIT FOR INIT MESSAGE
@@ -134,6 +141,12 @@ int main(int argc, char **argv)
 
       transformPose(in, out, "world");
       final_pose_pub.publish(out);
+
+      tf::Stamped<tf::Pose> pose;
+      tf::poseStampedMsgToTF( out, pose );
+      tf::StampedTransform t(pose, ros::Time::now(), "/world", "/desired_grasp_pose");
+      broadcaster->sendTransform(t);
+
       execute = false;
     }
   }
