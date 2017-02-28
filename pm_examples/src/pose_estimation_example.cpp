@@ -7,7 +7,7 @@
 
 #include <ros/ros.h>
 #include <pm_perception/pose_estimation.h>
-#include <pm_tools/visp_tools.h>
+#include <pm_tools/tf_tools.h>
 
 int main(int argc, char** argv)
 {
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   //Publish results
   // @ TODO Use parameter server
   // @ TODO Publish TF while averaging, not only final result.
-  VispToTF v;
+  FrameToTF v;
   v.addTransform(left, "stereo", "left_pose", "0");
   v.addTransform(right, "stereo_right", "right_pose", "1");
   v.addTransform(vpHomogeneousMatrix(0.09, 0, 0, 0, 0, 0), "stereo", "stereo_right", "2");

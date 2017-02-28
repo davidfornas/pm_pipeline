@@ -209,10 +209,11 @@ void WaypointServer::addInteractiveMarker(){
 
   // create a grey box marker
   visualization_msgs::Marker box_marker;
-  box_marker.type = visualization_msgs::Marker::CYLINDER;
-  box_marker.scale.x = 0.05;
-  box_marker.scale.y = 0.05;
-  box_marker.scale.z = 0.05;
+  box_marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+  box_marker.mesh_resource = "package://uwsim/gripper_old.stl";
+  box_marker.scale.x = 1;
+  box_marker.scale.y = 1;
+  box_marker.scale.z = 1;
   box_marker.color.r = 0.5;
   box_marker.color.g = 0.5;
   box_marker.color.b = 0.5;

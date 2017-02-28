@@ -14,7 +14,7 @@
 
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/pcl_segmentation.h>
-#include <pm_tools/visp_tools.h>
+#include <pm_tools/tf_tools.h>
 
 #include <visp/vpHomogeneousMatrix.h>
 
@@ -26,7 +26,7 @@ class BorderDetection
 
 protected:
 
-  VispToTF vispToTF;
+  FrameToTF vispToTF;
   pcl::PointCloud<PointT>::Ptr cloud_, border_cloud_;
   nav_msgs::Path path_;
   double subsampling_distance_;
