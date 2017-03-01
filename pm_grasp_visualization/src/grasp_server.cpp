@@ -81,13 +81,9 @@ int main(int argc, char **argv)
   //Point Cloud load
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
   PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
-  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.005
-
-                                         );
+  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.001);
   ROS_DEBUG_STREAM("PointCloud has: " << cloud->points.size() << " data points.");
 
-  //WAIT FOR INIT MESSAGE
-//CHANGE THIS
   while (!compute_initial_cMg)
   {
     ros::spinOnce();
@@ -95,6 +91,7 @@ int main(int argc, char **argv)
 
   //Init planner
   PMGraspPlanning planner(cloud);
+  planner.setPlaneSegmentationParams(0.06, 100);
   planner.perceive();
   vpHomogeneousMatrix cMg = planner.get_cMg();
 

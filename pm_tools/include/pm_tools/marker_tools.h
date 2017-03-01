@@ -123,14 +123,14 @@ public:
   //In ths case is safe to make it public. The it's easier to change  marker's appearance.
   visualization_msgs::Marker marker;
 
-  MarkerPublisher(vpHomogeneousMatrix sMs, std::string parent, std::string topic_name, ros::NodeHandle nh)
+  MarkerPublisher(vpHomogeneousMatrix sMs, std::string parent, std::string topic_name, ros::NodeHandle & nh)
   {
     tf::Transform pose = VispTools::tfTransFromVispHomog(sMs);
     setMarker(pose, parent);
     publisher_ = nh.advertise<visualization_msgs::Marker>(topic_name, 1);
   }
 
-  MarkerPublisher(tf::Transform pose, std::string parent, std::string topic_name, ros::NodeHandle nh)
+  MarkerPublisher(tf::Transform pose, std::string parent, std::string topic_name, ros::NodeHandle & nh)
   {
     setMarker(pose, parent);
     publisher_ = nh.advertise<visualization_msgs::Marker>(topic_name, 1);
@@ -147,13 +147,21 @@ public:
     marker.pose.position.x = pose.getOrigin().x();
     marker.pose.position.y = pose.getOrigin().y();
     marker.pose.position.z = pose.getOrigin().z();
-    marker.pose.orientation.x = pose.getOrigin().x();
-    marker.pose.orientation.y = pose.getOrigin().y();
-    marker.pose.orientation.z = pose.getOrigin().z();
-    marker.pose.orientation.w = pose.getOrigin().w();
+    marker.pose.orientation.x = pose.getRotation().x();
+    marker.pose.orientation.y = pose.getRotation().y();
+    marker.pose.orientation.z = pose.getRotation().z();
+    marker.pose.orientation.w = pose.getRotation().w();
     marker.lifetime = ros::Duration(duration);
     changeScale(0.1, 0.1, 0.2);
     changeColor(1, 0.2, 0.7, 0.7);
+  }
+
+  void setCylinder(vpHomogeneousMatrix sMs, std::string parent, double radious, double height, int duration = 1)
+  {
+    tf::Transform pose = VispTools::tfTransFromVispHomog(sMs);
+    setMarker(pose, parent, duration);
+    changeScale(radious, radious, height);
+    marker.type = visualization_msgs::Marker::CYLINDER;
   }
 
   void setCylinder(tf::Transform pose, std::string parent, double radious, double height, int duration = 1)

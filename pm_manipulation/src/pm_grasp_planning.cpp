@@ -32,7 +32,7 @@ void PMGraspPlanning::perceive() {
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
   pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
 
-  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, -1, 3);
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
 
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
@@ -69,8 +69,8 @@ void PMGraspPlanning::perceive() {
 
   tf::Vector3 result=tf::tfCross( perp, axis_dir).normalize();
 
-  getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir);
-  //Mean point taking into account only a 90% of the points.
+  getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir, 0.1);
+  //Mean point taking into account only a 90% of the points (0.1).
   mean.x=(max.x+min.x)/2;mean.y=(max.y+min.y)/2;mean.z=(max.z+min.z)/2;
   coefficients_cylinder->values[0]=mean.x;
   coefficients_cylinder->values[1]=mean.y;
@@ -81,25 +81,27 @@ void PMGraspPlanning::perceive() {
   height=sqrt((max.x-min.x)*(max.x-min.x)+(max.y-min.y)*(max.y-min.y)+(max.z-min.z)*(max.z-min.z));
 
   // @ NOTE Ahora mismo el end-efector cae dentro del cilindro en vez de en superfície.
-  //Esto está relativamente bien pero no tenemos en cuenta la penetración. Sin emargo, la
+  //Esto está relativamente bien pero no tenemos en cuenta la penetración. Sin embargo, la
   //tenemos en cuenta luego al separanos el radio así que no hay problema en realidad.
   cMo[0][0]=perp.x(); cMo[0][1]=axis_dir.x(); cMo[0][2]=result.x();cMo[0][3]=mean.x;
   cMo[1][0]=perp.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=result.y();cMo[1][3]=mean.y;
   cMo[2][0]=perp.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=result.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
-  //vispToTF.resetTransform(cMo, "1");
+
+  vispToTF.addTransform(cMo, "sense3d", "object_frame", "cMo");
+  vispToTF.addTransform(cMg, "sense3d", "grasp_frame", "cMg");
 
   //DEBUG Print MAX and MIN frames
   /*vpHomogeneousMatrix cMg2(cMo);
   cMg2[0][3]=max.x;
   cMg2[1][3]=max.y;
   cMg2[2][3]=max.z;
-  vispToTF.addTransform(cMg2, "/stereo", "/max", "3");
+  vispToTF.addTransform(cMg2, "/sense3d", "/max", "3");
   cMg2[0][3]=min.x;
   cMg2[1][3]=min.y;
   cMg2[2][3]=min.z;
-  vispToTF.addTransform(cMg2, "/stereo", "/min", "4");  */
+  vispToTF.addTransform(cMg2, "/sense3d", "/min", "4");*/
 
   //Compute modified cMg from cMo
   recalculate_cMg();
@@ -123,16 +125,22 @@ void PMGraspPlanning::recalculate_cMg(){
   oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
   cMg = cMo * oMg ;
 
-  vpHomogeneousMatrix rot(0,0,0,0,1.57,0);
-  cMg=cMg*rot;
+  cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,1.57);
 
   //Compute bMg and plan a grasp on bMg
   //vpHomogeneousMatrix bMg=bMc*cMg;
   //std::cerr << "bMg is: " << std::endl << bMg << std::endl;
 
-  //Publish cMg in TF, 2 is the TF list index.
-  //vispToTF.resetTransform(cMg, "2");
-  //vispToTF.publish();
+  vispToTF.resetTransform( cMg, "cMg");
+  vispToTF.publish();
+
+  // Send detected cylinder marker.
+  ros::NodeHandle nh;
+  vpHomogeneousMatrix cylinder;
+  cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
+  MarkerPublisher markerPub( cylinder, "sense3d", "visualization_marker", nh);
+  markerPub.setCylinder( cylinder, cloud_->header.frame_id, radious * 2, height, 15);
+  markerPub.publish();
 }
 
 /// Set config values: from int sliders to float values.
@@ -153,11 +161,13 @@ bool PMGraspPlanning::sortFunction(const PointT& d1, const PointT& d2)
 }
 
 ///Obtiene los máximos y mínimos del cilindro para encontrar la altura del cilindro con un margen
-///de descarte del 5%.
-void PMGraspPlanning::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal)
+///de descarte de outlier percentage (normalmente 10%).
+void PMGraspPlanning::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
 {
   axis_point_g=axis_point;
   normal_g=*normal;
+
+  outlier_percentage = outlier_percentage / 2.0;
 
   PointT max_p = axis_point;
   double max_t = 0.0;
@@ -177,7 +187,7 @@ void PMGraspPlanning::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstP
   }
   //Ordenamos con respecto al eje de direccion y tomamos P05 y P95
   std::sort(list.begin(), list.end(),  boost::bind(&PMGraspPlanning::sortFunction, this, _1, _2));
-  PointT max=list[(int)list.size()*0.05],min=list[(int)list.size()*0.95];
+  PointT max=list[(int)list.size()*outlier_percentage],min=list[(int)list.size()*(1-outlier_percentage)];
   //Proyección de los puntos reales a puntos sobre la normal.
   double t = (normal->x()*(max.x-axis_point.x) + normal->y()*(max.y-axis_point.y) + normal->z()*(max.z-axis_point.z))/(pow(normal->x(),2) + pow(normal->y(),2) + pow(normal->z(),2));
   PointT p;

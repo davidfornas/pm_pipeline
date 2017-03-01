@@ -12,7 +12,9 @@
 
 #include <pm_perception/background_removal.h>
 #include <pm_perception/object_segmentation.h>
-#include <pm_manipulation/hypothesis_generation.h>
+//#include <pm_manipulation/hypothesis_generation.h>
+#include <pm_tools/tf_tools.h>
+#include <pm_tools/marker_tools.h>
 
 #include <pcl/io/pcd_io.h>
 
@@ -34,7 +36,7 @@ class PMGraspPlanning {
   double angle_, rad_, along_;
   //Punto central del cilindro y la direccion.
   PointT axis_point_g; tf::Vector3 normal_g;
-  //VispToTF vispToTF;
+  FrameToTF vispToTF;
   //MarkerPublisher * cylPub;
   double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
   int plane_iterations_, cylinder_iterations_;
@@ -127,7 +129,7 @@ private:
   bool sortFunction(const PointT& d1, const PointT& d2);
 
   /** Get the grasp frame with respect to the camera frame */
-  void getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal);
+  void getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage = 0.1);
 
   /** Configure the camera based in int slider parameters */
   void intToConfig();
