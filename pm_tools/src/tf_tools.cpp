@@ -7,6 +7,21 @@
 
 #include <pm_tools/tf_tools.h>
 
+bool TFTools::transformPose(const geometry_msgs::PoseStamped& pose_in, geometry_msgs::PoseStamped &pose_out, const std::string& target_frame_id)
+{
+  tf::TransformListener *listener_;
+  try{
+    listener_->transformPose(target_frame_id, ros::Time(0), pose_in, "/sense3d", pose_out);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    return false;
+  }
+  pose_out.header.frame_id = target_frame_id;
+  return true;
+}
+
+
 std::ostream& operator<<(std::ostream& out, Frame& x)
 {
   out << "Pose origin  [x: " << x.pose.getOrigin().x() << " y: " << x.pose.getOrigin().y() << " z: "

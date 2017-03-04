@@ -7,13 +7,24 @@
 #ifndef TFTOOLS_H_
 #define TFTOOLS_H_
 
+#include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 #include <visp/vpHomogeneousMatrix.h>
 #include <string>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Transform.h>
 #include <geometry_msgs/Pose.h>
 #include <pm_tools/visp_tools.h>
+
+class TFTools
+{
+
+public:
+  static bool transformPose(const geometry_msgs::PoseStamped& pose_in,
+                     geometry_msgs::PoseStamped &pose_out, const std::string& target_frame_id);
+
+};
 
 struct Frame
 {

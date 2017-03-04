@@ -21,11 +21,13 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${VISP_INCLUDE_DI
 add_executable(grasp_vis src/grasp_vis.cpp)
 add_executable(grasp_marker src/grasp_marker.cpp)
 add_executable(grasp_server src/grasp_server.cpp)
+add_executable(online_grasp_server src/online_grasp_server.cpp)
 add_executable(waypoint_server src/waypoint_server.cpp)
 
 target_link_libraries(grasp_vis ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(grasp_marker ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(grasp_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
+target_link_libraries(online_grasp_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(waypoint_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 
 

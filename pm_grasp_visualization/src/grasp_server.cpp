@@ -8,6 +8,7 @@
 #include <pm_manipulation/pm_grasp_planning.h>
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/marker_tools.h>
+#include <pm_tools/tf_tools.h>
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -20,7 +21,7 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
-tf::TransformListener *listener_;
+
 bool markerStatus, compute_initial_cMg, resetMarker, execute;
 
 void stringCallback(const std_msgs::String &msg ){
@@ -33,20 +34,6 @@ void stringCallback(const std_msgs::String &msg ){
   }else{
     execute = true;
   }
-}
-
-bool transformPose(const geometry_msgs::PoseStamped& pose_in, geometry_msgs::PoseStamped &pose_out, const std::string& target_frame_id)
-{
-
-  try{
-    listener_->transformPose(target_frame_id, ros::Time(0), pose_in, "/sense3d", pose_out);
-  }
-  catch (tf::TransformException ex){
-    ROS_ERROR("%s",ex.what());
-    return false;
-  }
-  pose_out.header.frame_id = target_frame_id;
-  return true;
 }
 
 /** Plans a grasp on a point cloud and visualizes it using UWSim externally.
@@ -67,7 +54,7 @@ int main(int argc, char **argv)
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
   ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/final_pose", 1000);
 
-  listener_ = new tf::TransformListener();
+  tf::TransformListener *listener_ = new tf::TransformListener();
 
   tf::TransformBroadcaster *broadcaster;
 
@@ -84,8 +71,18 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.001);
   ROS_DEBUG_STREAM("PointCloud has: " << cloud->points.size() << " data points.");
 
-  while (!compute_initial_cMg)
+
+  bool got_wMc = false;
+  tf::StampedTransform wMc;;
+  while (!compute_initial_cMg && !got_wMc)
   {
+    try{
+      listener_->lookupTransform("sense3d", "world", ros::Time(0), wMc);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return false;
+    }
     ros::spinOnce();
   }
 
@@ -96,6 +93,7 @@ int main(int argc, char **argv)
   vpHomogeneousMatrix cMg = planner.get_cMg();
 
   EefFollower follower("/gripper_pose", nh);
+  follower.setWorldToCamera(VispTools::vispHomogFromTfTransform( wMc ));
 
   markerStatus=false, execute=false;
 
@@ -106,6 +104,9 @@ int main(int argc, char **argv)
   msg.data.push_back(10);
   params_pub.publish(msg);
 
+
+
+  //TODO, AL EMPEZAR HAY QUE GUARDAR EL MARCO ENTRE EL WORLD Y SESNSE 3D
 
   while (ros::ok())
   {
@@ -122,27 +123,30 @@ int main(int argc, char **argv)
       resetMarker = false;
       follower.resetMarker();
     }
+    execute = true;
     if(execute){
-      //PUBLISH POSE FRAME FOR EXECUTION
-      geometry_msgs::PoseStamped in, out;
-      in.pose.position.x = follower.grasp_pose.position.x;
-      in.pose.position.y = follower.grasp_pose.position.y;
-      in.pose.position.z = follower.grasp_pose.position.z;
-      in.pose.orientation.x = follower.grasp_pose.orientation.x;
-      in.pose.orientation.y = follower.grasp_pose.orientation.y;
-      in.pose.orientation.z = follower.grasp_pose.orientation.z;
-      in.pose.orientation.w = follower.grasp_pose.orientation.w;
-      in.header.stamp = ros::Time::now();
-      in.header.frame_id = cloud->header.frame_id;
-      out = in;
-
-      transformPose(in, out, "world");
-      final_pose_pub.publish(out);
+      //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.
+      /*geometry_msgs::PoseStamped gp;
+      gp.pose.position.x = follower.grasp_pose_final.position.x;
+      gp.pose.position.y = follower.grasp_pose_final.position.y;
+      gp.pose.position.z = follower.grasp_pose_final.position.z;
+      gp.pose.orientation.x = follower.grasp_pose_final.orientation.x;
+      gp.pose.orientation.y = follower.grasp_pose_final.orientation.y;
+      gp.pose.orientation.z = follower.grasp_pose_final.orientation.z;
+      gp.pose.orientation.w = follower.grasp_pose_final.orientation.w;
+      gp.header.stamp = ros::Time::now();
+      gp.header.frame_id = cloud->header.frame_id;
+      final_pose_pub.publish(gp);
 
       tf::Stamped<tf::Pose> pose;
-      tf::poseStampedMsgToTF( out, pose );
+      tf::poseStampedMsgToTF( gp, pose );
       tf::StampedTransform t(pose, ros::Time::now(), "/world", "/desired_grasp_pose");
-      broadcaster->sendTransform(t);
+
+      broadcaster->sendTransform(t);*/
+
+      //Mejorar y automatizar
+      //Cambiar el frame del brazo para que la X apunte hacia...preguntar a Toni.
+      //Introducir el coloreado en UWSim para evitar procesar la nube cada vez...
 
       execute = false;
     }

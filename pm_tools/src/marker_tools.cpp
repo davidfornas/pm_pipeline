@@ -42,6 +42,7 @@ void EefFollower::processFeedback(const visualization_msgs::InteractiveMarkerFee
 void EefFollower::loop(vpHomogeneousMatrix cMg){
 
   geometry_msgs::Pose pose = VispTools::geometryPoseFromVispHomog(cMg);
+  //Si no se muestra el IntMarker se utiliza la pose que me pasan
   if (!show_marker){
     grasp_pose = pose;
     if(marker_created){
@@ -51,11 +52,13 @@ void EefFollower::loop(vpHomogeneousMatrix cMg){
     //Publish Pose on UWSim
     pos_pub.publish(pose);
   }else{
+    //En caso contrario la pose la actualiza el feedback o es la que te pasan para un marker nuevo.
     if(!marker_created){
       marker_sliding_reference_pose = cMg;
       addMarker(cMg);
     }
-  }
+  }  
+  pos_pub.publish( grasp_pose );
 }
 
 void EefFollower::addMarker(vpHomogeneousMatrix cMg){

@@ -34,7 +34,10 @@ private:
 
 public:
 
-  geometry_msgs::Pose grasp_pose;
+  geometry_msgs::Pose grasp_pose, grasp_pose_world;
+
+
+  vpHomogeneousMatrix wMc; //Pasar a funcion y hacer privado.
 
   //Guided mode values
   int irad, ialong, iangle;
@@ -50,6 +53,10 @@ public:
 
   void setMarkerStatus( bool value ){
     show_marker = value;
+  }
+
+  void setWorldToCamera( vpHomogeneousMatrix worldToCamera ){
+    wMc = worldToCamera;
   }
 
   //Interactive marker feedback class (calls the publisher)
