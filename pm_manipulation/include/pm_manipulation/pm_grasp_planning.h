@@ -41,6 +41,8 @@ class PMGraspPlanning {
   double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
   int plane_iterations_, cylinder_iterations_;
 
+  std::string camera_frame_name;
+
 public:
 
   vpHomogeneousMatrix cMg, cMo; ///< Grasp frame with respect to the camera after planning
@@ -65,12 +67,12 @@ public:
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
-    //vispToTF.addTransform(cMg, "/stereo", "/cMo", "1");
-    //vispToTF.addTransform(cMg, "/stereo", "/cMg", "2");
+
     setPlaneSegmentationParams();
     setCylinderSegmentationParams();
 
     cloud_ = cloud;
+    camera_frame_name = "sense3d";
 
 //    background_remover_ = background_remover;
 //    segmentator_ = segmentator;
@@ -107,6 +109,10 @@ public:
     cylinder_distance_threshold_=distanceThreshold;
     cylinder_iterations_=iterations;
     radious_limit_=rlimit;
+  }
+
+  void setCamerFrameName( std::string name){
+    camera_frame_name = name;
   }
 
   /** Get the grasp frame with respect to the camera frame */

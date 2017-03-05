@@ -52,7 +52,7 @@ int main(int argc, char **argv)
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
-  ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/final_pose", 1000);
+  ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/desired_grasp_pose", 1000);
 
   tf::TransformListener *listener_ = new tf::TransformListener();
 
@@ -77,11 +77,10 @@ int main(int argc, char **argv)
   while (!compute_initial_cMg && !got_wMc)
   {
     try{
-      listener_->lookupTransform("sense3d", "world", ros::Time(0), wMc);
+      listener_->lookupTransform( cloud->header.frame_id, "world", ros::Time(0), wMc); // "sense3d"
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
-      return false;
     }
     ros::spinOnce();
   }
@@ -93,7 +92,7 @@ int main(int argc, char **argv)
   vpHomogeneousMatrix cMg = planner.get_cMg();
 
   EefFollower follower("/gripper_pose", nh);
-  follower.setWorldToCamera(VispTools::vispHomogFromTfTransform( wMc ));
+  follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
 
   markerStatus=false, execute=false;
 
@@ -104,9 +103,6 @@ int main(int argc, char **argv)
   msg.data.push_back(10);
   params_pub.publish(msg);
 
-
-
-  //TODO, AL EMPEZAR HAY QUE GUARDAR EL MARCO ENTRE EL WORLD Y SESNSE 3D
 
   while (ros::ok())
   {
@@ -126,27 +122,23 @@ int main(int argc, char **argv)
     execute = true;
     if(execute){
       //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.
-      /*geometry_msgs::PoseStamped gp;
-      gp.pose.position.x = follower.grasp_pose_final.position.x;
-      gp.pose.position.y = follower.grasp_pose_final.position.y;
-      gp.pose.position.z = follower.grasp_pose_final.position.z;
-      gp.pose.orientation.x = follower.grasp_pose_final.orientation.x;
-      gp.pose.orientation.y = follower.grasp_pose_final.orientation.y;
-      gp.pose.orientation.z = follower.grasp_pose_final.orientation.z;
-      gp.pose.orientation.w = follower.grasp_pose_final.orientation.w;
+      geometry_msgs::PoseStamped gp;
+      gp.pose.position.x = follower.grasp_pose_world.position.x;
+      gp.pose.position.y = follower.grasp_pose_world.position.y;
+      gp.pose.position.z = follower.grasp_pose_world.position.z;
+      gp.pose.orientation.x = follower.grasp_pose_world.orientation.x;
+      gp.pose.orientation.y = follower.grasp_pose_world.orientation.y;
+      gp.pose.orientation.z = follower.grasp_pose_world.orientation.z;
+      gp.pose.orientation.w = follower.grasp_pose_world.orientation.w;
       gp.header.stamp = ros::Time::now();
-      gp.header.frame_id = cloud->header.frame_id;
+      gp.header.frame_id = "world";
       final_pose_pub.publish(gp);
 
       tf::Stamped<tf::Pose> pose;
       tf::poseStampedMsgToTF( gp, pose );
       tf::StampedTransform t(pose, ros::Time::now(), "/world", "/desired_grasp_pose");
 
-      broadcaster->sendTransform(t);*/
-
-      //Mejorar y automatizar
-      //Cambiar el frame del brazo para que la X apunte hacia...preguntar a Toni.
-      //Introducir el coloreado en UWSim para evitar procesar la nube cada vez...
+      broadcaster->sendTransform(t);
 
       execute = false;
     }

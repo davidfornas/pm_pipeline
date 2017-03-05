@@ -32,7 +32,10 @@ void EefFollower::processFeedback(const visualization_msgs::InteractiveMarkerFee
   marker_current_pose = marker_creation_pose * marker_displacement;
   marker_sliding_reference_pose = marker_current_pose;
   grasp_pose = VispTools::geometryPoseFromVispHomog( marker_current_pose );
-  ROS_INFO_STREAM(grasp_pose);
+  grasp_pose_world = VispTools::geometryPoseFromVispHomog( wMc * marker_current_pose);
+
+  ROS_DEBUG_STREAM(grasp_pose);
+  ROS_DEBUG_STREAM(grasp_pose_world);
 
   pos_pub.publish( grasp_pose );
 
@@ -45,6 +48,7 @@ void EefFollower::loop(vpHomogeneousMatrix cMg){
   //Si no se muestra el IntMarker se utiliza la pose que me pasan
   if (!show_marker){
     grasp_pose = pose;
+    grasp_pose_world = VispTools::geometryPoseFromVispHomog( wMc * cMg);
     if(marker_created){
       marker_created = false;
       removeMarker();
@@ -63,6 +67,7 @@ void EefFollower::loop(vpHomogeneousMatrix cMg){
 
 void EefFollower::addMarker(vpHomogeneousMatrix cMg){
 grasp_pose = VispTools::geometryPoseFromVispHomog(cMg);
+grasp_pose_world = VispTools::geometryPoseFromVispHomog( wMc * cMg);
 marker_created = true;
 // DF NEED A MARKER CREATED POSE AND INIT TO BE DIFFERENT.
 marker_current_pose = cMg;

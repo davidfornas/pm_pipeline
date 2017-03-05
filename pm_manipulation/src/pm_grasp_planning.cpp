@@ -89,8 +89,8 @@ void PMGraspPlanning::perceive() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
 
-  vispToTF.addTransform(cMo, "sense3d", "object_frame", "cMo");
-  vispToTF.addTransform(cMg, "sense3d", "grasp_frame", "cMg");
+  vispToTF.addTransform(cMo, camera_frame_name, "object_frame", "cMo");
+  vispToTF.addTransform(cMg, camera_frame_name, "grasp_frame", "cMg");
 
   //DEBUG Print MAX and MIN frames
   /*vpHomogeneousMatrix cMg2(cMo);
@@ -132,13 +132,15 @@ void PMGraspPlanning::recalculate_cMg(){
   //std::cerr << "bMg is: " << std::endl << bMg << std::endl;
 
   vispToTF.resetTransform( cMg, "cMg");
-  vispToTF.publish();
+
+  //DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
+  //vispToTF.publish();
 
   // Send detected cylinder marker.
   ros::NodeHandle nh;
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
-  MarkerPublisher markerPub( cylinder, "sense3d", "visualization_marker", nh);
+  MarkerPublisher markerPub( cylinder, camera_frame_name, "visualization_marker", nh);
   markerPub.setCylinder( cylinder, cloud_->header.frame_id, radious * 2, height, 15);
   markerPub.publish();
 }
