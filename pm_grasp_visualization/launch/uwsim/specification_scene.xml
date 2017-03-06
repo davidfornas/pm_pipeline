@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE UWSimScene SYSTEM "UWSimScene.dtd" >
+
+<UWSimScene>
+  <oceanState>
+    <windx> 0.04 </windx>
+    <windy> 0.04 </windy>
+    <windSpeed> 12 </windSpeed>
+    <depth> 1000 </depth>
+    <reflectionDamping> 0.35 </reflectionDamping>
+    <waveScale> 1e-7 </waveScale>
+    <isNotChoppy> 0 </isNotChoppy>
+    <choppyFactor> 2.5 </choppyFactor>
+    <crestFoamHeight> 2.2 </crestFoamHeight>
+    <oceanSurfaceHeight> 20 </oceanSurfaceHeight>
+    <fog>
+      <density> 0.1 </density>
+      <color>
+	<r>0</r>
+	<g>0.05</g>
+	<b>0.3</b>
+      </color>
+    </fog>
+    <color>
+      <r>0.0</r>
+      <g>0.05</g>
+      <b>0.3</b>
+    </color>
+    <attenuation>
+      <r>0.015</r>
+      <g>0.0075 </g>
+      <b> 0.005 </b>
+    </attenuation>
+  </oceanState>
+  <simParams>
+    <disableShaders> 1 </disableShaders>
+    <resw> 800 </resw>
+    <resh> 600 </resh>
+    <offsetp>
+	<x>0</x>
+	<y>0</y>
+	<z>0</z>
+    </offsetp>
+    <offsetr>
+	<x> 3.14</x>
+	<y> 0</y>
+	<z> -1.57 </z>
+    </offsetr>
+  </simParams>
+
+  <camera>
+    <freeMotion> 1 </freeMotion>
+    <fov> 60 </fov>
+    <aspectRatio> 1.33 </aspectRatio>
+    <near> 0.1 </near>
+    <far> 10000 </far>
+    <position>
+      <x>5</x>
+      <y>5 </y>
+      <z>5 </z>
+    </position> 
+    <lookAt>
+      <x>0</x>
+      <y>0 </y>
+      <z>0 </z>
+    </lookAt>
+  </camera>
+
+
+  <vehicle>
+    <name>arm5e_gripper_desired</name>
+    <file>gripper_for_spec.urdf</file>
+    <jointValues>
+      <joint> 0.4 </joint>
+      <joint> 0.4</joint>
+    </jointValues>
+    <position>
+      <x> 0</x>
+      <y> 1 </y>
+      <z> 1 </z>
+    </position>
+    <orientation>
+      <r>0</r>
+      <p>0</p>
+      <y>0</y>
+    </orientation>
+  </vehicle>
+
+  <!-- I need this vehicle for the base_link reference of the cloud -->
+  <vehicle>
+    <name>cloud_source</name>
+    <file>cloud_source.urdf</file>
+    <position>
+      <x> 0</x>
+      <y> 0 </y>
+      <z> 0 </z>
+    </position>
+    <orientation>
+      <r>0</r>
+      <p>0</p>
+      <y>0</y>
+    </orientation>
+  </vehicle>
+<!-- 
+dfornas@SonyLaptop:~/catkin_ws$ rosrun tf tf_echo kinematic_base stereo
+At time 1415268099.070
+- Translation: [-0.298, 0.061, 0.255]
+- Rotation: in Quaternion [-0.189, 0.233, -0.664, 0.685]
+            in RPY [-0.606, 0.067, -1.561]
+            
+            dfornas@SonyLaptop:~/catkin_ws$ rosrun tf tf_echo stereo kinematic_base
+At time 1415268172.656
+- Translation: [0.081, 0.387, -0.036]
+- Rotation: in Quaternion [0.189, -0.233, 0.664, 0.685]
+            in RPY [-0.060, -0.607, 1.559]
+-->
+<rosInterfaces>
+    <!--ROSJointStateToArm>
+        <topic>/planner/joint_state_command</topic>
+        <vehicleName> arm5e_arm_reachable </vehicleName>
+    </ROSJointStateToArm-->
+    <ROSPoseToPAT>
+        <topic>/gripper_pose</topic>
+        <vehicleName> arm5e_gripper_desired </vehicleName>
+    </ROSPoseToPAT>
+    <ROSPointCloudLoader>
+        <!--topic>/input_cloud</topic-->        
+        <topic>/sense3d/scan/</topic>      
+        <!--topic>/stereo_down/points2</topic-->
+    </ROSPointCloudLoader>
+  </rosInterfaces>
+</UWSimScene>
+
