@@ -10,9 +10,6 @@
 #ifndef PMGRASPPLANNING_H_
 #define PMGRASPPLANNING_H_
 
-#include <pm_perception/background_removal.h>
-#include <pm_perception/object_segmentation.h>
-//#include <pm_manipulation/hypothesis_generation.h>
 #include <pm_tools/tf_tools.h>
 #include <pm_tools/marker_tools.h>
 
