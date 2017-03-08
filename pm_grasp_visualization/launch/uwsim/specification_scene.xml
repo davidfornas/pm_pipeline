@@ -102,32 +102,13 @@
       <y>0</y>
     </orientation>
   </vehicle>
-<!-- 
-dfornas@SonyLaptop:~/catkin_ws$ rosrun tf tf_echo kinematic_base stereo
-At time 1415268099.070
-- Translation: [-0.298, 0.061, 0.255]
-- Rotation: in Quaternion [-0.189, 0.233, -0.664, 0.685]
-            in RPY [-0.606, 0.067, -1.561]
-            
-            dfornas@SonyLaptop:~/catkin_ws$ rosrun tf tf_echo stereo kinematic_base
-At time 1415268172.656
-- Translation: [0.081, 0.387, -0.036]
-- Rotation: in Quaternion [0.189, -0.233, 0.664, 0.685]
-            in RPY [-0.060, -0.607, 1.559]
--->
 <rosInterfaces>
-    <!--ROSJointStateToArm>
-        <topic>/planner/joint_state_command</topic>
-        <vehicleName> arm5e_arm_reachable </vehicleName>
-    </ROSJointStateToArm-->
     <ROSPoseToPAT>
         <topic>/gripper_pose</topic>
         <vehicleName> arm5e_gripper_desired </vehicleName>
     </ROSPoseToPAT>
     <ROSPointCloudLoader>
-        <!--topic>/input_cloud</topic-->        
-        <topic>/sense3d/scan/</topic>      
-        <!--topic>/stereo_down/points2</topic-->
+        <topic>/specification_cloud</topic>
     </ROSPointCloudLoader>
   </rosInterfaces>
 </UWSimScene>

@@ -133,7 +133,7 @@ void PMGraspPlanning::recalculate_cMg(){
 
   vispToTF.resetTransform( cMg, "cMg");
 
-  //DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
+  //TONI DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
   //vispToTF.publish();
 
   // Send detected cylinder marker.

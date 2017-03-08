@@ -34,7 +34,6 @@ class PMGraspPlanning {
   //Punto central del cilindro y la direccion.
   PointT axis_point_g; tf::Vector3 normal_g;
   FrameToTF vispToTF;
-  //MarkerPublisher * cylPub;
   double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
   int plane_iterations_, cylinder_iterations_;
 
@@ -48,19 +47,13 @@ public:
   //With integuers to use trackbars
   int iangle, irad, ialong;
 
-  //Segmentation components. @ TODO Currently they are not used.
-  //BackgroundRemoval * background_remover_;
-  //ObjectSegmentation * segmentator_;
-  //HypothesisGeneration * hypothesis_generation_;
-
   std::list<vpHomogeneousMatrix> cMg_list;
 
 
   /** Constructor.
-   * @params: cloud, background_remover, segmentator, hypothesis_generator
+   * @params: cloud
    * */
-  PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){//, BackgroundRemoval * background_remover,
-                  //ObjectSegmentation * segmentator, HypothesisGeneration * hypothesis_generation){
+  PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
@@ -69,11 +62,8 @@ public:
     setCylinderSegmentationParams();
 
     cloud_ = cloud;
-    camera_frame_name = "sense3d";
+    camera_frame_name = cloud->header.frame_id;
 
-//    background_remover_ = background_remover;
-//    segmentator_ = segmentator;
-//    hypothesis_generation_ = hypothesis_generation;
   }
 
   /** @ TODO To implement. Place holder. */

@@ -16,7 +16,9 @@
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -45,6 +47,12 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "grasp_server");
   ros::NodeHandle nh;
 
+  std::string input_topic("/input_cloud"), final_grasp_pose_topic("/desired_grasp_pose"), cloud_frame_id("sense3d");
+  nh.getParam("input_topic", input_topic);
+  nh.getParam("grasp_pose_topic", final_grasp_pose_topic);
+  nh.getParam("cloud_frame_id", cloud_frame_id);
+
+
   compute_initial_cMg = false;
   resetMarker = false;
 
@@ -52,38 +60,43 @@ int main(int argc, char **argv)
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
-  ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/desired_grasp_pose", 1000);
+  ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
+  ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
+
 
   tf::TransformListener *listener_ = new tf::TransformListener();
-
-  tf::TransformBroadcaster *broadcaster;
+  tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
 
   //Variables de configuración: ángulo de agarre, distancias...
   //GET FROM GUI
   double angle = 0, rad = 0, along = 0;
   bool alignedGrasp = true;
-  std::string input_topic("/input_cloud");
-  nh.getParam("input_topic", input_topic);
-
-  //Point Cloud load
-  Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
-  PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
-  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.001);
-  ROS_DEBUG_STREAM("PointCloud has: " << cloud->points.size() << " data points.");
-
 
   bool got_wMc = false;
-  tf::StampedTransform wMc;;
+  tf::StampedTransform wMc;
   while (!compute_initial_cMg && !got_wMc)
   {
     try{
-      listener_->lookupTransform( cloud->header.frame_id, "world", ros::Time(0), wMc); // "sense3d"
+      listener_->lookupTransform( "world", cloud_frame_id, ros::Time(0), wMc); // "sense3d"
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
     }
     ros::spinOnce();
   }
+
+  //Point Cloud load
+  Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
+  PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+  ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
+
+  sensor_msgs::PointCloud2 message;
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl::toPCLPointCloud2(*cloud, pcl_pc);
+  pcl_conversions::fromPCL(pcl_pc, message);
+  cloud_pub.publish(message);
+  ros::spinOnce();
 
   //Init planner
   PMGraspPlanning planner(cloud);
@@ -119,7 +132,7 @@ int main(int argc, char **argv)
       resetMarker = false;
       follower.resetMarker();
     }
-    execute = true;
+    //execute = true;
     if(execute){
       //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.
       geometry_msgs::PoseStamped gp;
@@ -132,14 +145,24 @@ int main(int argc, char **argv)
       gp.pose.orientation.w = follower.grasp_pose_world.orientation.w;
       gp.header.stamp = ros::Time::now();
       gp.header.frame_id = "world";
-      final_pose_pub.publish(gp);
+
+      geometry_msgs::Pose gp2;
+      gp2.position.x = follower.grasp_pose_world.position.x;
+      gp2.position.y = follower.grasp_pose_world.position.y;
+      gp2.position.z = follower.grasp_pose_world.position.z;
+      gp2.orientation.x = follower.grasp_pose_world.orientation.x;
+      gp2.orientation.y = follower.grasp_pose_world.orientation.y;
+      gp2.orientation.z = follower.grasp_pose_world.orientation.z;
+      gp2.orientation.w = follower.grasp_pose_world.orientation.w;
+      final_pose_pub.publish(gp2);
+
+      //final_pose_pub.publish(gp);
 
       tf::Stamped<tf::Pose> pose;
       tf::poseStampedMsgToTF( gp, pose );
-      tf::StampedTransform t(pose, ros::Time::now(), "/world", "/desired_grasp_pose");
+      tf::StampedTransform t(pose, ros::Time::now(), "/world", final_grasp_pose_topic);
 
       broadcaster->sendTransform(t);
-
       execute = false;
     }
   }
