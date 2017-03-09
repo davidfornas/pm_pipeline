@@ -23,12 +23,13 @@
 #include <tf/transform_datatypes.h>
 #include <list>
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
 /** Point cloud grasp planning full */
 class PMGraspPlanning {
 
-  pcl::PointCloud<PointT>::Ptr cloud_;
+  PointTPtr cloud_;
   //Grasping params (to allow different grasps and radious (for grasp penetration)).
   double angle_, rad_, along_;
   //Punto central del cilindro y la direccion.
@@ -53,7 +54,7 @@ public:
   /** Constructor.
    * @params: cloud
    * */
-  PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
+  PMGraspPlanning(PointTPtr cloud){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;

@@ -15,7 +15,7 @@
 #include <vector>
 #include <algorithm>
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
 
 void PMGraspPlanning::proccessScene(){
 
@@ -90,7 +90,7 @@ void PMGraspPlanning::perceive() {
   ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
 
   vispToTF.addTransform(cMo, camera_frame_name, "object_frame", "cMo");
-  vispToTF.addTransform(cMg, camera_frame_name, "grasp_frame", "cMg");
+  //TONI DEBUG vispToTF.addTransform(cMg, camera_frame_name, "grasp_frame", "cMg");
 
   //DEBUG Print MAX and MIN frames
   /*vpHomogeneousMatrix cMg2(cMo);
@@ -131,10 +131,10 @@ void PMGraspPlanning::recalculate_cMg(){
   //vpHomogeneousMatrix bMg=bMc*cMg;
   //std::cerr << "bMg is: " << std::endl << bMg << std::endl;
 
-  vispToTF.resetTransform( cMg, "cMg");
+  //TONI DEBUG vispToTF.resetTransform( cMg, "cMg");
 
   //TONI DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
-  //vispToTF.publish();
+  vispToTF.publish();
 
   // Send detected cylinder marker.
   ros::NodeHandle nh;
