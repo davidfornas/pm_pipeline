@@ -107,6 +107,21 @@ void PMGraspPlanning::perceive() {
   recalculate_cMg();
 }
 
+void PMGraspPlanning::computeMatrix( double angle, double rad, double along){
+vpHomogeneousMatrix oMg;
+
+//Apply rotations and traslation to reposition the grasp frame.
+vpHomogeneousMatrix grMgt0(0,along,0,0,0,0);
+vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
+vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
+vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle);
+vpHomogeneousMatrix grMgt(rad,0,0,0,0,0);
+oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
+cMg = cMo * oMg ;
+
+cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,1.57);
+}
+
 /** Compute cMg from cMo. This function is inherited from MAR where
  * the repositioning is done using an UI
  */
@@ -114,18 +129,10 @@ void PMGraspPlanning::recalculate_cMg(){
 
   //Set grasp config values from interface int values.
   intToConfig();
-  vpHomogeneousMatrix oMg;
+  computeMatrix( angle_, rad_, along_ );
 
-  //Apply rotations and traslation to reposition the grasp frame.
-  vpHomogeneousMatrix grMgt0(0,along_,0,0,0,0);
-  vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
-  vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
-  vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle_);
-  vpHomogeneousMatrix grMgt(rad_,0,0,0,0,0);
-  oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
-  cMg = cMo * oMg ;
-
-  cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,1.57);
+  if( iangle > 90 )
+      cMg = cMg * vpHomogeneousMatrix(0,0,0,0,0,-3.14);
 
   //Compute bMg and plan a grasp on bMg
   //vpHomogeneousMatrix bMg=bMc*cMg;
@@ -143,7 +150,30 @@ void PMGraspPlanning::recalculate_cMg(){
   MarkerPublisher markerPub( cylinder, camera_frame_name, "visualization_marker", nh);
   markerPub.setCylinder( cylinder, cloud_->header.frame_id, radious * 2, height, 15);
   markerPub.publish();
+
 }
+
+
+void PMGraspPlanning::getBestParams( double & angle, double & rad, double & along){
+
+  computeMatrix( angle, rad, along);
+  tf::Vector3 a(cMg[2][0],cMg[2][1],cMg[2][2]), b(0, 0, 1);
+  double angle1 = a.angle(b);
+  ROS_INFO_STREAM("Angle1"<<angle1);
+  computeMatrix( 180 - angle, rad, along);
+  tf::Vector3 c(cMg[2][0],cMg[2][1],cMg[2][2]);
+  double angle2 = c.angle(b);
+  ROS_INFO_STREAM("Angle2"<<angle2);
+  if (angle2 < angle1)
+    angle = 180 - angle;
+
+}
+
+
+
+
+
+
 
 /// Set config values: from int sliders to float values.
 void PMGraspPlanning::intToConfig(){

@@ -42,8 +42,8 @@ public:
   //Guided mode values
   int irad, ialong, iangle;
 
-  EefFollower(std::string topic, ros::NodeHandle &nh )
-    : server("uwsim_marker"), show_marker(false), marker_created(false), irad(30), ialong(20), iangle(45)
+  EefFollower(std::string topic, ros::NodeHandle &nh,  double angle, double rad, double along )
+    : server("uwsim_marker"), show_marker(false), marker_created(false), irad(rad), ialong(along), iangle(angle)
   {
     pos_pub = nh.advertise<geometry_msgs::Pose>(topic, 1); //"/gripperPose"
     params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);

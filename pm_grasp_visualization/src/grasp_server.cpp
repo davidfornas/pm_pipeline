@@ -69,7 +69,6 @@ int main(int argc, char **argv)
 
   //Variables de configuración: ángulo de agarre, distancias...
   //GET FROM GUI
-  double angle = 0, rad = 0, along = 0;
   bool alignedGrasp = true;
 
   bool got_wMc = false;
@@ -104,7 +103,11 @@ int main(int argc, char **argv)
   planner.perceive();
   vpHomogeneousMatrix cMg = planner.get_cMg();
 
-  EefFollower follower("/gripper_pose", nh);
+
+  double angle = 45, rad = 30, along = 20;
+  planner.getBestParams(angle, rad, along);
+
+  EefFollower follower("/gripper_pose", nh, angle, rad, along);
   follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
 
   markerStatus=false, execute=false;

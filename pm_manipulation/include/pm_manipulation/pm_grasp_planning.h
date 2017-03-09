@@ -106,6 +106,9 @@ public:
   /** Get the grasp frame with respect to the camera frame */
   vpHomogeneousMatrix get_cMg() {return cMg;}
 
+  void getBestParams( double & angle, double & rad, double & along );
+  void computeMatrix( double angle, double rad, double along );
+
   /** Recalculate cMg with current parameters */
   void recalculate_cMg();
 
