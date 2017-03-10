@@ -85,7 +85,7 @@ vpHomogeneousMatrix grMgt(rad,0,0,0,0,0);
 oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
 cMg = cMo * oMg ;
 
-cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,1.57);
+cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) ;// TONI Y HACIA EL OTRO LADO 3.14-> * vpHomogeneousMatrix(0,0,0,0,0,1.57);
 }
 
 /** Compute cMg from cMo. This function is inherited from MAR where
