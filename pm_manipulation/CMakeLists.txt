@@ -22,6 +22,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 ## Declare a cpp library
 add_library(pm_manipulation 
   src/pm_grasp_planning.cpp
+  src/pm_grasp_planning_split.cpp
 )
 
 ## Specify libraries to link a library or executable target against

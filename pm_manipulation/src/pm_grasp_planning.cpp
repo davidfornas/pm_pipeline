@@ -107,7 +107,7 @@ void PMGraspPlanning::perceive() {
   recalculate_cMg();
 }
 
-void PMGraspPlanning::computeMatrix( double angle, double rad, double along){
+void PMGraspPlanning::computeMatrix( double angle, double rad, double along ){
 vpHomogeneousMatrix oMg;
 
 //Apply rotations and traslation to reposition the grasp frame.
