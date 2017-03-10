@@ -19,8 +19,10 @@
 void PMGraspPlanningSplit::perceive() {
 
 
+  ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
   geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
   cMo = VispTools::vispHomogFromGeometryPose(*message);
+  ROS_INFO_STREAM("Pose received");
 
   /*
   //Director vectors: cylinder axis and perpendicular vector.

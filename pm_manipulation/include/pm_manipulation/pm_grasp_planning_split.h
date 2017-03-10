@@ -47,7 +47,7 @@ public:
   /** Constructor.
    * @params: cloud
    * */
-  PMGraspPlanningSplit( std::string object_topic_name, std::string frame_id = "sense3d" ){
+  PMGraspPlanningSplit( std::string object_topic_name, std::string frame_id = "world" ){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
