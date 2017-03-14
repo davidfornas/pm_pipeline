@@ -15,16 +15,58 @@
 #include <vector>
 #include <algorithm>
 
+typedef pcl::PointXYZ PointT;
 
 void PMGraspPlanningSplit::perceive() {
 
+  if( do_ransac ){
+    doRansac();
+  }else{
+    ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
+    geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
+    cMo = VispTools::vispHomogFromGeometryPose(*message);
+    ROS_INFO_STREAM("Pose received");
+  }
+  //Compute modified cMg from cMo
+  recalculate_cMg();
+}
 
-  ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
-  geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
-  cMo = VispTools::vispHomogFromGeometryPose(*message);
-  ROS_INFO_STREAM("Pose received");
+void PMGraspPlanningSplit::doRansac() {
 
-  /*
+  pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>);
+  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
+
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
+  pcl::ModelCoefficients::Ptr coefficients_plane (new pcl::ModelCoefficients), coefficients_cylinder (new pcl::ModelCoefficients);
+
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
+  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
+
+  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
+  PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
+
+  PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
+  plane_seg.setDistanceThreshold(plane_distance_threshold_);
+  plane_seg.setIterations(plane_iterations_);
+  plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+
+  CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
+  cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
+  cyl_seg.setIterations(cylinder_iterations_);
+  cyl_seg.setRadiousLimit(radious_limit_);
+  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
+
+  // DEBUG
+  //PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+
+  //Grasp points
+  PointT mean, max, min;
+  //Cylinder origin
+  PointT axis_point;
+  axis_point.x=coefficients_cylinder->values[0];
+  axis_point.y=coefficients_cylinder->values[1];
+  axis_point.z=coefficients_cylinder->values[2];
+
   //Director vectors: cylinder axis and perpendicular vector.
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();
@@ -34,7 +76,7 @@ void PMGraspPlanningSplit::perceive() {
 
   tf::Vector3 result=tf::tfCross( perp, axis_dir).normalize();
 
-  //getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir, 0.1);
+  getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir, 0.1);
   //Mean point taking into account only a 90% of the points (0.1).
   mean.x=(max.x+min.x)/2;mean.y=(max.y+min.y)/2;mean.z=(max.z+min.z)/2;
   coefficients_cylinder->values[0]=mean.x;
@@ -54,20 +96,11 @@ void PMGraspPlanningSplit::perceive() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
 
+  pos_pub.publish( VispTools::geometryPoseFromVispHomog(cMo) );
+
+
   vispToTF.addTransform(cMo, camera_frame_name, "object_frame", "cMo");
   //TONI DEBUG vispToTF.addTransform(cMg, camera_frame_name, "grasp_frame", "cMg");
-  */
-
-  //DEBUG Print MAX and MIN frames
-  /*vpHomogeneousMatrix cMg2(cMo);
-  cMg2[0][3]=max.x;
-  cMg2[1][3]=max.y;
-  cMg2[2][3]=max.z;
-  vispToTF.addTransform(cMg2, "/sense3d", "/max", "3");
-  cMg2[0][3]=min.x;
-  cMg2[1][3]=min.y;
-  cMg2[2][3]=min.z;
-  vispToTF.addTransform(cMg2, "/sense3d", "/min", "4");*/
 
   //Compute modified cMg from cMo
   recalculate_cMg();
@@ -137,6 +170,60 @@ void PMGraspPlanningSplit::intToConfig(){
   angle_=iangle*(2.0*M_PI/360.0);
   rad_=-irad/100.0;
   along_=(ialong-20)/100.0;//to allow 20 cm negative.... should allow a range based on minMax distance
+}
+
+///Ordenar en función de la proyección del punto sobre el eje definido
+///por axis_point_g y normal_g (globales)
+bool PMGraspPlanningSplit::sortFunction(const PointT& d1, const PointT& d2)
+{
+  double t1 = (normal_g.x()*(d1.x-axis_point_g.x) + normal_g.y()*(d1.y-axis_point_g.y) + normal_g.z()*(d1.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
+  double t2 = (normal_g.x()*(d2.x-axis_point_g.x) + normal_g.y()*(d2.y-axis_point_g.y) + normal_g.z()*(d2.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
+
+  return t1 < t2;
+}
+
+///Obtiene los máximos y mínimos del cilindro para encontrar la altura del cilindro con un margen
+///de descarte de outlier percentage (normalmente 10%).
+void PMGraspPlanningSplit::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
+{
+  axis_point_g=axis_point;
+  normal_g=*normal;
+
+  outlier_percentage = outlier_percentage / 2.0;
+
+  PointT max_p = axis_point;
+  double max_t = 0.0;
+  PointT min_p = axis_point;
+  double min_t = 0.0;
+  std::vector<PointT> list;
+  PointT* k;
+
+  //Al tener la lista de todos los puntos podemos descartar los que esten fuera de un
+  //determinado porcentaje (percentiles) para
+  //Eliminar más outliers y ganar robustez.
+  BOOST_FOREACH(const PointT& pt, cloud->points)
+  {
+    k=new PointT();
+    k->x=pt.x*1;k->y=pt.y*1;k->z=pt.z*1;
+    list.push_back(*k);
+  }
+  //Ordenamos con respecto al eje de direccion y tomamos P05 y P95
+  std::sort(list.begin(), list.end(),  boost::bind(&PMGraspPlanningSplit::sortFunction, this, _1, _2));
+  PointT max=list[(int)list.size()*outlier_percentage],min=list[(int)list.size()*(1-outlier_percentage)];
+  //Proyección de los puntos reales a puntos sobre la normal.
+  double t = (normal->x()*(max.x-axis_point.x) + normal->y()*(max.y-axis_point.y) + normal->z()*(max.z-axis_point.z))/(pow(normal->x(),2) + pow(normal->y(),2) + pow(normal->z(),2));
+  PointT p;
+  p.x = axis_point.x + normal->x() * t;
+  p.y = axis_point.y + normal->y() * t;
+  p.z = axis_point.z + normal->z() * t;
+  *max_pt=p;
+  t = (normal->x()*(min.x-axis_point.x) + normal->y()*(min.y-axis_point.y) + normal->z()*(min.z-axis_point.z))/(pow(normal->x(),2) + pow(normal->y(),2) + pow(normal->z(),2));
+  p.x = axis_point.x + normal->x() * t;
+  p.y = axis_point.y + normal->y() * t;
+  p.z = axis_point.z + normal->z() * t;
+  *min_pt=p;
+  ///@ TODO MAke a list with this points and show it.
+
 }
 
 

@@ -24,15 +24,15 @@ typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 
-bool markerStatus, compute_initial_cMg, resetMarker, execute;
+bool marker_status, compute_initial_cMg, reset_marker, execute;
 
 void stringCallback(const std_msgs::String &msg ){
   if( msg.data == "init"){
     compute_initial_cMg = true;
   }else if( msg.data == "guided" || msg.data == "interactive"){
-    markerStatus = (msg.data == "guided" ?  false : true );
+    marker_status = (msg.data == "guided" ?  false : true );
   }else if(msg.data == "markerReset"){
-    resetMarker = true;
+    reset_marker = true;
   }else{
     execute = true;
   }
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
 
   compute_initial_cMg = false;
-  resetMarker = false;
+  reset_marker = false;
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
@@ -73,10 +73,11 @@ int main(int argc, char **argv)
 
   bool got_wMc = false;
   tf::StampedTransform wMc;
-  while (!compute_initial_cMg && !got_wMc)
+  while (!compute_initial_cMg || !got_wMc)
   {
     try{
       listener_->lookupTransform( "world", cloud_frame_id, ros::Time(0), wMc); // "sense3d"
+      got_wMc = true;
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
@@ -110,7 +111,7 @@ int main(int argc, char **argv)
   EefFollower follower("/gripper_pose", nh, angle, rad, along);
   follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
 
-  markerStatus=false, execute=false;
+  marker_status=false, execute=false;
 
   std_msgs::Float32MultiArray msg;
   msg.data.push_back(follower.irad);
@@ -128,11 +129,11 @@ int main(int argc, char **argv)
     //Compute new grasp frame with the slides
     planner.recalculate_cMg();
     cMg = planner.get_cMg();
-    follower.setMarkerStatus(markerStatus);
+    follower.setMarkerStatus(marker_status);
     follower.loop(cMg);
     ros::spinOnce();
-    if(resetMarker){
-      resetMarker = false;
+    if(reset_marker){
+      reset_marker = false;
       follower.resetMarker();
     }
     //execute = true;

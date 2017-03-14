@@ -23,18 +23,25 @@
 #include <tf/transform_datatypes.h>
 #include <list>
 
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
 /** Grasp planning from object pose */
 class PMGraspPlanningSplit {
 
+  PointTPtr cloud_;
   //Grasping params (to allow different grasps and radious (for grasp penetration)).
   double angle_, rad_, along_;
   //Punto central del cilindro y la direccion.
-  ///// PointT axis_point_g;
+  PointT axis_point_g;
   tf::Vector3 normal_g;
   FrameToTF vispToTF;
+  double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
+  int plane_iterations_, cylinder_iterations_;
 
   std::string camera_frame_name, topic_name;
+  bool do_ransac;
+  ros::Publisher pos_pub;
 
 public:
 
@@ -45,7 +52,7 @@ public:
   int iangle, irad, ialong;
 
   /** Constructor.
-   * @params: cloud
+   * @params: Get pose from topic
    * */
   PMGraspPlanningSplit( std::string object_topic_name, std::string frame_id = "world" ){
     angle_=0;iangle=0;
@@ -54,11 +61,51 @@ public:
 
     camera_frame_name = frame_id; //cloud->header.frame_id;
     topic_name = object_topic_name;
+    do_ransac = false;
   }
 
 
-  /** Main function where segmentation is done */
+  /** Constructor.
+   * @params: Get pose using RANSAC & the input cloud.
+   * */
+  PMGraspPlanningSplit(PointTPtr cloud, ros::NodeHandle & nh){
+    angle_=0;iangle=0;
+    rad_=0;irad=0;
+    along_=0;ialong=0;
+
+    setPlaneSegmentationParams();
+    setCylinderSegmentationParams();
+
+    cloud_ = cloud;
+    camera_frame_name = cloud->header.frame_id;
+    pos_pub = nh.advertise<geometry_msgs::Pose>( "object_pose", 1); //"/gripperPose"
+
+  }
+
+
+
+  /** Main function */
   void perceive();
+
+  /** Where segmentation is done */
+  void doRansac();
+
+  /** Set plane segmentation parameters: distance to the inliers to the plane
+   * and number of iterations.
+   */
+  void setPlaneSegmentationParams(double distanceThreshold = 0.03, int iterations = 100){
+    plane_distance_threshold_=distanceThreshold;
+    plane_iterations_=iterations;
+  }
+
+  /** Set cylinder segmentation parameters: distance to the inliers to the plane,
+   * number of iterations and radious limit.
+   */
+  void setCylinderSegmentationParams(double distanceThreshold = 0.05,int iterations = 20000, double rlimit = 0.1){
+    cylinder_distance_threshold_=distanceThreshold;
+    cylinder_iterations_=iterations;
+    radious_limit_=rlimit;
+  }
 
 
   void setCamerFrameName( std::string name){
@@ -83,6 +130,12 @@ public:
   ~PMGraspPlanningSplit() {}
 
 private:
+
+  /** Comparer used in the sort function */
+  bool sortFunction(const PointT& d1, const PointT& d2);
+
+  /** Get the grasp frame with respect to the camera frame */
+  void getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage = 0.1);
 
   /** Configure the camera based in int slider parameters */
   void intToConfig();

@@ -24,15 +24,18 @@ typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 
-bool markerStatus, compute_initial_cMg, resetMarker, execute;
+bool marker_status, compute_initial_cMg, reset_marker, execute, do_ransac;
 
 void stringCallback(const std_msgs::String &msg ){
-  if( msg.data == "init"){
+  // DF initFromPose initFromRansac
+  if( msg.data == "initFromPose" || msg.data == "initFromRansac" ){
     compute_initial_cMg = true;
+    if( msg.data == "initFromRansac" )
+      do_ransac = true;
   }else if( msg.data == "guided" || msg.data == "interactive"){
-    markerStatus = (msg.data == "guided" ?  false : true );
+    marker_status = (msg.data == "guided" ?  false : true );
   }else if(msg.data == "markerReset"){
-    resetMarker = true;
+    reset_marker = true;
   }else{
     execute = true;
   }
@@ -55,14 +58,20 @@ int main(int argc, char **argv)
 
 
   compute_initial_cMg = false;
-  resetMarker = false;
+  reset_marker = false;
+  do_ransac = false;
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
   ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
+  ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
 
+  ros::Publisher vehicle_pub = nh.advertise<geometry_msgs::Pose>("sim_vehicle_pose", 1);
+
+
+  tf::TransformListener *listener_ = new tf::TransformListener();
   tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
 
   //Variables de configuración: ángulo de agarre, distancias...
@@ -70,24 +79,99 @@ int main(int argc, char **argv)
   bool alignedGrasp = true;
 
   bool got_wMc = false;
-  tf::StampedTransform wMc;
-  while (!compute_initial_cMg && !got_wMc)
+
+  tf::StampedTransform wMc; // World to camera (sense3d or stereo_camera)
+
+  //For UWSim visualization
+  tf::StampedTransform wMv; // World to vehicle Girona500
+  tf::StampedTransform cMv; // Camera to vehicle Girona500
+
+  while (!compute_initial_cMg || !got_wMc)
   {
+    try{
+      listener_->lookupTransform( "world", cloud_frame_id, ros::Time(0), wMc); // "sense3d"
+      got_wMc = true;
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+    }
     ros::spinOnce();
   }
 
-  //Init planner
-  PMGraspPlanningSplit planner(object_pose_topic);
-  planner.perceive();
-  vpHomogeneousMatrix cMg = planner.get_cMg();
+  ROS_INFO_STREAM("Getting TF.");
 
-  double angle = 45, rad = 30, along = 20;
-  planner.getBestParams(angle, rad, along);
+  //Display the simulated vehicle for better visualization
+  if( do_ransac ){
+    try{
+      listener_->lookupTransform( cloud_frame_id, "girona500", ros::Time(0), cMv);
+      geometry_msgs::Pose p;
+      p.position.x = cMv.getOrigin().x();
+      p.position.y = cMv.getOrigin().y();
+      p.position.z = cMv.getOrigin().z();
+      p.orientation.x = cMv.getRotation().x();
+      p.orientation.y = cMv.getRotation().y();
+      p.orientation.z = cMv.getRotation().z();
+      p.orientation.w = cMv.getRotation().w();
+      vehicle_pub.publish( p );
+    }
+    catch (tf::TransformException ex){
+      ROS_DEBUG("%s",ex.what());
+    }
+  }else{
+    try{
+      listener_->lookupTransform( "world", "girona500", ros::Time(0), wMv);
+      geometry_msgs::Pose p;
+      p.position.x = wMv.getOrigin().x();
+      p.position.y = wMv.getOrigin().y();
+      p.position.z = wMv.getOrigin().z();
+      p.orientation.x = wMv.getRotation().x();
+      p.orientation.y = wMv.getRotation().y();
+      p.orientation.z = wMv.getRotation().z();
+      p.orientation.w = wMv.getRotation().w();
+      vehicle_pub.publish( p );
+    }
+    catch (tf::TransformException ex){
+      ROS_DEBUG("%s",ex.what());
+    }
+  }
+
+  ROS_INFO_STREAM("Getting TF done.");
+
+  // Load cloud if required.
+  Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
+  if( do_ransac ){
+    //Point Cloud load
+    PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+    PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+    ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
+
+    sensor_msgs::PointCloud2 message;
+    pcl::PCLPointCloud2 pcl_pc;
+    pcl::toPCLPointCloud2(*cloud, pcl_pc);
+    pcl_conversions::fromPCL(pcl_pc, message);
+    cloud_pub.publish(message);
+    ros::spinOnce();
+  }
+
+
+  //Init planner
+  PMGraspPlanningSplit * planner;
+  if( do_ransac ){
+    planner = new PMGraspPlanningSplit(cloud, nh);
+    planner->setPlaneSegmentationParams(0.06, 100);
+  }else{
+    planner = new PMGraspPlanningSplit(object_pose_topic);
+  }
+  planner->perceive();
+  vpHomogeneousMatrix cMg = planner->get_cMg();
+
+  double angle = 75, rad = 30, along = 20;
+  planner->getBestParams(angle, rad, along);
 
   EefFollower follower("/gripper_pose", nh, angle, rad, along);
   follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
 
-  markerStatus=false, execute=false;
+  marker_status=false, execute=false;
 
   std_msgs::Float32MultiArray msg;
   msg.data.push_back(follower.irad);
@@ -99,51 +183,53 @@ int main(int argc, char **argv)
 
   while (ros::ok())
   {
-    planner.irad = follower.irad;
-    planner.ialong = follower.ialong;
-    planner.iangle = follower.iangle;
+    planner->irad = follower.irad;
+    planner->ialong = follower.ialong;
+    planner->iangle = follower.iangle;
     //Compute new grasp frame with the slides
-    planner.recalculate_cMg();
-    cMg = planner.get_cMg();
-    follower.setMarkerStatus(markerStatus);
+    planner->recalculate_cMg();
+    cMg = planner->get_cMg();
+    follower.setMarkerStatus(marker_status);
     follower.loop(cMg);
     ros::spinOnce();
-    if(resetMarker){
-      resetMarker = false;
+    if(reset_marker){
+      reset_marker = false;
       follower.resetMarker();
     }
-    //execute = true;
+
     if(execute){
       //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.
-      geometry_msgs::PoseStamped gp;
-      gp.pose.position.x = follower.grasp_pose.position.x;
-      gp.pose.position.y = follower.grasp_pose.position.y;
-      gp.pose.position.z = follower.grasp_pose.position.z;
-      gp.pose.orientation.x = follower.grasp_pose.orientation.x;
-      gp.pose.orientation.y = follower.grasp_pose.orientation.y;
-      gp.pose.orientation.z = follower.grasp_pose.orientation.z;
-      gp.pose.orientation.w = follower.grasp_pose.orientation.w;
-      gp.header.stamp = ros::Time::now();
-      gp.header.frame_id = "world";
-
-      geometry_msgs::Pose gp2;
-      gp2.position.x = follower.grasp_pose.position.x;
-      gp2.position.y = follower.grasp_pose.position.y;
-      gp2.position.z = follower.grasp_pose.position.z;
-      gp2.orientation.x = follower.grasp_pose.orientation.x;
-      gp2.orientation.y = follower.grasp_pose.orientation.y;
-      gp2.orientation.z = follower.grasp_pose.orientation.z;
-      gp2.orientation.w = follower.grasp_pose.orientation.w;
-      final_pose_pub.publish(gp2);
-
-      //final_pose_pub.publish(gp);
+      geometry_msgs::Pose gp;
+      if( do_ransac ){
+        gp.position.x = follower.grasp_pose_world.position.x;
+        gp.position.y = follower.grasp_pose_world.position.y;
+        gp.position.z = follower.grasp_pose_world.position.z;
+        gp.orientation.x = follower.grasp_pose_world.orientation.x;
+        gp.orientation.y = follower.grasp_pose_world.orientation.y;
+        gp.orientation.z = follower.grasp_pose_world.orientation.z;
+        gp.orientation.w = follower.grasp_pose_world.orientation.w;
+        final_pose_pub.publish(gp);
+      }else{
+        gp.position.x = follower.grasp_pose.position.x;
+        gp.position.y = follower.grasp_pose.position.y;
+        gp.position.z = follower.grasp_pose.position.z;
+        gp.orientation.x = follower.grasp_pose.orientation.x;
+        gp.orientation.y = follower.grasp_pose.orientation.y;
+        gp.orientation.z = follower.grasp_pose.orientation.z;
+        gp.orientation.w = follower.grasp_pose.orientation.w;
+        final_pose_pub.publish(gp);
+      }
+      geometry_msgs::PoseStamped gps;
+      gps.pose = gp;
+      gps.header.stamp = ros::Time::now();
+      gps.header.frame_id = "world";
 
       tf::Stamped<tf::Pose> pose;
-      tf::poseStampedMsgToTF( gp, pose );
+      tf::poseStampedMsgToTF( gps, pose );
       tf::StampedTransform t(pose, ros::Time::now(), "/world", final_grasp_pose_topic);
 
       broadcaster->sendTransform(t);
-      //execute = false;
+
     }
   }
   return 0;
