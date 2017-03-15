@@ -1,6 +1,6 @@
 <launch>
   <param name="input_topic" value="/sense3d/scan/" />
-  <param name="cloud_frame_id" value="world" />
+  <param name="cloud_frame_id" value="sense3d" />
   <!--param name="input_topic" value="/stereo_down/points2" />
   <param name="cloud_frame_id" value="stereo_down" /-->
 
@@ -26,6 +26,6 @@
         En pm_grasp_planning puedes descomentar vispToTF.publish(); para tener más debug de frames
         -->
   <!-- Esta TF es necesaria así que si no está hay que ponerla como se pueda -->
-  <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 1 0 0 0 1 world sense3d 100" />
+  <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 1 0 0 0 1 world sense3d 100" /-->
 
 </launch>

@@ -98,8 +98,7 @@ int main(int argc, char **argv)
     ros::spinOnce();
   }
 
-  ROS_INFO_STREAM("Getting TF.");
-
+  ROS_INFO_STREAM("Getting TF frames...");
   //Display the simulated vehicle for better visualization
   if( do_ransac ){
     try{
@@ -115,7 +114,7 @@ int main(int argc, char **argv)
       vehicle_pub.publish( p );
     }
     catch (tf::TransformException ex){
-      ROS_DEBUG("%s",ex.what());
+      ROS_INFO("Cannot retrieve vehicle position. Not displaying vehicle position. %s",ex.what());
     }
   }else{
     try{
@@ -131,11 +130,9 @@ int main(int argc, char **argv)
       vehicle_pub.publish( p );
     }
     catch (tf::TransformException ex){
-      ROS_DEBUG("%s",ex.what());
+      ROS_DEBUG("Cannot retrieve vehicle position. Not displaying vehicle position. %s",ex.what());
     }
   }
-
-  ROS_INFO_STREAM("Getting TF done.");
 
   // Load cloud if required.
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
@@ -157,15 +154,17 @@ int main(int argc, char **argv)
   //Init planner
   PMGraspPlanningSplit * planner;
   if( do_ransac ){
+    ROS_INFO_STREAM("Computing pose using RANSAC");
     planner = new PMGraspPlanningSplit(cloud, nh);
     planner->setPlaneSegmentationParams(0.06, 100);
   }else{
+    ROS_INFO_STREAM("Specification using a input object Pose");
     planner = new PMGraspPlanningSplit(object_pose_topic);
   }
   planner->perceive();
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
-  double angle = 75, rad = 30, along = 20;
+  double angle = 75, rad = 50, along = 20;
   planner->getBestParams(angle, rad, along);
 
   EefFollower follower("/gripper_pose", nh, angle, rad, along);
@@ -179,7 +178,7 @@ int main(int argc, char **argv)
   msg.data.push_back(follower.ialong);
   msg.data.push_back(10);
   params_pub.publish(msg);
-
+  ros::spinOnce();
 
   while (ros::ok())
   {
@@ -196,6 +195,8 @@ int main(int argc, char **argv)
       reset_marker = false;
       follower.resetMarker();
     }
+    if(do_ransac)
+      planner->publishObjectPose();
 
     if(execute){
       //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.

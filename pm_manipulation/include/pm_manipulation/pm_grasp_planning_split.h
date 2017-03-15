@@ -78,8 +78,8 @@ public:
 
     cloud_ = cloud;
     camera_frame_name = cloud->header.frame_id;
-    pos_pub = nh.advertise<geometry_msgs::Pose>( "object_pose", 1); //"/gripperPose"
-
+    pos_pub = nh.advertise<geometry_msgs::Pose>( "/object_pose", 1); //"/gripperPose"
+    do_ransac = true;
   }
 
 
@@ -126,6 +126,11 @@ public:
    * @returns an homogeneous matrix with the grasp frame given wrt the frame 'b'
    */
   vpHomogeneousMatrix get_bMg(vpHomogeneousMatrix bMc) {return bMc*cMg;}
+
+  void publishObjectPose(){
+    pos_pub.publish( VispTools::geometryPoseFromVispHomog(cMo) );
+    ros::spinOnce();
+  }
 
   ~PMGraspPlanningSplit() {}
 

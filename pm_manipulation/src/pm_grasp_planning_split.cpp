@@ -20,6 +20,7 @@ typedef pcl::PointXYZ PointT;
 void PMGraspPlanningSplit::perceive() {
 
   if( do_ransac ){
+    ROS_INFO_STREAM("Computing pose with RANSAC...");
     doRansac();
   }else{
     ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
@@ -54,7 +55,8 @@ void PMGraspPlanningSplit::doRansac() {
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
   cyl_seg.setIterations(cylinder_iterations_);
   cyl_seg.setRadiousLimit(radious_limit_);
-  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);//coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
+  cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
+  //coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
 
   // DEBUG
   //PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
@@ -96,7 +98,6 @@ void PMGraspPlanningSplit::doRansac() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
 
-  pos_pub.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
 
   vispToTF.addTransform(cMo, camera_frame_name, "object_frame", "cMo");
@@ -148,20 +149,19 @@ void PMGraspPlanningSplit::recalculate_cMg(){
 
 }
 
-
+//Compute the best grasp from to approach directions along the cylinder axis.
 void PMGraspPlanningSplit::getBestParams( double & angle, double & rad, double & along){
 
   computeMatrix( angle, rad, along);
   tf::Vector3 a(cMg[2][0],cMg[2][1],cMg[2][2]), b(0, 0, 1);
   double angle1 = a.angle(b);
-  ROS_INFO_STREAM("Angle1"<<angle1);
+
   computeMatrix( 180 - angle, rad, along);
   tf::Vector3 c(cMg[2][0],cMg[2][1],cMg[2][2]);
   double angle2 = c.angle(b);
-  ROS_INFO_STREAM("Angle2"<<angle2);
+
   if (angle2 < angle1)
     angle = 180 - angle;
-
 }
 
 
@@ -222,8 +222,6 @@ void PMGraspPlanningSplit::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::C
   p.y = axis_point.y + normal->y() * t;
   p.z = axis_point.z + normal->z() * t;
   *min_pt=p;
-  ///@ TODO MAke a list with this points and show it.
-
 }
 
 
