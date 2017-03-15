@@ -164,7 +164,7 @@ int main(int argc, char **argv)
   planner->perceive();
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
-  double angle = 75, rad = 50, along = 20;
+  double angle = 75, rad = 30, along = 20;
   planner->getBestParams(angle, rad, along);
 
   EefFollower follower("/gripper_pose", nh, angle, rad, along);
