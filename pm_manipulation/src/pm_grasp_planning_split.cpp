@@ -27,6 +27,18 @@ void PMGraspPlanningSplit::perceive() {
     geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
     cMo = VispTools::vispHomogFromGeometryPose(*message);
     ROS_INFO_STREAM("Pose received");
+    //Director vectors: cylinder axis and perpendicular vector.
+    tf::Vector3 axis_dir(cMo[0][1], cMo[1][1], cMo[2][1]);
+    axis_dir=axis_dir.normalize();
+    tf::Vector3 perp = tf::Vector3(0,0,1) - ( axis_dir.dot( tf::Vector3(0,0,1) ) * axis_dir );
+    perp=perp.normalize();
+
+    tf::Vector3 result=tf::tfCross( perp, axis_dir).normalize();
+    result = -result;
+
+    cMo[0][0]=result.x(); cMo[0][2]=perp.x();
+    cMo[1][0]=result.y(); cMo[1][2]=perp.y();
+    cMo[2][0]=result.z(); cMo[2][2]=perp.z();
   }
   //Compute modified cMg from cMo
   recalculate_cMg();
@@ -73,10 +85,11 @@ void PMGraspPlanningSplit::doRansac() {
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();
 
-  tf::Vector3 perp(coefficients_cylinder->values[4], -coefficients_cylinder->values[3], 0);
+  tf::Vector3 perp = tf::Vector3(0,0,1) - ( axis_dir.dot( tf::Vector3(0,0,1) ) * axis_dir );
   perp=perp.normalize();
 
   tf::Vector3 result=tf::tfCross( perp, axis_dir).normalize();
+  result = -result;
 
   getMinMax3DAlongAxis(cloud_cylinder, &max, &min, axis_point, &axis_dir, 0.1);
   //Mean point taking into account only a 90% of the points (0.1).
@@ -92,9 +105,9 @@ void PMGraspPlanningSplit::doRansac() {
   // @ NOTE Ahora mismo el end-efector cae dentro del cilindro en vez de en superfície.
   //Esto está relativamente bien pero no tenemos en cuenta la penetración. Sin embargo, la
   //tenemos en cuenta luego al separanos el radio así que no hay problema en realidad.
-  cMo[0][0]=perp.x(); cMo[0][1]=axis_dir.x(); cMo[0][2]=result.x();cMo[0][3]=mean.x;
-  cMo[1][0]=perp.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=result.y();cMo[1][3]=mean.y;
-  cMo[2][0]=perp.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=result.z();cMo[2][3]=mean.z;
+  cMo[0][0]=result.x(); cMo[0][1]=axis_dir.x(); cMo[0][2]=perp.x();cMo[0][3]=mean.x;
+  cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
+  cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
 
