@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="object">
+  <link name="part4_base">
+    <visual>
+      <origin rpy="1.57 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="object/amphora.obj"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
