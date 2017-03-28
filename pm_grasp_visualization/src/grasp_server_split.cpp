@@ -164,7 +164,7 @@ int main(int argc, char **argv)
   planner->perceive();
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
-  double angle = 75, rad = 30, along = 20;
+  double angle = 75, rad = 18, along = 20;
   planner->getBestParams(angle, rad, along);
 
   EefFollower follower("/gripper_pose", nh, angle, rad, along);
@@ -185,6 +185,13 @@ int main(int argc, char **argv)
     planner->irad = follower.irad;
     planner->ialong = follower.ialong;
     planner->iangle = follower.iangle;
+
+    //Get object pose again.
+    if( !do_ransac ){
+      ROS_INFO_STREAM("Now I need the pose continously.");
+      planner->perceive();
+    }
+
     //Compute new grasp frame with the slides
     planner->recalculate_cMg();
     cMg = planner->get_cMg();
