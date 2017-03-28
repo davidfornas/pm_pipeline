@@ -16,5 +16,12 @@
     <child link="sense3d"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
+  <link name="camera">
+  </link>
+  <joint name="base_to_uib_camera" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
 </robot>
 
