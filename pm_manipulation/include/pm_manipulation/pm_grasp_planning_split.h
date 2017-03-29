@@ -12,6 +12,7 @@
 
 #include <pm_tools/tf_tools.h>
 #include <pm_tools/marker_tools.h>
+#include <pm_tools/pcl_segmentation.h>
 
 #include <pcl/io/pcd_io.h>
 
@@ -40,8 +41,11 @@ class PMGraspPlanningSplit {
   int plane_iterations_, cylinder_iterations_;
 
   std::string camera_frame_name, topic_name;
-  bool do_ransac;
+  bool do_ransac, initialized_;
   ros::Publisher pos_pub;
+  vpHomogeneousMatrix wMc_, previous_cMo_;
+
+  pcl::ModelCoefficients::Ptr coefficients_plane, coefficients_cylinder;
 
 public:
 
@@ -50,11 +54,12 @@ public:
 
   //With integuers to use trackbars
   int iangle, irad, ialong;
+  bool change_z_;
 
   /** Constructor.
    * @params: Get pose from topic
    * */
-  PMGraspPlanningSplit( std::string object_topic_name, std::string frame_id = "world" ){
+  PMGraspPlanningSplit( std::string object_topic_name, std::string frame_id = "world", bool change_z = false){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
@@ -62,13 +67,15 @@ public:
     camera_frame_name = frame_id; //cloud->header.frame_id;
     topic_name = object_topic_name;
     do_ransac = false;
+    change_z_ = change_z;
+    initialized_ = false;
   }
 
 
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
    * */
-  PMGraspPlanningSplit(PointTPtr cloud, ros::NodeHandle & nh){
+  PMGraspPlanningSplit(PointTPtr cloud, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
@@ -78,8 +85,14 @@ public:
 
     cloud_ = cloud;
     camera_frame_name = cloud->header.frame_id;
-    pos_pub = nh.advertise<geometry_msgs::Pose>( "/object_pose", 1); //"/gripperPose"
+    pos_pub = nh.advertise<geometry_msgs::Pose>( object_pose, 1); //"/gripperPose"
     do_ransac = true;
+    wMc_ = wMc;
+    initialized_ = false;
+  }
+
+  void setNewCloud(PointTPtr cloud){
+    cloud_ = cloud;
   }
 
 
@@ -89,6 +102,9 @@ public:
 
   /** Where segmentation is done */
   void doRansac();
+
+  /** Online planning **/
+  void redoRansac();
 
   /** Set plane segmentation parameters: distance to the inliers to the plane
    * and number of iterations.
@@ -127,10 +143,21 @@ public:
    */
   vpHomogeneousMatrix get_bMg(vpHomogeneousMatrix bMc) {return bMc*cMg;}
 
+  /** Publish object pose for RANSAC. Mainly to display in UWSim **/
   void publishObjectPose(){
     pos_pub.publish( VispTools::geometryPoseFromVispHomog(cMo) );
     ros::spinOnce();
   }
+
+  /** Publish cloud **/
+  void publishCloudOnce();
+
+  /** Load cloud to recompute RANSAC **/
+  void loadCloud();
+
+  /** Compute RANSAC taking into account a previous execution **/
+  void perceiveOnline();
+
 
   ~PMGraspPlanningSplit() {}
 

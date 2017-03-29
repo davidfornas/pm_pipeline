@@ -54,6 +54,9 @@ public:
   bool apply(CloudPtr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals,
 		  CloudPtr cloud_plane, pcl::ModelCoefficients::Ptr coeffs);
 
+  bool removeFromCoefficients(CloudPtr out_cloud, pcl::PointCloud<pcl::Normal>::Ptr out_normals,
+      CloudPtr cloud_plane, pcl::ModelCoefficients::Ptr coeffs);
+
   /** Set number of iterations for the RANSAC method **/
   void setIterations(int iterations)
   {
@@ -171,7 +174,7 @@ bool CylinderSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoef
 
   // Obtain the cylinder inliers and coefficients
   seg.segment(*inliers_cylinder_, *coeffs);
-  ROS_INFO_STREAM("Cylinder coefficients: " << *coeffs);
+  ROS_DEBUG_STREAM("Cylinder coefficients: " << *coeffs);
   clock_t end = clock();
   ROS_DEBUG_STREAM("Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC);
 
@@ -184,7 +187,7 @@ bool CylinderSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoef
     ROS_DEBUG_STREAM("Can't find the cylindrical component.");
   else
   {
-    ROS_INFO_STREAM(
+    ROS_DEBUG_STREAM(
         "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points.");
     writer.write("scene_cylinder.pcd", *cloud_cylinder, false);
   }
