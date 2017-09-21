@@ -60,9 +60,8 @@ public:
 	  ROS_DEBUG_STREAM("PointCloud loaded: " << cloud->points.size() << " data points." << std::endl);
 	}
 
-  static void cloudToTopic(CloudPtr cloud, std::string topicName){
-
-    ros::NodeHandle n;
+  static void cloudToTopic(CloudPtr cloud, std::string topicName, ros::NodeHandle & n){
+    ROS_ERROR_STREAM("Code not publishing properly");
     ros::Publisher cloud_pub = n.advertise<sensor_msgs::PointCloud2>(topicName, 1000);
     sensor_msgs::PointCloud2 message;
 

@@ -10,9 +10,6 @@
 #ifndef PMGRASPPLANNING_H_
 #define PMGRASPPLANNING_H_
 
-#include <pm_perception/background_removal.h>
-#include <pm_perception/object_segmentation.h>
-//#include <pm_manipulation/hypothesis_generation.h>
 #include <pm_tools/tf_tools.h>
 #include <pm_tools/marker_tools.h>
 
@@ -26,18 +23,18 @@
 #include <tf/transform_datatypes.h>
 #include <list>
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
 /** Point cloud grasp planning full */
 class PMGraspPlanning {
 
-  pcl::PointCloud<PointT>::Ptr cloud_;
+  PointTPtr cloud_;
   //Grasping params (to allow different grasps and radious (for grasp penetration)).
   double angle_, rad_, along_;
   //Punto central del cilindro y la direccion.
   PointT axis_point_g; tf::Vector3 normal_g;
   FrameToTF vispToTF;
-  //MarkerPublisher * cylPub;
   double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
   int plane_iterations_, cylinder_iterations_;
 
@@ -51,19 +48,13 @@ public:
   //With integuers to use trackbars
   int iangle, irad, ialong;
 
-  //Segmentation components. @ TODO Currently they are not used.
-  //BackgroundRemoval * background_remover_;
-  //ObjectSegmentation * segmentator_;
-  //HypothesisGeneration * hypothesis_generation_;
-
   std::list<vpHomogeneousMatrix> cMg_list;
 
 
   /** Constructor.
-   * @params: cloud, background_remover, segmentator, hypothesis_generator
+   * @params: cloud
    * */
-  PMGraspPlanning(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){//, BackgroundRemoval * background_remover,
-                  //ObjectSegmentation * segmentator, HypothesisGeneration * hypothesis_generation){
+  PMGraspPlanning(PointTPtr cloud){
     angle_=0;iangle=0;
     rad_=0;irad=0;
     along_=0;ialong=0;
@@ -72,11 +63,8 @@ public:
     setCylinderSegmentationParams();
 
     cloud_ = cloud;
-    camera_frame_name = "sense3d";
+    camera_frame_name = cloud->header.frame_id;
 
-//    background_remover_ = background_remover;
-//    segmentator_ = segmentator;
-//    hypothesis_generation_ = hypothesis_generation;
   }
 
   /** @ TODO To implement. Place holder. */
@@ -117,6 +105,9 @@ public:
 
   /** Get the grasp frame with respect to the camera frame */
   vpHomogeneousMatrix get_cMg() {return cMg;}
+
+  void getBestParams( double & angle, double & rad, double & along );
+  void computeMatrix( double angle, double rad, double along );
 
   /** Recalculate cMg with current parameters */
   void recalculate_cMg();

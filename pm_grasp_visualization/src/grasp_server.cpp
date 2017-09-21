@@ -16,21 +16,23 @@
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 
-bool markerStatus, compute_initial_cMg, resetMarker, execute;
+bool marker_status, compute_initial_cMg, reset_marker, execute;
 
 void stringCallback(const std_msgs::String &msg ){
   if( msg.data == "init"){
     compute_initial_cMg = true;
   }else if( msg.data == "guided" || msg.data == "interactive"){
-    markerStatus = (msg.data == "guided" ?  false : true );
+    marker_status = (msg.data == "guided" ?  false : true );
   }else if(msg.data == "markerReset"){
-    resetMarker = true;
+    reset_marker = true;
   }else{
     execute = true;
   }
@@ -45,39 +47,37 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "grasp_server");
   ros::NodeHandle nh;
 
+  std::string input_topic("/input_cloud"), final_grasp_pose_topic("/desired_grasp_pose"), cloud_frame_id("sense3d");
+  nh.getParam("input_topic", input_topic);
+  nh.getParam("grasp_pose_topic", final_grasp_pose_topic);
+  nh.getParam("cloud_frame_id", cloud_frame_id);
+
+
   compute_initial_cMg = false;
-  resetMarker = false;
+  reset_marker = false;
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
-  ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/desired_grasp_pose", 1000);
+  ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
+  ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
+
 
   tf::TransformListener *listener_ = new tf::TransformListener();
-
-  tf::TransformBroadcaster *broadcaster;
+  tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
 
   //Variables de configuración: ángulo de agarre, distancias...
   //GET FROM GUI
-  double angle = 0, rad = 0, along = 0;
   bool alignedGrasp = true;
-  std::string input_topic("/input_cloud");
-  nh.getParam("input_topic", input_topic);
-
-  //Point Cloud load
-  Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
-  PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
-  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.001);
-  ROS_DEBUG_STREAM("PointCloud has: " << cloud->points.size() << " data points.");
-
 
   bool got_wMc = false;
-  tf::StampedTransform wMc;;
-  while (!compute_initial_cMg && !got_wMc)
+  tf::StampedTransform wMc;
+  while (!compute_initial_cMg || !got_wMc)
   {
     try{
-      listener_->lookupTransform( cloud->header.frame_id, "world", ros::Time(0), wMc); // "sense3d"
+      listener_->lookupTransform( "world", cloud_frame_id, ros::Time(0), wMc); // "sense3d"
+      got_wMc = true;
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
@@ -85,16 +85,33 @@ int main(int argc, char **argv)
     ros::spinOnce();
   }
 
+  //Point Cloud load
+  Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
+  PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+  ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
+
+  sensor_msgs::PointCloud2 message;
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl::toPCLPointCloud2(*cloud, pcl_pc);
+  pcl_conversions::fromPCL(pcl_pc, message);
+  cloud_pub.publish(message);
+  ros::spinOnce();
+
   //Init planner
   PMGraspPlanning planner(cloud);
   planner.setPlaneSegmentationParams(0.06, 100);
   planner.perceive();
   vpHomogeneousMatrix cMg = planner.get_cMg();
 
-  EefFollower follower("/gripper_pose", nh);
+
+  double angle = 45, rad = 30, along = 20;
+  planner.getBestParams(angle, rad, along);
+
+  EefFollower follower("/gripper_pose", nh, angle, rad, along);
   follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
 
-  markerStatus=false, execute=false;
+  marker_status=false, execute=false;
 
   std_msgs::Float32MultiArray msg;
   msg.data.push_back(follower.irad);
@@ -112,14 +129,14 @@ int main(int argc, char **argv)
     //Compute new grasp frame with the slides
     planner.recalculate_cMg();
     cMg = planner.get_cMg();
-    follower.setMarkerStatus(markerStatus);
+    follower.setMarkerStatus(marker_status);
     follower.loop(cMg);
     ros::spinOnce();
-    if(resetMarker){
-      resetMarker = false;
+    if(reset_marker){
+      reset_marker = false;
       follower.resetMarker();
     }
-    execute = true;
+    //execute = true;
     if(execute){
       //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.
       geometry_msgs::PoseStamped gp;
@@ -132,14 +149,24 @@ int main(int argc, char **argv)
       gp.pose.orientation.w = follower.grasp_pose_world.orientation.w;
       gp.header.stamp = ros::Time::now();
       gp.header.frame_id = "world";
-      final_pose_pub.publish(gp);
+
+      geometry_msgs::Pose gp2;
+      gp2.position.x = follower.grasp_pose_world.position.x;
+      gp2.position.y = follower.grasp_pose_world.position.y;
+      gp2.position.z = follower.grasp_pose_world.position.z;
+      gp2.orientation.x = follower.grasp_pose_world.orientation.x;
+      gp2.orientation.y = follower.grasp_pose_world.orientation.y;
+      gp2.orientation.z = follower.grasp_pose_world.orientation.z;
+      gp2.orientation.w = follower.grasp_pose_world.orientation.w;
+      final_pose_pub.publish(gp2);
+
+      //final_pose_pub.publish(gp);
 
       tf::Stamped<tf::Pose> pose;
       tf::poseStampedMsgToTF( gp, pose );
-      tf::StampedTransform t(pose, ros::Time::now(), "/world", "/desired_grasp_pose");
+      tf::StampedTransform t(pose, ros::Time::now(), "/world", final_grasp_pose_topic);
 
       broadcaster->sendTransform(t);
-
       execute = false;
     }
   }

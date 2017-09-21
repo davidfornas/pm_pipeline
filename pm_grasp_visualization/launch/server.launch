@@ -1,6 +1,11 @@
 <launch>
-  <param name="input_topic" value="/stereo_down/points2" />
-  <!--param name="input_topic" value="/sense3d/scan/" /-->
+  <!--param name="input_topic" value="/stereo_down/points2" />
+  <param name="cloud_frame_id" value="stereo_down" /-->
+  <param name="input_topic" value="/sense3d/scan/" />
+  <param name="cloud_frame_id" value="sense3d" />
+
+
+  <param name="grasp_pose_topic" value="/task_priority_pose" />
 
   <arg name="scene" default="specification_scene.xml" />
 

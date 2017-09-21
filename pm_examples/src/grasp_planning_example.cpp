@@ -28,11 +28,11 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   //Class usages examples. TOp down design.
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGB>), scene_filtered(
-      new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr scene(new pcl::PointCloud<pcl::PointXYZ>), scene_filtered(
+      new pcl::PointCloud<pcl::PointXYZ>);
   std::string input_basename("in");
   nh.getParam("input_basename", input_basename);
-  PCLTools<pcl::PointXYZRGB>::cloudFromPCD(scene, input_basename + std::string(".pcd")); //Load from PCDReader or from topic
+  PCLTools<pcl::PointXYZ>::cloudFromPCD(scene, input_basename + std::string(".pcd")); //Load from PCDReader or from topic
   //From a topic instead: PCLTools::cloudFromTopic(scene, "/stereo/points2");
 
   //Optional filtering: PCLTools::applyZAxisPassthrough(scene, scene2, 0, 3); ///Input and output can not be the same.
@@ -51,8 +51,8 @@ int main(int argc, char **argv)
 
     // @ TODO planner.proccessScene();
 
-  GraspHypothesisEvaluation ghyval; // @ TODO  from planner.getGraspHypothesis;
-  ghyval.getBestGrasp();
+  //GraspHypothesisEvaluation ghyval; // @ TODO  from planner.getGraspHypothesis;
+  //ghyval.getBestGrasp();
   // @ TODO ghyval.getSortedGraspList();
   // @ TODO SHOW RESULT...
 

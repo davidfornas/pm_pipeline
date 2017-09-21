@@ -15,7 +15,7 @@
 #include <vector>
 #include <opencv2/highgui/highgui.hpp>
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 

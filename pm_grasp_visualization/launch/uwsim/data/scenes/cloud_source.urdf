@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<robot name="cloud_source" >
+  <link name="base_link">
+  </link>
+  <link name="stereo_down">
+  </link>
+  <joint name="base_to_stereo" type="fixed">
+    <parent link="base_link"/>
+    <child link="stereo_down"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <link name="sense3d">
+  </link>
+  <joint name="base_to_sense3d" type="fixed">
+    <parent link="base_link"/>
+    <child link="sense3d"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <link name="camera">
+  </link>
+  <joint name="base_to_uib_camera" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+</robot>
+
