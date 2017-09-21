@@ -2,14 +2,17 @@
   <param name="input_topic" value="/sense3d/scan/" />
   <param name="cloud_frame_id" value="sense3d" />
   <!--param name="input_topic" value="/cloud_pcd" />
-  <param name="cloud_frame_id" value="base_link" />
-  <param name="input_topic" value="/stereo_camera/scaled_x2/points2" />
+  <param name="cloud_frame_id" value="base_link" /-->
+  <!--param name="input_topic" value="/stereo_camera/scaled_x2/points2" />
   <param name="cloud_frame_id" value="bumblebee2/left" /-->
+  <!--param name="input_topic" value="/stereo_down/points2" />
+  <param name="cloud_frame_id" value="stereo_down" /-->
+  <!--param name="input_topic" value="/stereo/points2" />
+  <param name="cloud_frame_id" value="stereo" /-->
 
-  <param name="grasp_pose_topic" value="/final_grasp2" />
+  <param name="grasp_pose_topic" value="/task_priority_pose" />
 
-  <param name="object_pose_topic" value="/object_pose2" />
-
+  <param name="object_pose_topic" value="/object_pose" />
   <arg name="scene" default="specification_scene.xml" />
 
   <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
@@ -29,6 +32,8 @@
         -->
   <!-- Esta TF es necesaria así que si no está hay que ponerla como se pueda -->
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="1.483 -2.239 3.815 -0.192 0.020 0.864 0.465 world sense3d 100" /-->
-  <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="1.483 -2.239 3.815 -0.192 0.020 0.864 0.465 world sense3d 100" /-->
+  <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 1 world sense3d 100" />
+  <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 world stereo 100" /-->
+  <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 world stereo_down 100" /-->
 
 </launch>
