@@ -37,8 +37,11 @@ void PMGraspPlanningSplit::perceive() {
            ROS_INFO("No pose messages received in 10 seconds");
            return;
       }
+
     }
+
     ROS_INFO_STREAM("Pose received");
+    change_z_ = false;
     //Director vectors: cylinder axis and perpendicular vector.
     if(change_z_){
       // @TODO fix this!!!
@@ -127,8 +130,8 @@ void PMGraspPlanningSplit::doRansac() {
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  ROS_DEBUG_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
-  vispToTF.addTransform(cMo, camera_frame_name, "/amphora", "cMo");
+  ROS_INFO_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
+  vispToTF.addTransform(cMo, camera_frame_name, "/amphora2", "cMo");
 
   /*
   vpHomogeneousMatrix wMo;
@@ -152,8 +155,8 @@ void PMGraspPlanningSplit::doRansac() {
   //TONI DEBUG vispToTF.addTransform(cMg, camera_frame_name, "grasp_frame", "cMg");
   //cMo = wMc_.inverse() * wMo;
   //Compute modified cMg from cMo
-  recalculate_cMg();
-  previous_cMo_ = cMo;
+  //recalculate_cMg();
+  //previous_cMo_ = cMo;
 }
 
 //THIS SHOULD BE IMPROVED
@@ -163,24 +166,26 @@ void PMGraspPlanningSplit::redoRansac() {
   pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
-  coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+
   coefficients_cylinder = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
-  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
-  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered2, 0, 1.4);//REAL 0.89 SIM 1.4
+  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered2->points.size () << " data points.");
 
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
-  PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
-
+  PCLTools<PointT>::estimateNormals(cloud_filtered2, cloud_normals2);
+/*
   PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
   plane_seg.setDistanceThreshold(plane_distance_threshold_);
   plane_seg.setIterations(plane_iterations_);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
   //// @TODO plane_seg.removeFromCoefficients(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+*/
+
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
   cyl_seg.setIterations(cylinder_iterations_);
-  cyl_seg.setRadiousLimit(radious_limit_);
+  cyl_seg.setRadiousLimit(this->radious+0.01);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
 
   //Grasp points
@@ -223,25 +228,31 @@ void PMGraspPlanningSplit::redoRansac() {
   vispToTF.resetTransform(cMo, "cMo");
 
   ROS_INFO_STREAM("RANSAC REDONE");
+/*
   // @TODO Improve with a proper filter.
-  double distance = abs(cMo[0][3]-previous_cMo_[0][3]) * abs(cMo[0][3]-previous_cMo_[0][3])
-      + abs(cMo[1][3]-previous_cMo_[1][3]) * abs(cMo[1][3]-previous_cMo_[1][3])
-      + abs(cMo[2][3]-previous_cMo_[2][3]) * abs(cMo[2][3]-previous_cMo_[2][3]);
-  ROS_INFO_STREAM("Distance: "<< distance);
+  ROS_INFO_STREAM(cMo[0][3] << " :: " << cMo[1][3] << " :: " << cMo[2][3]);
+  ROS_INFO_STREAM(previous_cMo_[0][3] << " :: " << previous_cMo_[1][3] << " :: " << previous_cMo_[2][3]);
+  double distance = (cMo[0][3]-previous_cMo_[0][3]) * (cMo[0][3]-previous_cMo_[0][3])
+      + (cMo[1][3]-previous_cMo_[1][3]) * (cMo[1][3]-previous_cMo_[1][3])
+      + (cMo[2][3]-previous_cMo_[2][3]) * (cMo[2][3]-previous_cMo_[2][3]);
+  ROS_DEBUG_STREAM("cMo: "<< cMo);
+  ROS_DEBUG_STREAM("previous_cMo_: "<< previous_cMo_);
+
+  ROS_INFO_STREAM("dis: "<< distance);
+  //todo improve this
   if(distance < 0.2){
     tf::Vector3 y(cMo[0][1],cMo[1][1],cMo[2][1]);
     tf::Vector3 previous_y(previous_cMo_[0][1],previous_cMo_[1][1],previous_cMo_[2][1]);
     double angle_diff = y.angle(previous_y);
     ROS_INFO_STREAM("Angle: "<< angle_diff);
-    if (angle_diff < 3.3 && angle_diff > 2.9)
-      cMo = cMo * vpHomogeneousMatrix(0,1.57,0,0,0,0);
-
+    if (angle_diff < 3.3 && angle_diff > 2.9){
+      cMo = cMo * vpHomogeneousMatrix(0,0,0,0,0,0);
+      ROS_INFO_STREAM("TURN");
+    }
     previous_cMo_ = cMo;
   }else{//If bad (big distance), restore...
     cMo = previous_cMo_;
-  }
-
-
+  }*/
   recalculate_cMg();
 
 }

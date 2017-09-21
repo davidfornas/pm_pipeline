@@ -46,6 +46,7 @@ class PMGraspPlanningSplit {
   vpHomogeneousMatrix wMc_, previous_cMo_;
 
   pcl::ModelCoefficients::Ptr coefficients_plane, coefficients_cylinder;
+  geometry_msgs::Pose last_object_pose_;
 
 public:
 
@@ -69,6 +70,8 @@ public:
     do_ransac = false;
     change_z_ = change_z;
     initialized_ = false;
+
+    coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
   }
 
 
@@ -89,6 +92,8 @@ public:
     do_ransac = true;
     wMc_ = wMc;
     initialized_ = false;
+
+    coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
   }
 
   void setNewCloud(PointTPtr cloud){
