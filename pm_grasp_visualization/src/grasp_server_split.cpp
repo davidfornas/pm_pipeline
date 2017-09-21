@@ -130,23 +130,33 @@ int main(int argc, char **argv)
       ROS_INFO("Cannot retrieve vehicle position. Not displaying vehicle position. %s",ex.what());
     }
   }
+  clock_t begin, end;
 
   // Load cloud if required.
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
   if( do_ransac ){
     //Point Cloud load
     PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+    ROS_INFO_STREAM("Initial PointCloud has non nan: " << PCLTools<PointT>::nanAwareCount(cloud) << " data points.");
+    begin = clock();
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
-    ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
+    end = clock();
+    ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
+
+    ROS_INFO_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
 
     sensor_msgs::PointCloud2 message;
     pcl::PCLPointCloud2 pcl_pc;
     pcl::toPCLPointCloud2(*cloud, pcl_pc);
     pcl_conversions::fromPCL(pcl_pc, message);
+
+    ROS_INFO_STREAM("FRame ID:" << message.header.frame_id);
     cloud_pub.publish(message);
     ros::spinOnce();
   }
 
+
+;
 
   //Init planner
   PMGraspPlanningSplit * planner;
@@ -158,7 +168,10 @@ int main(int argc, char **argv)
     ROS_INFO_STREAM("Specification using a input object Pose");
     planner = new PMGraspPlanningSplit(object_pose_topic);
   }
+  begin = clock();
   planner->perceive();
+  end = clock();
+  ROS_INFO_STREAM("Perceive time: " << double(end - begin) / CLOCKS_PER_SEC);
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
   double angle = 75, rad = 18, along = 20;
@@ -187,11 +200,23 @@ int main(int argc, char **argv)
     if( !do_ransac ){
       planner->perceive();
     }else{
+      begin = clock();
       PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+      end = clock();
+      ROS_INFO_STREAM("Cloud load time: " << double(end - begin) / CLOCKS_PER_SEC);
+      begin = clock();
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+      end = clock();
+      ROS_INFO_STREAM("Online downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
       planner->setNewCloud(cloud);
+
+      begin = clock();
       planner->redoRansac();
+      end = clock();
+      ROS_INFO_STREAM("Redo RANSAC time: " << double(end - begin) / CLOCKS_PER_SEC);
+
+
     }
 
     //Compute new grasp frame with the slides
@@ -228,7 +253,8 @@ int main(int argc, char **argv)
     }
     geometry_msgs::PoseStamped gps;
     gps.pose = gp;
-    gps.header.stamp = ros::Time::now();
+    gps.header.stamp = pcl_conversions::fromPCL( cloud->header.stamp );
+
     gps.header.frame_id = "world";
 
     tf::Stamped<tf::Pose> pose;
