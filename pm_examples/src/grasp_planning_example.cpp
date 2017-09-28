@@ -15,8 +15,6 @@
 #include <pm_perception/object_segmentation.h>
 
 #include <pm_manipulation/pm_grasp_planning.h>
-#include <pm_manipulation/hypothesis_generation.h>
-#include <pm_manipulation/grasp_hypothesis_evaluation.h>
 
 #include <pcl/io/pcd_io.h>
 #include <ros/ros.h>

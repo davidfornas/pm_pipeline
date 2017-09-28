@@ -5,7 +5,6 @@
  */
 #include <ros/ros.h>
 #include <pm_perception/border_detection.h>
-#include <pm_manipulation/trajectory_following.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
 //Time measures
