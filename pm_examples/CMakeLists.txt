@@ -16,7 +16,6 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(grasp_planning_example src/grasp_planning_example.cpp)
-add_executable(grasp_planning_with_clustering src/grasp_planning_with_clustering.cpp)
 add_executable(border_following_example src/border_following_example.cpp)
 add_executable(border_following_full_example src/border_following_full_example.cpp)
 add_executable(concave_hull_example src/concave_hull_example.cpp)
@@ -36,7 +35,6 @@ add_executable(grasp_testing src/grasp_testing.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planning_example ${catkin_LIBRARIES} )
-target_link_libraries(grasp_planning_with_clustering ${catkin_LIBRARIES} )
 target_link_libraries(border_following_example ${catkin_LIBRARIES} )
 target_link_libraries(border_following_full_example ${catkin_LIBRARIES} )
 target_link_libraries(concave_hull_example ${catkin_LIBRARIES} )

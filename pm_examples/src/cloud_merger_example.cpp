@@ -1,5 +1,5 @@
 /** 
- * This program test the cloud merging utility.
+ * This program test the cloud merging utility. Used to merge clouds with the same viewpoint.
  *  Created on: 13/04/2015
  *      Author: dfornas
  */
