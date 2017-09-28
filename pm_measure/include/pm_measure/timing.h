@@ -37,9 +37,6 @@ public:
 	  start_time_ = clock();
   }
 
-  /** Remove the plane from the cloud, easy to use method.  */
-  static void now();//pcl::PointCloud<PointT>::Ptr in, pcl::PointCloud<PointT>::Ptr out, int iteration=100, double threshold=0.06);
-
 };
 
 #endif

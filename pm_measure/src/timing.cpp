@@ -7,10 +7,4 @@
 #include <pm_measure/timing.h>
 #include <ros/ros.h>
 
-/**   */
-void Timing::now(){
-
-
-}
-
 
