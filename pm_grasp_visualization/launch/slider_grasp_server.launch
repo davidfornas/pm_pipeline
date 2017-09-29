@@ -1,6 +1,8 @@
 <launch>
-  <param name="input_topic" value="/sense3d/scan/" />
-  <param name="cloud_frame_id" value="sense3d" />
+  <param name="input_topic" value="/stereo_forward/points2/" />
+  <param name="cloud_frame_id" value="camera" />
+  <!--param name="input_topic" value="/sense3d/scan/" />
+  <param name="cloud_frame_id" value="sense3d" /-->
   <!--param name="input_topic" value="/cloud_pcd" />
   <param name="cloud_frame_id" value="base_link" /-->
   <!--param name="input_topic" value="/stereo_camera/scaled_x2/points2" />
@@ -15,8 +17,8 @@
   <param name="object_pose_topic" value="/object_pose" />
   <arg name="scene" default="specification_scene.xml" />
 
-  <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
-  <node name="grasp_server_split" pkg="pm_grasp_visualization" type="grasp_server_split" output="screen" respawn="false"/>
+  <node name="uwsim" pkg="uwsim" type="uwsim_binary" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
+  <node name="grasp_server_split" pkg="pm_grasp_visualization" type="slider_grasp_server" output="screen" respawn="false"/>
   <!--node name="waypoint_server" pkg="pm_grasp_visualization" type="waypoint_server" output="screen" respawn="false"/-->
 
   <!--  La pose del gripper con la camara se muestra continuamente en /gripper_pose
@@ -32,7 +34,7 @@
         -->
   <!-- Esta TF es necesaria así que si no está hay que ponerla como se pueda -->
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="1.483 -2.239 3.815 -0.192 0.020 0.864 0.465 world sense3d 100" /-->
-  <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 1 world sense3d 100" />
+  <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 1 world camera 100" />
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 world stereo 100" /-->
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 world stereo_down 100" /-->
 

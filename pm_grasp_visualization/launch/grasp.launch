@@ -5,5 +5,5 @@
   <arg name="scene" default="specification_scene.xml" />
 
   <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
-  <node name="grasp_vis" pkg="pm_grasp_visualization" type="grasp_vis" output="screen" respawn="false"/>
+  <node name="grasp_vis" pkg="pm_grasp_visualization" type="planning_and_visualization_simple" output="screen" respawn="false"/>
 </launch>

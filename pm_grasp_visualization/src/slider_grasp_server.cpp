@@ -5,7 +5,7 @@
  *      Author: dfornas
  */
 #include <ros/ros.h>
-#include <pm_manipulation/pm_grasp_planning_split.h>
+#include <pm_manipulation/slider_grasp_planner.h>
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/marker_tools.h>
 #include <pm_tools/tf_tools.h>
@@ -147,14 +147,14 @@ int main(int argc, char **argv)
   }
 
   //Init planner
-  PMGraspPlanningSplit * planner;
+  SliderGraspPlanner * planner;
   if( do_ransac ){
     ROS_INFO_STREAM("Computing pose using RANSAC");
-    planner = new PMGraspPlanningSplit(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
+    planner = new SliderGraspPlanner(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
     planner->sac_pose_estimation->setPlaneSegmentationParams(0.06, 100);
   }else{
     ROS_INFO_STREAM("Specification using a input object Pose");
-    planner = new PMGraspPlanningSplit(object_pose_topic);
+    planner = new SliderGraspPlanner(object_pose_topic);
   }
   begin = clock();
   planner->perceive();

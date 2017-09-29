@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME}
   src/pose_estimation.cpp
   src/cluster_measure.cpp
   src/octomap.cpp
+  src/sac_pose_estimation.cpp
 )
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} ${OpenCV})
