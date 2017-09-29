@@ -18,26 +18,25 @@ typedef pcl::PointXYZ PointT;
 
 void PMGraspPlanningSplit::perceive() {
 
-  initialized_ = true;
+  bool initialized;
 
   if( do_ransac ){
     ROS_INFO_STREAM("Computing pose with RANSAC...");
-    doRansac();    
+    sac_pose_estimation->doRansac();
     ROS_INFO_STREAM("RANSAC finished.");
   }else{
     ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
-    //geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
-    if (!initialized_){
+    if (!initialized){
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
       cMo = VispTools::vispHomogFromGeometryPose(*message);
+      initialized = true;
     }else{
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name, ros::Duration(2));
-      cMo = VispTools::vispHomogFromGeometryPose(*message);
       if (message == NULL){
-           ROS_INFO("No pose messages received in 10 seconds");
+           ROS_INFO("No pose messages received in 2 seconds. cMo unchanged.");
            return;
       }
-
+      cMo = VispTools::vispHomogFromGeometryPose(*message);
     }
 
     ROS_INFO_STREAM("Pose received");
@@ -58,13 +57,13 @@ void PMGraspPlanningSplit::perceive() {
       cMo[1][0]=result.y(); cMo[1][2]=perp.y();
       cMo[2][0]=result.z(); cMo[2][2]=perp.z();
     }
-    //vispToTF.addTransform(cMo, "/world", "/amphora_from_pose", "cMo");
+    // @DEBUG vispToTF.addTransform(cMo, "/world", "/amphora_from_pose", "cMo");
   }
   //Compute modified cMg from cMo
   recalculate_cMg();
 }
 
-void PMGraspPlanningSplit::doRansac() {
+void SACPoseEstimation::doRansac() {
 
   pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>);
   pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
@@ -160,7 +159,7 @@ void PMGraspPlanningSplit::doRansac() {
 }
 
 //THIS SHOULD BE IMPROVED
-void PMGraspPlanningSplit::redoRansac() {
+void SACPoseEstimation::redoRansac() {
 
   pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>);
   pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
@@ -180,7 +179,6 @@ void PMGraspPlanningSplit::redoRansac() {
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
   //// @TODO plane_seg.removeFromCoefficients(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
 */
-
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -253,24 +251,11 @@ void PMGraspPlanningSplit::redoRansac() {
   }else{//If bad (big distance), restore...
     cMo = previous_cMo_;
   }*/
+}
+
+void PMGraspPlanningSplit::redoRansac() {
+  sac_pose_estimation->redoRansac();
   recalculate_cMg();
-
-}
-
-
-/** Publish cloud **/
-void PMGraspPlanningSplit::publishCloudOnce(){
-
-}
-
-/** Load cloud to recompute RANSAC **/
-void PMGraspPlanningSplit::loadCloud(){
-
-}
-
-/** Compute RANSAC taking into account a previous execution **/
-void PMGraspPlanningSplit::perceiveOnline(){
-
 }
 
 void PMGraspPlanningSplit::computeMatrix( double angle, double rad, double along ){
@@ -293,6 +278,8 @@ cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.
  */
 void PMGraspPlanningSplit::recalculate_cMg(){
 
+  if( do_ransac ) cMo = sac_pose_estimation->get_cMo();
+
   //Set grasp config values from interface int values.
   intToConfig();
   computeMatrix( angle_, rad_, along_ );
@@ -300,9 +287,8 @@ void PMGraspPlanningSplit::recalculate_cMg(){
   if( iangle > 90 )
       cMg = cMg * vpHomogeneousMatrix(0,0,0,0,0,-3.14);
 
-  //TONI DEBUG vispToTF.resetTransform( cMg, "cMg");
-
-  //TONI DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
+  // @DEBUG vispToTF.resetTransform( cMg, "cMg");
+  // @DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
   vispToTF.publish();
 
   // Send detected cylinder marker.
@@ -342,7 +328,7 @@ void PMGraspPlanningSplit::intToConfig(){
 
 ///Ordenar en función de la proyección del punto sobre el eje definido
 ///por axis_point_g y normal_g (globales)
-bool PMGraspPlanningSplit::sortFunction(const PointT& d1, const PointT& d2)
+bool SACPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
 {
   double t1 = (normal_g.x()*(d1.x-axis_point_g.x) + normal_g.y()*(d1.y-axis_point_g.y) + normal_g.z()*(d1.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
   double t2 = (normal_g.x()*(d2.x-axis_point_g.x) + normal_g.y()*(d2.y-axis_point_g.y) + normal_g.z()*(d2.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
@@ -352,7 +338,7 @@ bool PMGraspPlanningSplit::sortFunction(const PointT& d1, const PointT& d2)
 
 ///Obtiene los máximos y mínimos del cilindro para encontrar la altura del cilindro con un margen
 ///de descarte de outlier percentage (normalmente 10%).
-void PMGraspPlanningSplit::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
+void SACPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
 {
   axis_point_g=axis_point;
   normal_g=*normal;
@@ -376,7 +362,7 @@ void PMGraspPlanningSplit::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::C
     list.push_back(*k);
   }
   //Ordenamos con respecto al eje de direccion y tomamos P05 y P95
-  std::sort(list.begin(), list.end(),  boost::bind(&PMGraspPlanningSplit::sortFunction, this, _1, _2));
+  std::sort(list.begin(), list.end(),  boost::bind(&SACPoseEstimation::sortFunction, this, _1, _2));
   PointT max=list[(int)list.size()*outlier_percentage],min=list[(int)list.size()*(1-outlier_percentage)];
   //Proyección de los puntos reales a puntos sobre la normal.
   double t = (normal->x()*(max.x-axis_point.x) + normal->y()*(max.y-axis_point.y) + normal->z()*(max.z-axis_point.z))/(pow(normal->x(),2) + pow(normal->y(),2) + pow(normal->z(),2));

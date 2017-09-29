@@ -62,7 +62,6 @@ int main(int argc, char **argv)
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
-
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
   ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
   ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
@@ -71,18 +70,13 @@ int main(int argc, char **argv)
   tf::TransformListener *listener_ = new tf::TransformListener();
   tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
 
-  //Variables de configuración: ángulo de agarre, distancias...
-  //GET FROM GUI
-  bool alignedGrasp = true;
-  bool got_wMc = false;
-
-
   //For UWSim visualization
   tf::StampedTransform wMv; // World to vehicle Girona500
   tf::StampedTransform cMv; // Camera to vehicle Girona500
   tf::StampedTransform wMc; // World to camera (sense3d or stereo_camera)
 
   ROS_INFO_STREAM("Getting world to cloud frame id...");
+  bool got_wMc = false;
   while (!compute_initial_cMg || !got_wMc)
   {
     try{
@@ -142,28 +136,22 @@ int main(int argc, char **argv)
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
     end = clock();
     ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
-
     ROS_INFO_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
 
     sensor_msgs::PointCloud2 message;
     pcl::PCLPointCloud2 pcl_pc;
     pcl::toPCLPointCloud2(*cloud, pcl_pc);
     pcl_conversions::fromPCL(pcl_pc, message);
-
-    ROS_INFO_STREAM("FRame ID:" << message.header.frame_id);
     cloud_pub.publish(message);
     ros::spinOnce();
   }
-
-
-;
 
   //Init planner
   PMGraspPlanningSplit * planner;
   if( do_ransac ){
     ROS_INFO_STREAM("Computing pose using RANSAC");
-    planner = new PMGraspPlanningSplit(cloud, nh, object_pose_topic, VispTools::vispHomogFromTfTransform( wMc ));
-    planner->setPlaneSegmentationParams(0.06, 100);
+    planner = new PMGraspPlanningSplit(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
+    planner->sac_pose_estimation->setPlaneSegmentationParams(0.06, 100);
   }else{
     ROS_INFO_STREAM("Specification using a input object Pose");
     planner = new PMGraspPlanningSplit(object_pose_topic);
