@@ -24,7 +24,6 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${VISP_INCLUDE_DI
 ## Declare a cpp library
 add_library(${PROJECT_NAME} 
   src/background_removal.cpp
-  src/object_segmentation.cpp
   src/border_detection.cpp
   src/pose_estimation.cpp
   src/cluster_measure.cpp

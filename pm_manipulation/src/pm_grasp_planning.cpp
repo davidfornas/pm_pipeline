@@ -1,5 +1,6 @@
 /*
  * PMGraspPlanning.cpp
+ * DEPRECTAED: Do not use this version because everything is coupled.
  *
  *  Created on: 03/03/2014
  *      Author: dfornas

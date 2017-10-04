@@ -12,7 +12,6 @@
 #include <pm_tools/pcl_segmentation.h>
 
 #include <pm_perception/background_removal.h>
-#include <pm_perception/object_segmentation.h>
 
 #include <pm_manipulation/pm_grasp_planning.h>
 
