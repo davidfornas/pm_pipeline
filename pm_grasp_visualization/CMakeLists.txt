@@ -23,11 +23,13 @@ add_executable(interactive_marker_test src/interactive_marker_test.cpp)
 add_executable(slider_grasp_server src/slider_grasp_server.cpp)
 add_executable(waypoint_server src/waypoint_server.cpp)
 add_executable(fake_pose_publisher src/fake_pose_publisher.cpp)
+add_executable(object_pose_from_marker_pose src/object_pose_from_marker_pose.cpp)
 
 #Old example: target_link_libraries(grasp_vis ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(interactive_marker_test ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(slider_grasp_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(waypoint_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(fake_pose_publisher ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
+target_link_libraries(object_pose_from_marker_pose ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 
 
