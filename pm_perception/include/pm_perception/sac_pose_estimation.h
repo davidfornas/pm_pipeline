@@ -23,7 +23,7 @@
 #include <tf/transform_datatypes.h>
 #include <list>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
 class SACPoseEstimation{
@@ -48,8 +48,8 @@ public:
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
    * */
-  SACPoseEstimation(PointTPtr cloud){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
-    setPlaneSegmentationParams();
+  SACPoseEstimation(PointTPtr cloud, double distanceThreshold = 0.05){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
+    setPlaneSegmentationParams(distanceThreshold);
     setCylinderSegmentationParams();
 
     cloud_ = cloud;

@@ -25,7 +25,7 @@
 #include <tf/transform_datatypes.h>
 #include <list>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
 

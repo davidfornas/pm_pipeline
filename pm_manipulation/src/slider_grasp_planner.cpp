@@ -10,7 +10,7 @@
 
 #include <visp/vpHomogeneousMatrix.h>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 
 void SliderGraspPlanner::perceive() {
 
