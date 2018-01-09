@@ -14,7 +14,7 @@
 #include <vector>
 #include <algorithm>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 
 void SACPoseEstimation::doRansac() {
 
@@ -120,18 +120,18 @@ void SACPoseEstimation::redoRansac() {
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
 
   coefficients_cylinder = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
-  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered2, 0, 1.4);//REAL 0.89 SIM 1.4
-  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered2->points.size () << " data points.");
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);//REAL 0.89 SIM 1.4 "REMOVE FILTER" 3
+  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
 
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
-  PCLTools<PointT>::estimateNormals(cloud_filtered2, cloud_normals2);
-/*
+  PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
+
+  //Could remove this and change it for thrsholding
   PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
   plane_seg.setDistanceThreshold(plane_distance_threshold_);
   plane_seg.setIterations(plane_iterations_);
   plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
   //// @TODO plane_seg.removeFromCoefficients(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
-*/
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);

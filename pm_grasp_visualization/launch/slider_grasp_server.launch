@@ -1,6 +1,6 @@
 <launch>
-  <param name="input_topic" value="/stereo_forward/points2/" />
-  <param name="cloud_frame_id" value="camera" />
+  <param name="input_topic" value="/stereo_camera/points2/" />
+  <param name="cloud_frame_id" value="bumblebee2/left" />
   <!--param name="input_topic" value="/sense3d/scan/" />
   <param name="cloud_frame_id" value="sense3d" /-->
   <!--param name="input_topic" value="/cloud_pcd" />
@@ -34,7 +34,7 @@
         -->
   <!-- Esta TF es necesaria así que si no está hay que ponerla como se pueda -->
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="1.483 -2.239 3.815 -0.192 0.020 0.864 0.465 world sense3d 100" /-->
-  <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 1 world camera 100" />
+  <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 1 world bumblebee2/left 100" />
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 world stereo 100" /-->
   <!--node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 world stereo_down 100" /-->
 

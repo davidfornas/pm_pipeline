@@ -20,7 +20,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
 
@@ -127,13 +127,14 @@ int main(int argc, char **argv)
   clock_t begin, end;
 
   // Load cloud if required.
-  Cloud::Ptr cloud (new pcl::PointCloud<PointT>);
+  Cloud::Ptr cloud (new pcl::PointCloud<PointT>), aux_cloud (new pcl::PointCloud<PointT>);
   if( do_ransac ){
     //Point Cloud load
-    PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
-    ROS_INFO_STREAM("Initial PointCloud has non nan: " << PCLTools<PointT>::nanAwareCount(cloud) << " data points.");
+    PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
+    ROS_INFO_STREAM("Initial PointCloud has non nan: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points.");
     begin = clock();
-    PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+    PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
+    PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
     end = clock();
     ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
     ROS_INFO_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
@@ -142,6 +143,7 @@ int main(int argc, char **argv)
     pcl::PCLPointCloud2 pcl_pc;
     pcl::toPCLPointCloud2(*cloud, pcl_pc);
     pcl_conversions::fromPCL(pcl_pc, message);
+    message.header.frame_id = "camera"; //New
     cloud_pub.publish(message);
     ros::spinOnce();
   }
@@ -151,7 +153,7 @@ int main(int argc, char **argv)
   if( do_ransac ){
     ROS_INFO_STREAM("Computing pose using RANSAC");
     planner = new SliderGraspPlanner(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
-    planner->sac_pose_estimation->setPlaneSegmentationParams(0.06, 100);
+    planner->sac_pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
   }else{
     ROS_INFO_STREAM("Specification using a input object Pose");
     planner = new SliderGraspPlanner(object_pose_topic);
@@ -188,12 +190,14 @@ int main(int argc, char **argv)
     if( !do_ransac ){
       planner->perceive();
     }else{
+
       begin = clock();
-      PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+      PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
       end = clock();
       ROS_INFO_STREAM("Cloud load time: " << double(end - begin) / CLOCKS_PER_SEC);
       begin = clock();
-      PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+      PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
+      PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
       end = clock();
       ROS_INFO_STREAM("Online downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
@@ -202,8 +206,16 @@ int main(int argc, char **argv)
       begin = clock();
       planner->redoRansac();
       end = clock();
+
       ROS_INFO_STREAM("Redo RANSAC time: " << double(end - begin) / CLOCKS_PER_SEC);
 
+      sensor_msgs::PointCloud2 message;
+      pcl::PCLPointCloud2 pcl_pc;
+      pcl::toPCLPointCloud2(*cloud, pcl_pc);
+      pcl_conversions::fromPCL(pcl_pc, message);
+      message.header.frame_id = "camera"; //New
+      cloud_pub.publish(message);
+      ros::spinOnce();
 
     }
 
