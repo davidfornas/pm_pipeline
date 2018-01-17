@@ -253,47 +253,19 @@ public:
     p-> spinOnce();
   }
 
-  //Display source and target on the second viewport of the visualizer
-  void showMarkerAlignment2(const CloudPtr cloud_target, const CloudPtr cloud_source)
+  //Display source and target aligned with ICP
+  void showICPRefinement(const CloudPtr cloud_target, const CloudPtr cloud_source, float score)
   {
     p->removePointCloud ("vp4_target");
     p->removePointCloud ("vp4_source");
     pcl::visualization::PointCloudColorHandlerCustom<PointT> tgt_h (cloud_target, 0, 255, 0);
     pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h (cloud_source, 255, 0, 0);
-    p->addPointCloud (cloud_target, tgt_h, "vp4_target", vp_2);
-    p->addPointCloud (cloud_source, src_h, "vp4_source", vp_2);
-
-    p-> spinOnce();
+    p->addPointCloud (cloud_target, tgt_h, "vp4_target", vp_4);
+    p->addPointCloud (cloud_source, src_h, "vp4_source", vp_4);
+    ROS_INFO_STREAM ("ICP Score:" << score);
+    ROS_INFO ("Press q to continue the registration.");
+    p->spin ();
   }
-
-  void showCloudsRight(const CloudWithNormalsPtr cloud_target, const CloudWithNormalsPtr cloud_source)
-  {
-
-
-
-    p->removePointCloud ("vp3_source");
-    p->removePointCloud ("vp3_target");
-
-
-    /*pcl::visualization::PointCloudColorHandlerGenericField<NormalT> tgt_color_handler (cloud_target, "curvature");
-    if (!tgt_color_handler.isCapable ())
-      PCL_WARN ("Cannot create curvature color handler!");
-
-    pcl::visualization::PointCloudColorHandlerGenericField<NormalT> src_color_handler (cloud_source, "curvature");
-    if (!src_color_handler.isCapable ())
-      PCL_WARN ("Cannot create curvature color handler!");*/
-    pcl::visualization::PointCloudColorHandlerCustom<NormalT> tgt_h (cloud_target, 0, 255, 0);
-    pcl::visualization::PointCloudColorHandlerCustom<NormalT> src_h (cloud_source, 255, 0, 0);
-
-    /*p->addPointCloud (cloud_target, tgt_color_handler, "vp3_target", vp_3);
-    p->addPointCloud (cloud_source, src_color_handler, "vp3_source", vp_3);*/
-    p->addPointCloud (cloud_target, tgt_h, "vp3_target", vp_3);
-    p->addPointCloud (cloud_source, src_h, "vp3_source", vp_3);
-
-    p->spinOnce();
-  }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /** \brief Align a pair of PointCloud datasets and return the result
@@ -322,16 +294,11 @@ public:
       src = cloud_src;
       tgt = cloud_tgt;
     }
-
-    ROS_INFO_STREAM("ALIGN: " << PCLTools<PointT>::nanAwareCount(src) << "X" << PCLTools<PointT>::nanAwareCount(tgt));
+    ROS_INFO_STREAM("Cloud sizes: " << PCLTools<PointT>::nanAwareCount(src) << " and " << PCLTools<PointT>::nanAwareCount(tgt));
 
     std::vector<int> indices;
     PCLTools<PointT>::removeNanPoints(src);
     PCLTools<PointT>::removeNanPoints(tgt);
-    //pcl::removeNaNFromPointCloud(*src,*src, indices);
-    //pcl::removeNaNFromPointCloud(*tgt,*tgt, indices);
-
-
 
     // Compute surface normals and curvature
     CloudWithNormalsPtr points_with_normals_src (new CloudWithNormals);
@@ -411,24 +378,13 @@ public:
     pcl::transformPointCloud (*cloud_tgt, *output, targetToSource);
     pcl::transformPointCloud (*tgt, *opt, targetToSource);
 
-    showMarkerAlignment2(opt, src);
-
-    /*p->removePointCloud ("vp4_source");
-    p->removePointCloud ("vp4_target");
-    pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_tgt_h (output, 0, 255, 0);
-    pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_src_h (cloud_src, 255, 0, 0);
-    p->addPointCloud (opt, cloud_tgt_h, "vp4_target", vp_4);
-    p->addPointCloud (src, cloud_src_h, "vp4_source", vp_4);*/
-
+    //ICP Score, the lower, the better.
+    float score = 1.0;
     if(reg.hasConverged()) {
-      float score = reg.getFitnessScore();
-      ROS_INFO_STREAM("SCORE: " << score);
+      score = reg.getFitnessScore();
+      ROS_DEBUG_STREAM("Icp Score: " << score);
     }
-    PCL_INFO ("Press q to continue the registration.\n");
-    p->spin ();
-
-    p->removePointCloud ("vp4_source");
-    p->removePointCloud ("vp4_target");
+    showICPRefinement(opt, src, score);
 
     //add the source to the transformed target
     *output += *cloud_src;
