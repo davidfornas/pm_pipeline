@@ -4,35 +4,15 @@
  *      Author: dfornas
  */
 
-
 #include <pm_tools/tf_tools.h>
-#include <pm_tools/visp_tools.h>
 #include <pm_tools/pcl_tools.h>
-
-#include <ros/ros.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/PointCloud2.h>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-#include <pcl/conversions.h>
-#include <pcl/point_types.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/visualization/pcl_visualizer.h>
-
-#include <pcl/point_cloud.h>
-#include <pcl/point_representation.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/filter.h>
-#include <pcl/features/normal_3d.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
-#include <pcl/registration/transforms.h>
 
 typedef message_filters::Subscriber<geometry_msgs::PoseStamped> PoseSub;
 typedef message_filters::Subscriber<sensor_msgs::PointCloud2> CloudSub;
@@ -82,8 +62,8 @@ class MarkerRegistration{
 
     CloudPtr current_cloud_, map_cloud_;
     pcl::visualization::PCLVisualizer *p;
-    //its left and right viewports
-    int vp_1, vp_2, vp_3;
+    // 4 viewports. 1)Originals. 2)Marker correction 3)Map 4)Marker+ICP.
+    int vp_1, vp_2, vp_3, vp_4;
 
     ros::Publisher cloud_pub_;
     bool first_cloud_;
@@ -112,10 +92,15 @@ public:
 
         // Create a PCLVisualizer object
         p = new pcl::visualization::PCLVisualizer (argc, argv, "Pairwise Incremental Registration example");
-        p->createViewPort (0.0,  0, 0.33, 1.0, vp_1);
-        p->createViewPort (0.33, 0, 0.66, 1.0, vp_2);
-        p->createViewPort (0.66, 0, 1.0,  1.0, vp_3);
+        p->createViewPort (0.0, 0.5, 0.5, 1.0, vp_1);
+        p->createViewPort (0.0, 0.0, 0.5, 0.5, vp_2);
+        p->createViewPort (0.5, 0.5, 1.0, 1.0, vp_3);
+        p->createViewPort (0.5, 0.0, 1.0, 0.5, vp_4);
 
+        p->addText( "Original difference",    0.0, 0.5, "1", vp_1);
+        p->addText( "Alignment with markers", 0.0, 0.0, "2", vp_2);
+        p->addText( "Full map",               0.5, 0.5, "3", vp_3);
+        p->addText( "ICP Refinement",         0.5, 0.0, "4", vp_4);
 
     }
 
@@ -236,10 +221,9 @@ public:
 
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
-/** \brief Display source and target on the first viewport of the visualizer
- *
- */
+
+
+    //Display source and target on the first viewport of the visualizer
     void showCloudsLeft(const CloudPtr cloud_target, const CloudPtr cloud_source)
     {
       p->removePointCloud ("vp1_target");
@@ -253,10 +237,7 @@ public:
       p-> spinOnce();
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
-/** \brief Display source and target on the second viewport of the visualizer
- *
- */
+    //Display source and target on the second viewport of the visualizer
     void showCloudsCenter(const CloudPtr cloud_target, const CloudPtr cloud_source)
     {
       p->removePointCloud ("vp2_target");
@@ -283,10 +264,7 @@ public:
       p-> spin();
     }*/
 
-    ////////////////////////////////////////////////////////////////////////////////
-/** \brief Display source and target on the second viewport of the visualizer
- *
- */
+
     void showCloudsRight(const CloudWithNormals::Ptr cloud_target, const CloudWithNormals::Ptr cloud_source)
     {
       p->removePointCloud ("vp3_source");
@@ -429,15 +407,15 @@ public:
       pcl::transformPointCloud (*cloud_tgt, *output, targetToSource);
       pcl::transformPointCloud (*tgt, *opt, targetToSource);
 
-      p->removePointCloud ("vp3_source");
-      p->removePointCloud ("vp3_target");
+      p->removePointCloud ("vp4_source");
+      p->removePointCloud ("vp4_target");
 
       pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_tgt_h (output, 0, 255, 0);
       pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_src_h (cloud_src, 255, 0, 0);
-      //p->addPointCloud (output, cloud_tgt_h, "target", vp_3);
-      //p->addPointCloud (cloud_src, cloud_src_h, "source", vp_3);
-      p->addPointCloud (opt, cloud_tgt_h, "vp3_target", vp_3);
-      p->addPointCloud (src, cloud_src_h, "vp3_source", vp_3);
+      //p->addPointCloud (output, cloud_tgt_h, "target", vp_4);
+      //p->addPointCloud (cloud_src, cloud_src_h, "source", vp_4);
+      p->addPointCloud (opt, cloud_tgt_h, "vp4_target", vp_4);
+      p->addPointCloud (src, cloud_src_h, "vp4_source", vp_4);
 
       if(reg.hasConverged()) {
         float score = reg.getFitnessScore();
@@ -446,8 +424,8 @@ public:
       PCL_INFO ("Press q to continue the registration.\n");
       p->spin ();
 
-      p->removePointCloud ("vp3_source");
-      p->removePointCloud ("vp3_target");
+      p->removePointCloud ("vp4_source");
+      p->removePointCloud ("vp4_target");
 
       //add the source to the transformed target
       *output += *cloud_src;
