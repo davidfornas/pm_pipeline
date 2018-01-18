@@ -104,10 +104,10 @@ public:
     p->createViewPort (0.5, 0.5, 1.0, 1.0, vp_3);
     p->createViewPort (0.5, 0.0, 1.0, 0.5, vp_4);
 
-    p->addText( "Original difference",    0.0, 0.5, "1", vp_1);
-    p->addText( "Alignment with markers", 0.0, 0.0, "2", vp_2);
-    p->addText( "Full map",               0.5, 0.5, "3", vp_3);
-    p->addText( "ICP Refinement",         0.5, 0.0, "4", vp_4);
+    p->addText( "Original difference",    0, 0, "1", vp_1);
+    p->addText( "Alignment with markers", 0, 0, "2", vp_2);
+    p->addText( "Full map",               0, 0, "3", vp_3);
+    p->addText( "ICP Refinement",         0, 0, "4", vp_4);
 
   }
 
@@ -158,7 +158,7 @@ public:
     //Z Filter to get rid of plane
     // @TODO Remove plane with other method (RANSAC). Other option is doing euclidean clustering.
     PCLTools<PointT>::applyZAxisPassthrough(current_cloud_, 0.3, 1.15);
-    PCLTools<PointT>::applyVoxelGridFilter(current_cloud_, 0.01);
+    PCLTools<PointT>::applyVoxelGridFilter(current_cloud_, 0.02);
     ROS_INFO_STREAM("PointCloud from topic filtered: " << current_cloud_->points.size() << " points.");
 
     current_pose_.header = pose->header;
@@ -196,9 +196,9 @@ public:
         PointT new_point = current_cloud_->points[i];
         vpHomogeneousMatrix point(current_cloud_->points[i].x, current_cloud_->points[i].y, current_cloud_->points[i].z, 0, 0, 0);
         point = c1Mc2 * point ;
-        new_point.x = point [0][3];
-        new_point.y = point [1][3];
-        new_point.z = point [2][3];
+        new_point.x = static_cast<float>(point [0][3]);
+        new_point.y = static_cast<float>(point [1][3]);
+        new_point.z = static_cast<float>(point [2][3]);
         pre_aligned_cloud->points.push_back( new_point );
       }
       ;
@@ -217,7 +217,9 @@ public:
     */
 
     //@ TODO filter out markers with big shifts in orientation.
-    float summd = (current_pose_.pose.position.x - prev_pose_.pose.position.x) + (current_pose_.pose.position.y - prev_pose_.pose.position.y) + (current_pose_.pose.position.z - prev_pose_.pose.position.z);
+    double summd;
+    summd = (current_pose_.pose.position.x - prev_pose_.pose.position.x) + (current_pose_.pose.position.y - prev_pose_.pose.position.y)
+            + (current_pose_.pose.position.z - prev_pose_.pose.position.z);
     ROS_INFO_STREAM("Marker difference" << summd);
 
     showOriginalDifference(current_cloud_, prev_cloud_);
@@ -234,9 +236,9 @@ public:
     pcl::transformPointCloud (*current_cloud_, *final_cloud, globalTransform);
 
     //Add cloud with different color.
-    uint8_t r = std::rand()%255;
-    uint8_t g = std::rand()%255;
-    uint8_t b = std::rand()%255;
+    uint8_t r = static_cast<uint8_t>(std::rand() % 255);
+    uint8_t g = static_cast<uint8_t>(std::rand() % 255);
+    uint8_t b = static_cast<uint8_t>(std::rand() % 255);
     for(int i=0; i< final_cloud->points.size(); i++){
       final_cloud->points[i].r = r;
       final_cloud->points[i].g = g;
@@ -294,7 +296,7 @@ public:
   }
 
   //Display source and target aligned with ICP
-  void showICPRefinement(const CloudPtr cloud_target, const CloudPtr cloud_source, float score)
+  void showICPRefinement(const CloudPtr cloud_target, const CloudPtr cloud_source, double score)
   {
     p->removePointCloud ("vp4_target");
     p->removePointCloud ("vp4_source");
@@ -427,7 +429,7 @@ public:
     pcl::transformPointCloud (*tgt, *opt, targetToSource);
 
     //ICP Score, the lower, the better.
-    float score = 1.0;
+    double score = 1.0;
     if(reg.hasConverged()) {
       score = reg.getFitnessScore();
       ROS_DEBUG_STREAM("Icp Score: " << score);
@@ -447,6 +449,7 @@ int main (int argc, char** argv)
   ros::init(argc, argv, "ar_marker_registration");
   ros::NodeHandle nh;
 
+  // @TODO Add visualization THREADS http://pointclouds.org/documentation/tutorials/cloud_viewer.php
   MarkerRegistration mr(nh, argc, argv);
   mr.run();
 
