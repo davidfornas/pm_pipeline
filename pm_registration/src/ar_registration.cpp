@@ -62,13 +62,15 @@ class MarkerRegistration{
 
   geometry_msgs::PoseStamped current_pose_, prev_pose_;
 
-  CloudPtr current_cloud_, prev_cloud;
+  CloudPtr current_cloud_, prev_cloud_, map_cloud_;
   pcl::visualization::PCLVisualizer *p;
   // 4 viewports. 1)Originals. 2)Marker correction 3)Marker+ICP 4)Map
   int vp_1, vp_2, vp_3, vp_4;
 
   ros::Publisher map_pub_;
   bool first_cloud_;
+
+  Eigen::Matrix4f globalTransform;
 
 public:
 
@@ -86,11 +88,14 @@ public:
     sync->registerCallback(boost::bind(&MarkerRegistration::detectionCallback, this, _1, _2));
 
     current_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
-    prev_cloud = boost::shared_ptr<Cloud>( new Cloud() );
+    prev_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
+    map_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
 
     map_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/out", 1000);
 
     first_cloud_ = true;
+    globalTransform = Eigen::Matrix4f::Identity();
+
 
     // Create a PCLVisualizer object.  4 viewports. 1)Originals. 2)Marker correction 3)Marker+ICP 4)Map
     p = new pcl::visualization::PCLVisualizer (argc, argv, "Pairwise Incremental Registration example");
@@ -162,14 +167,17 @@ public:
     CloudPtr pre_aligned_cloud;
     pre_aligned_cloud = boost::shared_ptr<Cloud>( new Cloud() );
 
+    Eigen::Matrix4f prealignTransform = Eigen::Matrix4f::Identity();
 
     if(first_cloud_){
       //Initialize previus cloud and pose
       prev_pose_ = current_pose_;
       first_cloud_ = false;
-      prev_cloud->header = current_cloud_->header;
+      prev_cloud_->header = current_cloud_->header;
+      map_cloud_->header = current_cloud_->header;
       for(int i=0; i< current_cloud_->points.size(); i++){
-        prev_cloud->points.push_back( current_cloud_->points[i] );
+        prev_cloud_->points.push_back( current_cloud_->points[i] );
+        map_cloud_->points.push_back( current_cloud_->points[i] );
       }
 
     }else{
@@ -180,6 +188,8 @@ public:
       vpHomogeneousMatrix c1Mc2;
       c1Mc2 = c1Mm1 * wMm1.inverse() * wMm2 * c2Mm2.inverse();
       ROS_INFO_STREAM("Position transform between clouds (using markers) ->  X: " << c1Mc2[0][3] << "Y: " << c1Mc2[1][3] << "Z:" << c1Mc2[2][3]);
+
+      prealignTransform = vpHomogeneousMatrixToEigen4f(c1Mc2);
 
       //Create prealigned cloud.
       for(int i=0; i< current_cloud_->points.size(); i++){
@@ -196,12 +206,12 @@ public:
     }
 
     /*    PRINT MAP ONCE ITS BUILT
-    ROS_INFO_STREAM("Map size: " << prev_cloud->points.size() << " data points." << std::endl);
+    ROS_INFO_STREAM("Map size: " << prev_cloud_->points.size() << " data points." << std::endl);
     sensor_msgs::PointCloud2 out_message;
 
     pcl::PCLPointCloud2 out_pcl_pc;
     //PointT strong type to PCL Generic cloud.
-    pcl::toPCLPointCloud2(*prev_cloud, out_pcl_pc);
+    pcl::toPCLPointCloud2(*prev_cloud_, out_pcl_pc);
     pcl_conversions::fromPCL(out_pcl_pc, out_message);
     map_pub_.publish(out_message);
     */
@@ -210,21 +220,53 @@ public:
     float summd = (current_pose_.pose.position.x - prev_pose_.pose.position.x) + (current_pose_.pose.position.y - prev_pose_.pose.position.y) + (current_pose_.pose.position.z - prev_pose_.pose.position.z);
     ROS_INFO_STREAM("Marker difference" << summd);
 
-    showOriginalDifference(current_cloud_, prev_cloud);
-    showMarkerAlignment(pre_aligned_cloud, prev_cloud);
+    showOriginalDifference(current_cloud_, prev_cloud_);
+    showMarkerAlignment(pre_aligned_cloud, prev_cloud_);
 
     Eigen::Matrix4f pairTransform;
     CloudPtr aligned_cloud (new Cloud);
-    pairAlign (prev_cloud, pre_aligned_cloud, aligned_cloud, pairTransform, false);
+    pairAlign (prev_cloud_, pre_aligned_cloud, aligned_cloud, pairTransform, false);
+
+    ROS_INFO_STREAM(pre_aligned_cloud);
+    globalTransform = pairTransform * prealignTransform * globalTransform;
+    CloudPtr final_cloud = boost::shared_ptr<Cloud>( new Cloud() );
+
+    pcl::transformPointCloud (*current_cloud_, *final_cloud, globalTransform);
+
+    //Add cloud with different color.
+    uint8_t r = std::rand()%255;
+    uint8_t g = std::rand()%255;
+    uint8_t b = std::rand()%255;
+    for(int i=0; i< final_cloud->points.size(); i++){
+      final_cloud->points[i].r = r;
+      final_cloud->points[i].g = g;
+      final_cloud->points[i].b = b;
+      map_cloud_->points.push_back( final_cloud->points[i] );
+    }
+
+    //VOXELGRID
+    showMap(map_cloud_);
+    ROS_INFO_STREAM("Map size: " << map_cloud_->points.size() << " points.");
+    ROS_INFO_STREAM("Final: " << final_cloud->points.size() << " points.");
 
     //Update prev cloud. Probably not very efficient.
     prev_pose_ = current_pose_;
-    prev_cloud->header = current_cloud_->header;
-    prev_cloud->points.resize(0);
+    prev_cloud_->header = current_cloud_->header;
+    prev_cloud_->points.resize(0);
     for(int i=0; i< current_cloud_->points.size(); i++){
-      prev_cloud->points.push_back( current_cloud_->points[i] );
+      prev_cloud_->points.push_back( current_cloud_->points[i] );
     }
 
+  }
+
+  //Move tools
+  Eigen::Matrix4f vpHomogeneousMatrixToEigen4f( vpHomogeneousMatrix in ){
+    Eigen::Matrix4f out;
+    out(0,0)=in[0][0];out(0,1)=in[0][1];out(0,2)=in[0][2];out(0,3)=in[0][3];
+    out(1,0)=in[1][0];out(1,1)=in[1][1];out(1,2)=in[1][2];out(1,3)=in[1][3];
+    out(2,0)=in[2][0];out(2,1)=in[2][1];out(2,2)=in[2][2];out(2,3)=in[2][3];
+    out(3,0)=in[3][0];out(3,1)=in[3][1];out(3,2)=in[3][2];out(3,3)=in[3][3];
+    return out;
   }
 
   //Display source and target on the first viewport of the visualizer
@@ -236,20 +278,18 @@ public:
     pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h (cloud_source, 255, 0, 0);
     p->addPointCloud (cloud_target, tgt_h, "vp1_target", vp_1);
     p->addPointCloud (cloud_source, src_h, "vp1_source", vp_1);
-
     p-> spinOnce();
   }
 
   //Display source and target on the second viewport of the visualizer
   void showMarkerAlignment(const CloudPtr cloud_target, const CloudPtr cloud_source)
   {
-    p->removePointCloud ("vp2_target");
     p->removePointCloud ("vp2_source");
+    p->removePointCloud ("vp2_target");
     pcl::visualization::PointCloudColorHandlerCustom<PointT> tgt_h (cloud_target, 0, 255, 0);
     pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h (cloud_source, 255, 0, 0);
     p->addPointCloud (cloud_target, tgt_h, "vp2_target", vp_2);
     p->addPointCloud (cloud_source, src_h, "vp2_source", vp_2);
-
     p-> spinOnce();
   }
 
@@ -263,6 +303,14 @@ public:
     p->addPointCloud (cloud_target, tgt_h, "vp4_target", vp_4);
     p->addPointCloud (cloud_source, src_h, "vp4_source", vp_4);
     ROS_INFO_STREAM ("ICP Score:" << score);
+    p->spinOnce ();
+  }
+
+  //Display map
+  void showMap(const CloudPtr map)
+  {
+    p->removePointCloud ("vp3_map");
+    p->addPointCloud (map, "vp3_map", vp_3);
     ROS_INFO ("Press q to continue the registration.");
     p->spin ();
   }

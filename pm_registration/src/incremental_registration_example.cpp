@@ -55,11 +55,11 @@ struct PCDComparator
 };
 
 // Define a new point representation for < x, y, z, curvature >
-class MyPointRepresentation : public pcl::PointRepresentation <PointNormalT>
+class PointRepXYZCurv : public pcl::PointRepresentation <PointNormalT>
 {
   using pcl::PointRepresentation<PointNormalT>::nr_dimensions_;
 public:
-  MyPointRepresentation ()
+  PointRepXYZCurv ()
   {
     // Define the number of dimensions
     nr_dimensions_ = 4;
@@ -205,7 +205,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
 
   //
   // Instantiate our custom point representation (defined above) ...
-  MyPointRepresentation point_representation;
+  PointRepXYZCurv point_representation;
   // ... and weight the 'curvature' dimension so that it is balanced against x, y, and z
   float alpha[4] = {1.0, 1.0, 1.0, 1.0};
   point_representation.setRescaleValues (alpha);
@@ -218,7 +218,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   // Note: adjust this based on the size of your datasets
   reg.setMaxCorrespondenceDistance (0.15);
   // Set the point representation
-  reg.setPointRepresentation (boost::make_shared<const MyPointRepresentation> (point_representation));
+  reg.setPointRepresentation (boost::make_shared<const PointRepXYZCurv> (point_representation));
 
   reg.setInputSource (points_with_normals_src);
   reg.setInputTarget (points_with_normals_tgt);
