@@ -6,28 +6,6 @@
 
 
 #include <pm_registration/marker_registration.h>
-/*#include <pm_tools/tf_tools.h>
-#include <pm_tools/pcl_tools.h>
-
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
-
-#include <pcl/registration/icp.h>
-#include <pcl/registration/icp_nl.h>
-
-typedef message_filters::Subscriber<geometry_msgs::PoseStamped> PoseSub;
-typedef message_filters::Subscriber<sensor_msgs::PointCloud2> CloudSub;
-typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, sensor_msgs::PointCloud2> CloudPoseSync;
-
-typedef pcl::PointXYZRGB PointT;
-typedef typename pcl::PointCloud<PointT> Cloud;
-typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
-
-typedef pcl::PointNormal NormalT;
-typedef typename pcl::PointCloud<NormalT> CloudWithNormals;
-typedef typename pcl::PointCloud<NormalT>::Ptr CloudWithNormalsPtr;
-*/
 
 void MarkerRegistration::run() {
 

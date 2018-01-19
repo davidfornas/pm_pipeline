@@ -139,6 +139,12 @@ public:
 	}
 
 	static void removeNanPoints(CloudPtr p, CloudPtr copy){
+		/* COMPARE WITH ...
+		 *
+         * std::vector<int> indices;
+         * pcl::removeNaNFromPointCloud(*m.cloud,*m.cloud, indices);
+         *
+        */
 		int new_size = PCLTools<PointT>::nanAwareCount(p);
 	    copy->width    = new_size;
 		copy->height   = 1;
