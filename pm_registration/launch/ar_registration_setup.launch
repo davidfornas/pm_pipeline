@@ -1,0 +1,9 @@
+<launch>
+
+    <node pkg="rosbag" type="play" name="player" output="screen" args="-l /home/dfornas/data/octubre17/videre-camera-2017-10-27.bag"/>
+    <group ns="stereo">
+        <node name="image_proc" pkg="stereo_image_proc" type="stereo_image_proc"  output="screen"/>
+    </group>
+    <include file="$(find ar_markers_detector)/launch/videre.launch"/>
+
+</launch>
