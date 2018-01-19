@@ -9,20 +9,20 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 
 catkin_package(
-#  INCLUDE_DIRS include
+   INCLUDE_DIRS include
 #  LIBRARIES pm_registration
    CATKIN_DEPENDS roscpp pm_measure pm_tools
    DEPENDS PCL
 )
 link_directories(${catkin_LIBRARY_DIRS})
-# include_directories(include)
+include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
 add_executable(registration_example src/registration_example.cpp)
 add_executable(incremental_registration_example src/incremental_registration_example.cpp)
-add_executable(ar_registration src/ar_registration.cpp)
+add_executable(ar_registration src/ar_registration.cpp src/marker_registration.cpp)
 
 target_link_libraries(registration_example ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(incremental_registration_example ${catkin_LIBRARIES} ${PCL_LIBRARIES})
