@@ -1,0 +1,12 @@
+<launch>
+
+  <arg name="input_bag" default="/home/dfornas/ros_ws/data/bags_santfeliu/14_00/g500/g500_image_2017-03-30-13-57-49_0.bag" />
+  <node pkg="rosbag" type="play" name="player" output="screen" args="-l $(arg input_bag) --clock -r 1"/>
+
+  <group ns="stereo_camera">
+    <node name="image_proc" pkg="stereo_image_proc" type="stereo_image_proc"  output="screen">
+      <param name="disparity_range" type="double" value="128.0"/>
+    </node>
+  </group>
+
+</launch>

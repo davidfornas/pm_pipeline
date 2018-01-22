@@ -3,5 +3,7 @@
 
   <node name="uwsim" pkg="uwsim" type="uwsim_binary" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
   <node pkg="tf" type="static_transform_publisher" name="fake_broadcaster" args="0 0 0 0 0 0 1 world bumblebee2/left 100" />
+  <node pkg="merbots_gui" type="merbots_gui" name="merbots_gui" />
+  <include file="$(find pm_grasp_visualization)/launch/play_merbots_bag.launch"/>
 
 </launch>

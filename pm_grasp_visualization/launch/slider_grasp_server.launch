@@ -17,7 +17,7 @@
   <param name="object_pose_topic" value="/object_pose" />
   <arg name="scene" default="specification_scene.xml" />
 
-  <node name="uwsim" pkg="uwsim" type="uwsim_binary" args="--configfile $(find pm_grasp_visualization)/$(arg scene)" output="screen" respawn="false"/>
+  <node name="uwsim" pkg="uwsim" type="uwsim_binary" args="--configfile $(arg scene)" output="screen" respawn="false"/>
   <node name="grasp_server_split" pkg="pm_grasp_visualization" type="slider_grasp_server" output="screen" respawn="false"/>
   <!--node name="waypoint_server" pkg="pm_grasp_visualization" type="waypoint_server" output="screen" respawn="false"/-->
 
