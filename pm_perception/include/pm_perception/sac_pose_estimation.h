@@ -39,6 +39,7 @@ class SACPoseEstimation{
   pcl::ModelCoefficients::Ptr coefficients_plane, coefficients_cylinder;
   double plane_distance_threshold_, cylinder_distance_threshold_, radious_limit_;
   int plane_iterations_, cylinder_iterations_;
+  bool ransac_background_filter_;
 
 public:
 
@@ -55,7 +56,11 @@ public:
     cloud_ = cloud;
     camera_frame_name = cloud->header.frame_id;
     coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+    ransac_background_filter_ = true;
   }
+
+  /** Set background removal mode */
+  void setRansacBackgroundFilter( bool ransac_background_filter ){ ransac_background_filter_ = ransac_background_filter; }
 
   void setNewCloud(PointTPtr cloud){cloud_ = cloud;}
 

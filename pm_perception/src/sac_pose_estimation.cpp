@@ -126,12 +126,18 @@ void SACPoseEstimation::redoRansac() {
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
 
-  //Could remove this and change it for thrsholding
-  PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
-  plane_seg.setDistanceThreshold(plane_distance_threshold_);
-  plane_seg.setIterations(plane_iterations_);
-  plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
-  //// @TODO plane_seg.removeFromCoefficients(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+  if( ransac_background_filter_ ) {
+    PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
+    plane_seg.setDistanceThreshold(plane_distance_threshold_);
+    plane_seg.setIterations(plane_iterations_);
+    plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+    //// @TODO plane_seg.removeFromCoefficients(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+  }else{
+    PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 0.89);//REAL 0.89 SIM 1.4 "REMOVE FILTER" 3
+    PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
+    cloud_filtered2 = cloud_filtered;
+    cloud_normals2 = cloud_normals;
+  }
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -142,7 +148,7 @@ void SACPoseEstimation::redoRansac() {
   ROS_INFO_STREAM("Found cylinder size: " << cloud_cylinder->size());
 
   // @TODO return boolean and treat it later
-  if(cloud_cylinder->size() == 0) return;
+  if(cloud_cylinder->size() < 100) return;
 
   //Grasp points
   PointT mean, max, min;
