@@ -17,15 +17,14 @@ void SliderGraspPlanner::perceive() {
   bool initialized;
 
   if( do_ransac ){
-    ROS_INFO_STREAM("Computing pose with RANSAC...");
     sac_pose_estimation->doRansac();
-    ROS_INFO_STREAM("RANSAC finished.");
   }else{
     ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
     if (!initialized){
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
       cMo = VispTools::vispHomogFromGeometryPose(*message);
       initialized = true;
+      ROS_INFO_STREAM("Pose received");
     }else{
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name, ros::Duration(2));
       if (message == NULL){
@@ -35,7 +34,6 @@ void SliderGraspPlanner::perceive() {
       cMo = VispTools::vispHomogFromGeometryPose(*message);
     }
 
-    ROS_INFO_STREAM("Pose received");
     change_z_ = false;
     //Director vectors: cylinder axis and perpendicular vector.
     if(change_z_){

@@ -80,7 +80,7 @@ int main(int argc, char **argv)
   while (!compute_initial_cMg || !got_wMc)
   {
     try{
-      listener_->lookupTransform( "world", cloud_frame_id, ros::Time(0), wMc); // "sense3d" or any stereo_frame
+      listener_->lookupTransform( "world", cloud_frame_id, ros::Time(0), wMc);
       got_wMc = true;
     }
     catch (tf::TransformException ex){
@@ -89,38 +89,30 @@ int main(int argc, char **argv)
     ros::spinOnce();
   }
 
-  ROS_INFO_STREAM("Getting TF frames...");
+  ROS_INFO_STREAM("World to camera OK. Getting vehicle frames...");
   //Display the simulated vehicle for better visualization
   if( do_ransac ){
     try{
       listener_->lookupTransform( cloud_frame_id, "girona500", ros::Time(0), cMv);
       geometry_msgs::Pose p;
-      p.position.x = cMv.getOrigin().x();
-      p.position.y = cMv.getOrigin().y();
-      p.position.z = cMv.getOrigin().z();
-      p.orientation.x = cMv.getRotation().x();
-      p.orientation.y = cMv.getRotation().y();
-      p.orientation.z = cMv.getRotation().z();
-      p.orientation.w = cMv.getRotation().w();
+      p.position.x = cMv.getOrigin().x(); p.position.y = cMv.getOrigin().y(); p.position.z = cMv.getOrigin().z();
+      p.orientation.x = cMv.getRotation().x(); p.orientation.y = cMv.getRotation().y();
+      p.orientation.z = cMv.getRotation().z(); p.orientation.w = cMv.getRotation().w();
       vehicle_pub.publish( p );
     }
-    catch (tf::TransformException ex){
+    catch (tf::TransformException & ex){
       ROS_INFO("Cannot retrieve vehicle position. Not displaying vehicle position. %s",ex.what());
     }
   }else{
     try{
       listener_->lookupTransform( "world", "girona500", ros::Time(0), wMv);
       geometry_msgs::Pose p;
-      p.position.x = wMv.getOrigin().x();
-      p.position.y = wMv.getOrigin().y();
-      p.position.z = wMv.getOrigin().z();
-      p.orientation.x = wMv.getRotation().x();
-      p.orientation.y = wMv.getRotation().y();
-      p.orientation.z = wMv.getRotation().z();
-      p.orientation.w = wMv.getRotation().w();
+      p.position.x = wMv.getOrigin().x(); p.position.y = wMv.getOrigin().y();p.position.z = wMv.getOrigin().z();
+      p.orientation.x = wMv.getRotation().x(); p.orientation.y = wMv.getRotation().y();
+      p.orientation.z = wMv.getRotation().z(); p.orientation.w = wMv.getRotation().w();
       vehicle_pub.publish( p );
     }
-    catch (tf::TransformException ex){
+    catch (tf::TransformException & ex){
       ROS_INFO("Cannot retrieve vehicle position. Not displaying vehicle position. %s",ex.what());
     }
   }
@@ -131,7 +123,7 @@ int main(int argc, char **argv)
   if( do_ransac ){
     //Point Cloud load
     PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
-    ROS_INFO_STREAM("Initial PointCloud has non nan: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points.");
+    ROS_INFO_STREAM("Initial cloud has: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points (not NaN).");
     begin = clock();
     PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
@@ -151,17 +143,17 @@ int main(int argc, char **argv)
   //Init planner
   SliderGraspPlanner * planner;
   if( do_ransac ){
-    ROS_INFO_STREAM("Computing pose using RANSAC");
+    ROS_INFO_STREAM("Specification using RANSAC.");
     planner = new SliderGraspPlanner(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
     planner->sac_pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
   }else{
-    ROS_INFO_STREAM("Specification using a input object Pose");
+    ROS_INFO_STREAM("Specification using a input object Pose.");
     planner = new SliderGraspPlanner(object_pose_topic);
   }
   begin = clock();
   planner->perceive();
   end = clock();
-  ROS_INFO_STREAM("Perceive time: " << double(end - begin) / CLOCKS_PER_SEC);
+  ROS_INFO_STREAM("First computing time: " << double(end - begin) / CLOCKS_PER_SEC);
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
   double angle = 75, rad = 18, along = 20;
@@ -201,13 +193,12 @@ int main(int argc, char **argv)
       end = clock();
       ROS_INFO_STREAM("Online downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
-      planner->setNewCloud(cloud);
 
+      planner->setNewCloud(cloud);
       begin = clock();
       planner->redoRansac();
       end = clock();
-
-      ROS_INFO_STREAM("Redo RANSAC time: " << double(end - begin) / CLOCKS_PER_SEC);
+      ROS_INFO_STREAM("Finished. RANSAC processing time: " << double(end - begin) / CLOCKS_PER_SEC);
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;
@@ -216,7 +207,6 @@ int main(int argc, char **argv)
       message.header.frame_id = "camera"; //New
       cloud_pub.publish(message);
       ros::spinOnce();
-
     }
 
     //Compute new grasp frame with the slides

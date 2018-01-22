@@ -137,7 +137,12 @@ void SACPoseEstimation::redoRansac() {
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
   cyl_seg.setIterations(cylinder_iterations_);
   cyl_seg.setRadiousLimit(this->radious+0.01);
+
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
+  ROS_INFO_STREAM("Found cylinder size: " << cloud_cylinder->size());
+
+  // @TODO return boolean and treat it later
+  if(cloud_cylinder->size() == 0) return;
 
   //Grasp points
   PointT mean, max, min;
@@ -178,7 +183,6 @@ void SACPoseEstimation::redoRansac() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   vispToTF.resetTransform(cMo, "cMo");
 
-  ROS_INFO_STREAM("RANSAC REDONE");
 /*
   // @TODO Improve with a proper filter.
   ROS_INFO_STREAM(cMo[0][3] << " :: " << cMo[1][3] << " :: " << cMo[2][3]);
