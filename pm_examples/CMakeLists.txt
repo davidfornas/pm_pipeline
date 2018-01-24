@@ -29,6 +29,8 @@ add_executable(remove_nan src/remove_nan.cpp)
 add_executable(hobbit_grasping src/hobbit_grasping.cpp)
 add_executable(particlef_template_tracking_tutorial src/particlef_template_tracking_tutorial.cpp)
 add_executable(tutorial src/tutorial.cpp)
+add_executable(mirror src/mirror.cpp)
+add_executable(greedy_triangulation src/greedy_triangulation.cpp)
 
 #for MERBOTS MANIPULATION
 add_executable(grasp_testing src/grasp_testing.cpp)
@@ -48,6 +50,8 @@ target_link_libraries(remove_nan ${catkin_LIBRARIES} )
 target_link_libraries(hobbit_grasping ${catkin_LIBRARIES} )
 target_link_libraries(particlef_template_tracking_tutorial ${catkin_LIBRARIES} )
 target_link_libraries(tutorial ${catkin_LIBRARIES} )
+target_link_libraries(mirror ${catkin_LIBRARIES} )
+target_link_libraries(greedy_triangulation ${catkin_LIBRARIES} )
 
 
 target_link_libraries(grasp_testing ${catkin_LIBRARIES} )
