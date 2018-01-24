@@ -21,8 +21,6 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "pcl_processing");
   ros::NodeHandle nh;
 
-
-
   if(argc < 4){
 	  std::cerr << "rosrun pm_examples process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
       std::cerr << "Other options: -b <billateralFilter> 15,0.05 -v (visualization) -s (save)" << std::endl;
@@ -39,12 +37,12 @@ int main(int argc, char** argv)
   if (pcl::console::find_argument (argc, argv, "-f") > 0){
 	  pcl::console::parse_argument (argc, argv, "-f", source);
 	  PCLTools<PointT>::cloudFromPCD(cloud, source + std::string(".pcd"));
-      std::cerr << "LOADED FROM FILE" << std::endl;
+      std::cerr << "Cloud loaded from file. Saving in " << source << "_processed.pcd" << std::endl;
   }else if (pcl::console::find_argument (argc, argv, "-t") > 0){
 	  pcl::console::parse_argument (argc, argv, "-t", source);
 	  PCLTools<PointT>::cloudFromTopic(cloud, source); // From UWSim
       source = "topic";
-	  std::cerr << "LOADED FROM TOPIC" << std::endl;
+	  std::cerr << "Cloud loaded from topic. Saving in topic_processed.pcd" << std::endl;
   }else{
     return 0;
   }
@@ -66,12 +64,15 @@ int main(int argc, char** argv)
   if(leafSize != 0)  	PCLTools<PointT>::applyVoxelGridFilter(cloud, leafSize);
   if(planeTh != 0) 		PlaneSegmentation<PointT>::removeBackground(cloud, 100, planeTh);
 
+  ROS_INFO("TESTING");
   if(bilateralSigmaS != 0){
     pcl::FastBilateralFilter<PointT> filter;
+    filter.setInputCloud(cloud);
     filter.setSigmaS( bilateralSigmaS );
     filter.setSigmaR( bilateralSigmaR );
     filter.applyFilter(*cloud);
   }
+  ROS_INFO("TESTING");
 
   if (pcl::console::find_argument (argc, argv, "-s") > 0) {
     PCLTools<PointT>::cloudToPCD(cloud, source + std::string("_processed.pcd"));
