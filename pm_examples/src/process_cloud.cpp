@@ -21,9 +21,11 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "pcl_processing");
   ros::NodeHandle nh;
 
+
+
   if(argc < 4){
 	  std::cerr << "rosrun pm_examples process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
-      std::cerr << "Other options: -b <billateralFilter> 15,0.05" << std::endl;
+      std::cerr << "Other options: -b <billateralFilter> 15,0.05 -v (visualization) -s (save)" << std::endl;
 	  std::cerr << "Example: -f <filename> -p 0,2 -r 50,1.0 -d 0.03 -s 0.06 -> result in <filename>_processed.pcd" << std::endl;	  std::cerr << "rosrun pm_examples process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
 	  std::cerr << "Example: Also with -t <topic> instead." << std::endl;
 	  return 0;
@@ -32,19 +34,22 @@ int main(int argc, char** argv)
   float passthroughMinZ = 0, passthroughMaxZ = 0, outRemMeanK = 0, outRemStdTh = 0, leafSize = 0, planeTh = 0;
   float bilateralSigmaS = 0.0, bilateralSigmaR = 0.0;
 
-  CPtr cloud(new Cloud);
-
+  CPtr cloud(new Cloud), original(new Cloud);
 
   if (pcl::console::find_argument (argc, argv, "-f") > 0){
 	  pcl::console::parse_argument (argc, argv, "-f", source);
 	  PCLTools<PointT>::cloudFromPCD(cloud, source + std::string(".pcd"));
       std::cerr << "LOADED FROM FILE" << std::endl;
-  }
-  if (pcl::console::find_argument (argc, argv, "-t") > 0){
+  }else if (pcl::console::find_argument (argc, argv, "-t") > 0){
 	  pcl::console::parse_argument (argc, argv, "-t", source);
 	  PCLTools<PointT>::cloudFromTopic(cloud, source); // From UWSim
+      source = "topic";
 	  std::cerr << "LOADED FROM TOPIC" << std::endl;
+  }else{
+    return 0;
   }
+
+  original = cloud;
 
 
   pcl::console::parse_2x_arguments (argc, argv, "-p", passthroughMinZ, passthroughMaxZ);
@@ -61,7 +66,6 @@ int main(int argc, char** argv)
   if(leafSize != 0)  	PCLTools<PointT>::applyVoxelGridFilter(cloud, leafSize);
   if(planeTh != 0) 		PlaneSegmentation<PointT>::removeBackground(cloud, 100, planeTh);
 
-  PCLTools<PointT>::cloudToPCD(cloud, /*std::string() +*/ std::string("_preprocessed.pcd"));
   if(bilateralSigmaS != 0){
     pcl::FastBilateralFilter<PointT> filter;
     filter.setSigmaS( bilateralSigmaS );
@@ -69,7 +73,20 @@ int main(int argc, char** argv)
     filter.applyFilter(*cloud);
   }
 
-  PCLTools<PointT>::cloudToPCD(cloud, /*std::string() +*/ std::string("_processed.pcd"));
+  if (pcl::console::find_argument (argc, argv, "-s") > 0) {
+    PCLTools<PointT>::cloudToPCD(cloud, source + std::string("_processed.pcd"));
+  }
+
+  if (pcl::console::find_argument (argc, argv, "-v") > 0){
+    pcl::visualization::PCLVisualizer *p;
+    int vp_1, vp_2;
+    p = new pcl::visualization::PCLVisualizer (argc, argv, "Pairwise Incremental Registration example");
+    p->createViewPort (0.0, 0.0, 0.5, 1.0, vp_1);
+    p->createViewPort (0.5, 0.0, 1.0, 1.0, vp_2);
+    p->addPointCloud (original, "c1", vp_1);
+    p->addPointCloud (cloud, "c2", vp_2);
+    p->spin();
+  }
 
   return (0);
 }
