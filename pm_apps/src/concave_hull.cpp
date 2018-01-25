@@ -6,8 +6,6 @@
 #include <ros/ros.h>
 #include <pm_perception/border_detection.h>
 
-//Time measures
-
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "concave_hull_example");

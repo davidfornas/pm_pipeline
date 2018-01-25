@@ -6,9 +6,6 @@
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/pcl_merge.h>
 
-#include <ros/ros.h>
-#include <pcl/visualization/pcl_visualizer.h>
-
 typedef pcl::PointXYZRGB PointT;
 
 int main(int argc, char** argv)
@@ -52,7 +49,7 @@ int main(int argc, char** argv)
   }
 
   pcl::PCDWriter writer;
-  writer.write(input_basename + std::string("_out.pcd"), *cloud, false);
+  writer.write(input_basename + std::string("_merged.pcd"), *cloud, false);
 
   ros::Rate r(10);
   while (!viewer.wasStopped())

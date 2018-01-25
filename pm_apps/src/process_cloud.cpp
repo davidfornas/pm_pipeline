@@ -1,5 +1,6 @@
 /** 
  * This program is used to filter and modify point clouds easily.
+ * @TODO Move bilateral to pm_tools
  *  Created on: 13/04/2015
  *      Author: dfornas
  */
@@ -7,7 +8,6 @@
 #include <ros/ros.h>
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/pcl_segmentation.h>
-
 #include <pcl/filters/fast_bilateral.h>
 
 #include <pcl/console/parse.h>
@@ -23,14 +23,14 @@ int main(int argc, char** argv)
 
   if(argc < 4){
 	  std::cerr << "rosrun pm_apps process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
-      std::cerr << "Other options: -b <billateralFilter> 15,0.05 -v (visualization) -s (save)" << std::endl;
+      std::cerr << "-b <billateralFilter> 15,0.05. Parameterless options: -v (visualization) -s (save)" << std::endl;
 	  std::cerr << "Example: -f <filename> -p 0,2 -r 50,1.0 -d 0.03 -s 0.06 -> result in <filename>_processed.pcd" << std::endl;	  std::cerr << "rosrun pm_apps process_cloud -f <filename> -p <passMinZ> <passMaxZ>  -r <meanK> <stdThresh>  -d <leafSize>  -s <planeThr>" << std::endl;
 	  std::cerr << "Example: Also with -t <topic> instead." << std::endl;
 	  return 0;
   }
   std::string source("");
-  float passthroughMinZ = 0, passthroughMaxZ = 0, outRemMeanK = 0, outRemStdTh = 0, leafSize = 0, planeTh = 0;
-  float bilateralSigmaS = 0.0, bilateralSigmaR = 0.0;
+  float passthroughMinZ = 0.0, passthroughMaxZ = 0.0, outRemMeanK = 0.0, outRemStdTh = 0.0;
+  float leafSize = 0.0, planeTh = 0.0, bilateralSigmaS = 0.0, bilateralSigmaR = 0.0;
 
   CPtr cloud(new Cloud), original(new Cloud);
 
@@ -40,15 +40,13 @@ int main(int argc, char** argv)
       std::cerr << "Cloud loaded from file. Saving in " << source << "_processed.pcd" << std::endl;
   }else if (pcl::console::find_argument (argc, argv, "-t") > 0){
 	  pcl::console::parse_argument (argc, argv, "-t", source);
-	  PCLTools<PointT>::cloudFromTopic(cloud, source); // From UWSim
+	  PCLTools<PointT>::cloudFromTopic(cloud, source);
       source = "topic";
 	  std::cerr << "Cloud loaded from topic. Saving in topic_processed.pcd" << std::endl;
   }else{
     return 0;
   }
-
   original = cloud;
-
 
   pcl::console::parse_2x_arguments (argc, argv, "-p", passthroughMinZ, passthroughMaxZ);
   pcl::console::parse_2x_arguments (argc, argv, "-r", outRemMeanK, outRemStdTh);
@@ -56,7 +54,7 @@ int main(int argc, char** argv)
   pcl::console::parse_argument (argc, argv, "-s", planeTh);
   pcl::console::parse_2x_arguments (argc, argv, "-b", bilateralSigmaS, bilateralSigmaR);
 
-  //REMOVE NaN if needed
+  // @TODO This should be optional
   PCLTools<PointT>::removeNanPoints(cloud);
 
   if(passthroughMinZ != 0 && passthroughMaxZ != 0) 	PCLTools<PointT>::applyZAxisPassthrough(cloud, passthroughMinZ, passthroughMaxZ);
@@ -64,7 +62,6 @@ int main(int argc, char** argv)
   if(leafSize != 0)  	PCLTools<PointT>::applyVoxelGridFilter(cloud, leafSize);
   if(planeTh != 0) 		PlaneSegmentation<PointT>::removeBackground(cloud, 100, planeTh);
 
-  ROS_INFO("TESTING");
   if(bilateralSigmaS != 0){
     pcl::FastBilateralFilter<PointT> filter;
     filter.setInputCloud(cloud);
@@ -72,7 +69,6 @@ int main(int argc, char** argv)
     filter.setSigmaR( bilateralSigmaR );
     filter.applyFilter(*cloud);
   }
-  ROS_INFO("TESTING");
 
   if (pcl::console::find_argument (argc, argv, "-s") > 0) {
     PCLTools<PointT>::cloudToPCD(cloud, source + std::string("_processed.pcd"));
@@ -81,7 +77,7 @@ int main(int argc, char** argv)
   if (pcl::console::find_argument (argc, argv, "-v") > 0){
     pcl::visualization::PCLVisualizer *p;
     int vp_1, vp_2;
-    p = new pcl::visualization::PCLVisualizer (argc, argv, "Pairwise Incremental Registration example");
+    p = new pcl::visualization::PCLVisualizer (argc, argv, "Simple cloud filtering.");
     p->createViewPort (0.0, 0.0, 0.5, 1.0, vp_1);
     p->createViewPort (0.5, 0.0, 1.0, 1.0, vp_2);
     p->addPointCloud (original, "c1", vp_1);

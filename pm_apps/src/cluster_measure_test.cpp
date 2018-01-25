@@ -5,13 +5,10 @@
  *      Author: dfornas
  */
 
-
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/pcl_clustering.h>
 #include <pm_perception/cluster_measure.h>
 #include <pm_tools/pcl_segmentation.h>
-#include <pcl/io/pcd_io.h>
-#include <ros/ros.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef typename pcl::PointCloud<PointT> Cloud;
@@ -20,7 +17,7 @@ typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "cluster_measure_example");
+  ros::init(argc, argv, "cluster_measure_test");
   ros::NodeHandle nh;
 
   //Get cloud from topic
@@ -37,12 +34,9 @@ int main(int argc, char **argv)
 
   //Actual Clustering
   CloudClustering<PointT> cluster(point_cloud_ptr);
-  ROS_INFO_STREAM("CLUSTERING...");
-
   cluster.applyEuclidianClustering();
   cluster.displayColoured();
   cluster.save("euclidian");
-
   /*
   cluster.applyRegionGrowingClustering();
   cluster.displayColoured();
@@ -51,7 +45,7 @@ int main(int argc, char **argv)
 
   // PCA
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
-  ROS_INFO_STREAM("CENTROID: " << cm.getCentroid());
+  ROS_INFO_STREAM("First cluster centroid: " << cm.getCentroid());
   cm.getAxis();
 
   Eigen::Quaternionf q;
@@ -60,6 +54,7 @@ int main(int argc, char **argv)
   cm.getOABBox( q, t, width, height, depth );
 
   // @TODO Further grasping execution. Maybe separate app
+
   return 0;
 }
 

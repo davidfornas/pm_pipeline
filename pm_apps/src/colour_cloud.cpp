@@ -7,9 +7,6 @@
 #include <ros/ros.h>
 #include <pm_tools/pcl_tools.h>
 
-#include <pcl/console/parse.h>
-
-
 ros::Publisher cloud_pub;
 
 /*
@@ -18,7 +15,6 @@ ros::Publisher cloud_pub;
 double interpolate(double val, double y0, double x0, double y1, double x1){
   return (val - x0)*(y1-y0)/(x1-x0) + y0;
 }
-
 
 double base(double val){
   if (val <= -0.75) return 0;
@@ -31,7 +27,6 @@ double base(double val){
 /*
   ColorCloudDepth returns an RGB cloud coloured with depth with matlab's jet color scale
   */
-
 void colourCloudDepth(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudIn,
                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, double min_z,double max_z){
 
@@ -88,24 +83,17 @@ void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg){
 
   pcl::PCLPointCloud2 pcl_pc;
   pcl_conversions::toPCL(*msg, pcl_pc);
-  //PCL Generic cloud to PointT strong type.
   pcl::fromPCLPointCloud2(pcl_pc, *original);
 
   //Filter and colors for 0-2m. range...
   //PCLTools<pcl::PointXYZRGB>::applyZAxisPassthrough(colour, 0, 1.95);
-
   colourCloudDepth( original, colour, 0, 0 );
 
-
   sensor_msgs::PointCloud2 message;
-  //PointT strong type to PCL Generic cloud.
   pcl::toPCLPointCloud2(*colour, pcl_pc);
-  //ROS_INFO_STREAM(pcl_pc.fields.size());
   pcl_conversions::fromPCL(pcl_pc, message);
   cloud_pub.publish(message);
-
 }
-
 
 int main(int argc, char** argv)
 {
