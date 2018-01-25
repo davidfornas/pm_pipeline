@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(pm_apps)
+
+find_package(catkin REQUIRED COMPONENTS roscpp pm_manipulation pm_tools pm_perception mar_perception)
+
+catkin_package(CATKIN_DEPENDS roscpp pm_manipulation pm_tools pm_perception mar_perception)
+
+# include_directories(include)
+include_directories(${catkin_INCLUDE_DIRS})
+
+add_executable(border_following src/border_following.cpp)
+add_executable(cloud_merge src/cloud_merge.cpp)
+add_executable(concave_hull src/concave_hull.cpp)
+add_executable(online_cloud_merger src/online_cloud_merger.cpp)
+add_executable(2d_pose_estimation src/2d_pose_estimation.cpp)
+add_executable(clustering src/clustering.cpp)
+add_executable(process_cloud src/process_cloud.cpp)
+add_executable(colour_cloud src/colour_cloud.cpp)
+add_executable(remove_nan src/remove_nan.cpp)
+add_executable(cluster_measure_test src/cluster_measure_test.cpp)
+add_executable(mirror_cloud src/mirror_coud.cpp)
+
+target_link_libraries(border_following ${catkin_LIBRARIES} )
+target_link_libraries(cloud_merge ${catkin_LIBRARIES} )
+target_link_libraries(concave_hull ${catkin_LIBRARIES} )
+target_link_libraries(online_cloud_merger ${catkin_LIBRARIES} )
+target_link_libraries(2d_pose_estimation ${catkin_LIBRARIES} )
+target_link_libraries(clustering ${catkin_LIBRARIES} )
+target_link_libraries(process_cloud ${catkin_LIBRARIES} )
+target_link_libraries(colour_cloud ${catkin_LIBRARIES} )
+target_link_libraries(remove_nan ${catkin_LIBRARIES} )
+target_link_libraries(cluster_measure_test ${catkin_LIBRARIES} )
+target_link_libraries(mirror_cloud ${catkin_LIBRARIES} )

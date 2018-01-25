@@ -13,7 +13,7 @@ to interpretation, 3D processing, segmentation ...
  * **pm_manipulation**: Arm control packages used to object manipulation and arm control in environments
 already perceived with pm_perception.
 
- * **pm_examples**: Stand alone examples of the usage of this classes.
+ * **pm_apps**: Stand alone apps taht use this classes.
 
  * **pm_grasp_visualization**: Grasp specification for MERBOTS and visual planning.
 
@@ -28,7 +28,7 @@ In launch set:
 * scene is arm5e_arm.xml which used the model: gripper_for_spec.urdf and cloud_source.urdf to reference the cloud...
 * rosrun merbots_gui merbots_gui
 
-**PUBLISH INPUT CLOUD FROM BAG OR PCD **
+**PUBLISH INPUT CLOUD FROM BAG OR PCD**
 
 STEREO
 dfornas@asusIrslab:~/ros_ws/src/pm_pipeline/pm_grasp_visualization/launch$ rosrun pcl_ros pcd_to_pointcloud cloud2.pcd cloud_pcd:=/stereo_down/points2 1

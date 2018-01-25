@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package>
+  <name>pm_apps</name>
+  <version>0.1.0</version>
+  <description> This packages show the use of the pm_pipeline classes </description>
+
+  <maintainer email="dfornas@uji.es">David Fornas</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">https://github.com/davidfornas/pm_pipeline</url>
+  <author email="dfornas@uji.es">David Fornas</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>pm_manipulation</build_depend>
+  <build_depend>pm_perception</build_depend>
+  <build_depend>mar_perception</build_depend>
+  <build_depend>pm_tools</build_depend>
+   
+  <run_depend>roscpp</run_depend>
+  <run_depend>pm_manipulation</run_depend>
+  <run_depend>pm_perception</run_depend>
+  <run_depend>mar_perception</run_depend>
+  <run_depend>pm_tools</run_depend>
+
+  <export>
+  </export>
+</package>
