@@ -1,0 +1,3 @@
+initial_posture: [0.0, 0.4, 1.3, 0.0, 0.0]
+joint_waypoint_: [0.0, 0.4, 1.13, 0.0, 0.0]
+cartesian_waypoint_: [0.0, 0.0, -0.03, 0.0, 0.0, 0.0]

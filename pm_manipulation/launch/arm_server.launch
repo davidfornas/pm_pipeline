@@ -1,0 +1,21 @@
+<launch>
+	<rosparam command="load" file="$(find grasper)/launch/hotStab.yaml" />
+	 <arg name="joint_state" default="/arm5e/joint_state_angle" />
+	 <arg name="joint_state_command" default="/arm5e/command_angle" />
+	 <arg name="joint_state_fixed" default="/arm5e/joint_state_angle_fixed" />
+	 <arg name="max_current" default="1.0" />
+	 <arg name="velocity_aperture" default="0.4" />
+	 <arg name="gripper_manipulation" default="1.0" />
+	 <arg name="gripper_closed" default="0.0" />
+		 
+	 <param name="joint_state" value="$(arg joint_state)" />
+	 <param name="joint_state_command" value="$(arg joint_state_command)" />
+	 <param name="joint_state_fixed" value="$(arg joint_state_fixed)" />
+	 <param name="max_current" value="$(arg max_current)" />
+	 <param name="velocity_aperture" value="$(arg velocity_aperture)" />
+	 <param name="gripper_manipulation" value="$(arg gripper_manipulation)" />
+	 <param name="gripper_opened" value="$(arg gripper_closed)" />
+
+<node name="arm_server" pkg="pm_manipulation" type="arm_server" respawn="false" output="screen" />
+
+</launch>

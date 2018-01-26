@@ -31,6 +31,7 @@ public:
     nh_.getParam("joint_state_fixed", joint_state_fixed_);
     cartesian_waypoint_=mar_params::paramToVispHomogeneousMatrix(&nh_, "cartesian_waypoint_");
     joint_waypoint_=mar_params::paramToVispColVector(&nh_, "joint_waypoint_");
+    initial_posture_=mar_params::paramToVispColVector(&nh_, "initial_posture");
     nh_.getParam("max_current", max_current_);
     nh_.getParam("velocity_aperture", velocity_aperture_);
     nh_.getParam("gripper_manipulation", gripper_manipulation_);
