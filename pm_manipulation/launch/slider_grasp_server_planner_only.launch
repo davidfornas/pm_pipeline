@@ -6,6 +6,6 @@
   <param name="grasp_pose_topic" value="/task_priority_pose" />
   <param name="object_pose_topic" value="/object_pose" />
 
-  <node name="grasp_server_split" pkg="pm_manipulation" type="slider_grasp_server" output="screen" respawn="false"/>
+  <node name="slider_grasp_planner_server" pkg="pm_manipulation" type="slider_grasp_planner_server" output="screen" respawn="false"/>
 
 </launch>

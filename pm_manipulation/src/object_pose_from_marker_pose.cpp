@@ -3,23 +3,13 @@
     1) Take a maker pose and publish iy with a displacement.
     2) Take poses from RANSAC and save the in a CSV file.
  */
-
-#include <stdlib.h>
-#include <string.h>
-
 #include <iostream>
 #include <fstream>
 
-//ROS
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <osg/Quat>
-#include <osg/Vec3d>
-#include <osg/Matrix>
-
 #include <pm_tools/visp_tools.h>
-#include <visp/vpHomogeneousMatrix.h>
 
 class Republisher{
 

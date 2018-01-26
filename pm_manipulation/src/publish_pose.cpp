@@ -1,21 +1,14 @@
 /*
-
+  Publish a Pose to use with Merbots GUI
  */
 
 #include <stdlib.h>
-#include <string.h>
-
-//ROS
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
-#include <osg/Quat>
-#include <osg/Vec3d>
-#include <osg/Matrix>
-
 
 int main(int argc, char **argv) {
 
-  ros::init(argc, argv, "setVehiclePose");
+  ros::init(argc, argv, "Publish Pose");
   ros::NodeHandle nh;
 
   if (argc!=9) {
@@ -39,7 +32,6 @@ int main(int argc, char **argv) {
   ros::Rate r(25);
   while (ros::ok()) {
     geometry_msgs::Pose pose;
-
     pose.position.x=x;
     pose.position.y=y;
     pose.position.z=z;
@@ -47,7 +39,6 @@ int main(int argc, char **argv) {
     pose.orientation.y=yr;
     pose.orientation.z=zr;
     pose.orientation.w=wr;
-
     position_pub.publish(pose);
 
     ros::spinOnce();
