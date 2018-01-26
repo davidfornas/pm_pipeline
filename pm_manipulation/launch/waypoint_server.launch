@@ -1,0 +1,8 @@
+<launch>
+  <param name="input_topic" value="/stereo_down/points2" />
+
+  <arg name="scene" default="specification_scene.xml" />
+
+  <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_manipulation)/$(arg scene)" output="screen" respawn="false"/>
+  <node name="waypoint_server" pkg="pm_manipulation" type="waypoint_server" output="screen" respawn="false"/>
+</launch>

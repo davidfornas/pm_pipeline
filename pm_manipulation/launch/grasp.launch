@@ -1,0 +1,9 @@
+<launch>
+  <arg name="input_basename" default="cloud2.pcd" />
+  <param name="input_basename" value="$(find pm_manipulation)/launch/$(arg input_basename)" />
+
+  <arg name="scene" default="specification_scene.xml" />
+
+  <node name="uwsim" pkg="uwsim" type="uwsim" args="--configfile $(find pm_manipulation)/$(arg scene)" output="screen" respawn="false"/>
+  <node name="grasp_vis" pkg="pm_manipulation" type="planning_and_visualization_simple" output="screen" respawn="false"/>
+</launch>
