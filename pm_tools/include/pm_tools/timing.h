@@ -8,7 +8,6 @@
 
 //Time measures with C library, should use another library such as ROS
 #include <ctime>
-
 #include <ros/ros.h>
 
 class Timing
