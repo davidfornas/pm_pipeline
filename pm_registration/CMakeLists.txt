@@ -16,12 +16,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(registration_example src/registration_example.cpp)
-add_executable(incremental_registration_example src/incremental_registration_example.cpp)
 add_executable(ar_registration src/ar_registration.cpp src/marker_registration.cpp)
-
-target_link_libraries(registration_example ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-target_link_libraries(incremental_registration_example ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(ar_registration ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
