@@ -30,9 +30,6 @@ add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 
-add_executable(convert src/conversions.cpp)
-target_link_libraries(convert ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
-
 install(
   TARGETS
     ${PROJECT_NAME}
