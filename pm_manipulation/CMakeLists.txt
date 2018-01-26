@@ -13,19 +13,11 @@ catkin_package(
   CATKIN_DEPENDS roscpp tf mar_robot_arm5e pm_tools pm_perception nav_msgs geometry_msgs
   DEPENDS PCL VISP OpenCV
 )
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
-## Declare a cpp library
-add_library(pm_manipulation 
-  src/pm_grasp_planning.cpp
-  src/slider_grasp_planner.cpp
-)
 
-## Specify libraries to link a library or executable target against
+add_library(pm_manipulation src/slider_grasp_planner.cpp)
 target_link_libraries(pm_manipulation ${catkin_LIBRARIES}  ${PCL_LIBRARIES} ${VISP_LIBRARIES})
 
 
