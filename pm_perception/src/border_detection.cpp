@@ -82,7 +82,8 @@ void ConcaveHullBorderDetection::process()
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
   // @ TODO cleaner solution
   cyl_seg.getInliers(inliers_cylinder);
-  PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+  PCLTools<PointT>::showSegmentationCloudsAndModels(cloud_plane, cloud_cylinder, coefficients_plane,
+                                                    coefficients_cylinder);
 
   clock_t end = clock();
   ROS_DEBUG_STREAM("Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC);

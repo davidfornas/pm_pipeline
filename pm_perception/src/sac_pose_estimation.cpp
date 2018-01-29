@@ -43,7 +43,7 @@ void SACPoseEstimation::doRansac() {
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
   //coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
   // DEBUG
-  //PCLTools<PointT>::showClouds(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
+  //PCLTools<PointT>::showSegmentationCloudsAndModels(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
   //Grasp points
   PointT mean, max, min;
