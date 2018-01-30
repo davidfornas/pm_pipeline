@@ -12,6 +12,6 @@
 	 <param name="target_frame_id" value="$(arg target_frame_id)" />
 	 <param name="source_frame_id" value="$(arg source_frame_id)" />
 
-     <node name="joint_offset_launcher" pkg="pm_manipulation" type="joint_offset_launcher" respawn="false" output="screen" />
+     <node name="joint_offset_test" pkg="pm_manipulation" type="joint_offset_test" respawn="false" output="screen" />
 
 </launch>
