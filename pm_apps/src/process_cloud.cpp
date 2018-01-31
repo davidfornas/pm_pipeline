@@ -71,7 +71,10 @@ int main(int argc, char** argv)
 
   if(planeTh != 0) PlaneSegmentation<PointT>::removeBackground(cloud, 100, planeTh);
 
-
+  // @TODO TEST THIS!!
+  /*pcl::ModelCoefficients mc;
+  RemoveModel<PointT>::apply(cloud, cloud, mc, pcl::SACMODEL_CYLINDER);
+*/
   if (pcl::console::find_argument (argc, argv, "-s") > 0) {
     std::cerr << "Cloud save with name " << source + std::string("_processed.pcd") << std::endl;
     PCLTools<PointT>::cloudToPCD(cloud, source + std::string("_processed.pcd"));

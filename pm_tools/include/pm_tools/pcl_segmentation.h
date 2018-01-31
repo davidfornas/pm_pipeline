@@ -18,6 +18,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/model_outlier_removal.h>
 
 #include <pcl/ModelCoefficients.h>
 
@@ -27,6 +28,27 @@
 #include <pcl/visualization/pcl_visualizer.h>
 
 #include <pcl/search/kdtree.h>
+
+
+template <typename PointT>
+class RemoveModel
+{
+  typedef typename pcl::PointCloud<PointT> Cloud;
+  typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
+
+public:
+
+  static void apply(CloudPtr & in, CloudPtr & out, pcl::ModelCoefficients & model_coeffs, pcl::SacModel model = pcl::SACMODEL_CYLINDER){
+    pcl::ModelOutlierRemoval<PointT> filter;
+    filter.setModelCoefficients(model_coeffs);
+    filter.setModelType(model);
+    filter.setInputCloud(in);
+    filter.filter(*out);
+  }
+
+};
+
+
 
 template <typename PointT>
 class PlaneSegmentation
