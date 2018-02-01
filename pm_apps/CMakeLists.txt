@@ -19,6 +19,8 @@ add_executable(colour_cloud src/colour_cloud.cpp)
 add_executable(remove_nan src/remove_nan.cpp)
 add_executable(cluster_measure_test src/cluster_measure_test.cpp)
 add_executable(mirror_cloud src/mirror_cloud.cpp)
+add_executable(pose_estimation_test src/pose_estimation_test.cpp)
+
 
 target_link_libraries(border_following ${catkin_LIBRARIES} )
 target_link_libraries(cloud_merge ${catkin_LIBRARIES} )
@@ -31,3 +33,4 @@ target_link_libraries(colour_cloud ${catkin_LIBRARIES} )
 target_link_libraries(remove_nan ${catkin_LIBRARIES} )
 target_link_libraries(cluster_measure_test ${catkin_LIBRARIES} )
 target_link_libraries(mirror_cloud ${catkin_LIBRARIES} )
+target_link_libraries(pose_estimation_test ${catkin_LIBRARIES} )
