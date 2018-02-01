@@ -4,7 +4,6 @@
  *  Created on: 29/09/2017
  *      Author: dfornas
  */
-
 #include <pm_perception/sac_pose_estimation.h>
 
 typedef pcl::PointXYZRGB PointT;
@@ -73,7 +72,6 @@ void SACPoseEstimation::initialize() {
 
 }
 
-//THIS SHOULD BE IMPROVED
 void SACPoseEstimation::process() {
 
   CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud);
@@ -82,8 +80,7 @@ void SACPoseEstimation::process() {
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
 
   coefficients_cylinder = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
-  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
-  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);//REAL 0.89 SIM 1.4 "REMOVE FILTER" 3
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
@@ -129,9 +126,6 @@ void SACPoseEstimation::process() {
   radious=coefficients_cylinder->values[6];
   height=sqrt((max.x-min.x)*(max.x-min.x)+(max.y-min.y)*(max.y-min.y)+(max.z-min.z)*(max.z-min.z));
 
-  // @ NOTE Ahora mismo el end-efector cae dentro del cilindro en vez de en superfície.
-  //Esto está relativamente bien pero no tenemos en cuenta la penetración. Sin embargo, la
-  //tenemos en cuenta luego al separanos el radio así que no hay problema en realidad.
   cMo[0][0]=result.x(); cMo[0][1]=axis_dir.x(); cMo[0][2]=perp.x();cMo[0][3]=mean.x;
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
@@ -170,7 +164,6 @@ bool SACPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
 {
   double t1 = (normal_g.x()*(d1.x-axis_point_g.x) + normal_g.y()*(d1.y-axis_point_g.y) + normal_g.z()*(d1.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
   double t2 = (normal_g.x()*(d2.x-axis_point_g.x) + normal_g.y()*(d2.y-axis_point_g.y) + normal_g.z()*(d2.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
-
   return t1 < t2;
 }
 
@@ -180,7 +173,6 @@ void SACPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::Cons
 {
   axis_point_g=axis_point;
   normal_g=*normal;
-
   outlier_percentage = outlier_percentage / 2.0;
 
   PointT max_p = axis_point;
@@ -191,8 +183,7 @@ void SACPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::Cons
   PointT* k;
 
   //Al tener la lista de todos los puntos podemos descartar los que esten fuera de un
-  //determinado porcentaje (percentiles) para
-  //Eliminar más outliers y ganar robustez.
+  //determinado porcentaje (percentiles) para eliminar más outliers y ganar robustez.
   BOOST_FOREACH(const PointT& pt, cloud->points)
   {
     k=new PointT();

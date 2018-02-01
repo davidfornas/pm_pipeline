@@ -77,6 +77,9 @@ public:
   vpHomogeneousMatrix get_cMo() {return cMo;}
 };
 
+class BoxPoseEstimation : public PoseEstimation{
+  
+};
 
 class SACPoseEstimation : public PoseEstimation{
 
