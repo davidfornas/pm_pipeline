@@ -13,6 +13,7 @@
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Transform.h>
 #include <geometry_msgs/Pose.h>
+#include <Eigen/Eigen>
 
 
 class VispTools
@@ -28,7 +29,7 @@ public:
   static vpHomogeneousMatrix weightedAverage(vpHomogeneousMatrix, int, vpHomogeneousMatrix);
   static void rpyFromQuaternion(double, double, double, double, double&, double&, double&);
   static void quaternionFromRpy(double, double, double, double&, double&, double&, double&);
-
+  static Eigen::Matrix4f vpHomogeneousMatrixToEigen4f(vpHomogeneousMatrix&);
 };
 
 
