@@ -201,15 +201,6 @@ void MarkerRegistration::showOriginalDifference(const CloudPtr cloud_target, con
   p-> spinOnce();
 }
 
-Eigen::Matrix4f MarkerRegistration::vpHomogeneousMatrixToEigen4f(vpHomogeneousMatrix in) {
-  Eigen::Matrix4f out;
-  out(0,0)=in[0][0];out(0,1)=in[0][1];out(0,2)=in[0][2];out(0,3)=in[0][3];
-  out(1,0)=in[1][0];out(1,1)=in[1][1];out(1,2)=in[1][2];out(1,3)=in[1][3];
-  out(2,0)=in[2][0];out(2,1)=in[2][1];out(2,2)=in[2][2];out(2,3)=in[2][3];
-  out(3,0)=in[3][0];out(3,1)=in[3][1];out(3,2)=in[3][2];out(3,3)=in[3][3];
-  return out;
-}
-
 void MarkerRegistration::detectionCallback(const geometry_msgs::PoseStamped::ConstPtr &pose,
                                            const sensor_msgs::PointCloud2::ConstPtr &cloud) {
   //Convert input cloud to PCL
@@ -251,7 +242,7 @@ void MarkerRegistration::detectionCallback(const geometry_msgs::PoseStamped::Con
     c1Mc2 = c1Mm1 * wMm1.inverse() * wMm2 * c2Mm2.inverse();
     ROS_INFO_STREAM("Position transform between clouds (using markers) ->  X: " << c1Mc2[0][3] << "Y: " << c1Mc2[1][3] << "Z:" << c1Mc2[2][3]);
 
-    prealignTransform = vpHomogeneousMatrixToEigen4f(c1Mc2);
+    prealignTransform = VispTools::vpHomogeneousMatrixToEigen4f(c1Mc2);
 
     //Create prealigned cloud.
     for(int i=0; i< current_cloud_->points.size(); i++){
