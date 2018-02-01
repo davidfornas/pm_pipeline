@@ -78,7 +78,13 @@ public:
 };
 
 class BoxPoseEstimation : public PoseEstimation{
-  
+
+public:
+
+  BoxPoseEstimation(CloudPtr source) : PoseEstimation(source){}
+
+  void initialize();
+
 };
 
 class SACPoseEstimation : public PoseEstimation{

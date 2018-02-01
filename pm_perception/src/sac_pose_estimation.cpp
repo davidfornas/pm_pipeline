@@ -5,10 +5,38 @@
  *      Author: dfornas
  */
 #include <pm_perception/sac_pose_estimation.h>
+#include <pm_perception/cluster_measure.h>
+#include <pm_tools/pcl_clustering.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
+
+void BoxPoseEstimation::initialize() {
+
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+  bg_remove->setNewCloud(cloud_);
+  bg_remove->initialize(cloud_, cloud_normals);
+
+  CloudClustering<PointT> cluster(cloud_);
+  cluster.applyEuclidianClustering();
+  cluster.displayColoured();
+  cluster.save("euclidian");
+  PCLView<PointT>::showCloud(cluster.cloud_clusters[0]);
+  //Display
+
+  // PCA
+  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
+  cm.getCentroid();
+  cm.getAxis();
+
+  Eigen::Quaternionf q;
+  Eigen::Vector3f t;
+  Eigen::Matrix4f cMo_eigen;
+  float width, height, depth;
+  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
+}
 
 void SACPoseEstimation::initialize() {
 

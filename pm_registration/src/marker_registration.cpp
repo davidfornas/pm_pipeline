@@ -242,7 +242,7 @@ void MarkerRegistration::detectionCallback(const geometry_msgs::PoseStamped::Con
     c1Mc2 = c1Mm1 * wMm1.inverse() * wMm2 * c2Mm2.inverse();
     ROS_INFO_STREAM("Position transform between clouds (using markers) ->  X: " << c1Mc2[0][3] << "Y: " << c1Mc2[1][3] << "Z:" << c1Mc2[2][3]);
 
-    prealignTransform = VispTools::vpHomogeneousMatrixToEigen4f(c1Mc2);
+    prealignTransform = VispTools::vpHomogeneousMatrixToEigenMatrix4f(c1Mc2);
 
     //Create prealigned cloud.
     for(int i=0; i< current_cloud_->points.size(); i++){

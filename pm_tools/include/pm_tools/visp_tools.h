@@ -29,7 +29,8 @@ public:
   static vpHomogeneousMatrix weightedAverage(vpHomogeneousMatrix, int, vpHomogeneousMatrix);
   static void rpyFromQuaternion(double, double, double, double, double&, double&, double&);
   static void quaternionFromRpy(double, double, double, double&, double&, double&, double&);
-  static Eigen::Matrix4f vpHomogeneousMatrixToEigen4f(vpHomogeneousMatrix&);
+  static Eigen::Matrix4f vpHomogeneousMatrixToEigenMatrix4f(vpHomogeneousMatrix &);
+  static vpHomogeneousMatrix EigenMatrix4fToVpHomogeneousMatrix(Eigen::Matrix4f &in);
 };
 
 

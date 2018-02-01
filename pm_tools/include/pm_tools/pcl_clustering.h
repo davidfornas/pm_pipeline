@@ -33,10 +33,10 @@ class CloudClustering
   typedef typename Cloud::Ptr CloudPtr;
 
   CloudPtr cloud_;
+  bool display_clusters_;
 
   /** Store the clusters in a vector of clouds  */
   void extract();
-
 
   void getColoredCloud();
 
@@ -47,8 +47,8 @@ public:
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud;
 
-  CloudClustering(CloudPtr in_cloud) :
-      cloud_(in_cloud)
+  CloudClustering(CloudPtr in_cloud, bool display_clusters = true) :
+      cloud_(in_cloud), display_clusters_(display_clusters)
   {
   }
 
@@ -120,15 +120,13 @@ void CloudClustering<PointT>::extract()
 	  cloud_cluster->height = 1;
 	  cloud_cluster->is_dense = true;
 	  cloud_clusters.push_back(cloud_cluster);
-	  std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
+	  ROS_DEBUG_STREAM("PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points.");
 	}
 }
-
 
 template<typename PointT>
 void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int minSize, int maxSize )
 {
-
   // Creating the KdTree object for the search method of the extraction
   typename pcl::search::KdTree<PointT>::Ptr tree (new typename pcl::search::KdTree<PointT>);
   tree->setInputCloud (cloud_);
@@ -142,8 +140,7 @@ void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int min
   ec.extract (cluster_indices);
 
   extract();
-  getColoredCloud();
-
+  if(display_clusters_) getColoredCloud();
 }
 
 template<typename PointT>
@@ -200,11 +197,6 @@ void CloudClustering<PointT>::applyRGBRegionGrowingClustering( float distance, f
 	extract();
 }
 
-
-
-
-
-
 template <typename PointT>
 void CloudClustering<PointT>::getColoredCloud()
 {
@@ -252,7 +244,6 @@ void CloudClustering<PointT>::getColoredCloud()
       next_color++;
     }
   }
-
 }
 
 #endif
