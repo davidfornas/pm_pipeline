@@ -17,7 +17,7 @@ void SliderGraspPlanner::perceive() {
   bool initialized;
 
   if( do_ransac ){
-    sac_pose_estimation->doRansac();
+    sac_pose_estimation->initialize();
   }else{
     ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
     if (!initialized){
@@ -58,7 +58,7 @@ void SliderGraspPlanner::perceive() {
 }
 
 void SliderGraspPlanner::redoRansac() {
-  sac_pose_estimation->redoRansac();
+  sac_pose_estimation->process();
   recalculate_cMg();
 }
 

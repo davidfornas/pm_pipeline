@@ -12,6 +12,7 @@
 #include <pm_tools/tf_tools.h>
 #include <pm_tools/marker_tools.h>
 #include <pm_tools/pcl_segmentation.h>
+#include <pm_perception/background_removal.h>
 
 #include <pcl/io/pcd_io.h>
 
@@ -24,55 +25,57 @@
 #include <list>
 
 typedef pcl::PointXYZRGB PointT;
-typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
+typedef pcl::PointCloud<PointT> Cloud;
+typedef Cloud::Ptr CloudPtr;
 
 class PoseEstimation{
 
 protected:
 
-  PointTPtr cloud_;
+  CloudPtr cloud_;
   std::string camera_frame_name, topic_name;
   FrameToTF vispToTF;
 
-  pcl::ModelCoefficients::Ptr coefficients_plane;
-  double plane_distance_threshold_;
-  int plane_iterations_;
-  bool ransac_background_filter_;
-
 public:
 
-  vpHomogeneousMatrix  cMo; ///< object frame with respect to the camera after detection
+  // Object frame with respect to the camera
+  vpHomogeneousMatrix  cMo;
+  BackgroundRemoval * bg_remove;
 
-  PoseEstimation(PointTPtr cloud, double distanceThreshold = 0.05){
-    setPlaneSegmentationParams(distanceThreshold);
+  PoseEstimation(CloudPtr cloud, double distanceThreshold = 0.05){
+
     cloud_ = cloud;
-    ransac_background_filter_ = true;
     camera_frame_name = cloud->header.frame_id;
-    coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+    bg_remove = new BackgroundRemoval(cloud, distanceThreshold);
 
   }
 
-  void setNewCloud(PointTPtr cloud){cloud_ = cloud;}
+  /** Set new input cloud */
+  void setNewCloud(CloudPtr cloud){
+    cloud_ = cloud;
+    bg_remove->setNewCloud(cloud);
+  }
 
   /** Set background removal mode */
-  void setRansacBackgroundFilter( bool ransac_background_filter ){ ransac_background_filter_ = ransac_background_filter; }
+  void setRansacBackgroundFilter( bool ransac_background_filter ){
+    bg_remove->setRansacBackgroundFilter(ransac_background_filter);
+  }
 
   /** Set plane segmentation parameters: distance to the inliers to the plane
    * and number of iterations.
    */
   void setPlaneSegmentationParams(double distanceThreshold = 0.03, int iterations = 100){
-    plane_distance_threshold_=distanceThreshold;
-    plane_iterations_=iterations;
+    bg_remove->setPlaneSegmentationParams( distanceThreshold, iterations );
   }
 
-  void setCamerFrameName( std::string name){
+  /** Change camera frame name */
+  void setCameraFrameName(std::string name){
     camera_frame_name = name;
   }
 
   /** Get the object frame with respect to the camera frame */
   vpHomogeneousMatrix get_cMo() {return cMo;}
 };
-
 
 
 class SACPoseEstimation : public PoseEstimation{
@@ -92,16 +95,15 @@ public:
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
    * */
-  SACPoseEstimation(PointTPtr cloud, double distanceThreshold = 0.05) : PoseEstimation(cloud, distanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
+  SACPoseEstimation(CloudPtr cloud, double distanceThreshold = 0.05) : PoseEstimation(cloud, distanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
     setCylinderSegmentationParams();
-
   }
 
   /** Where segmentation is done */
-  void doRansac();
+  void initialize();
 
   /** Online planning **/
-  void redoRansac();
+  void process();
 
   /** Set cylinder segmentation parameters: distance to the inliers to the plane,
    * number of iterations and radious limit.

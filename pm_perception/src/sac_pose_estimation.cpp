@@ -6,35 +6,22 @@
  */
 
 #include <pm_perception/sac_pose_estimation.h>
-#include <pm_tools/pcl_tools.h>
-
-#include <visp/vpHomogeneousMatrix.h>
-
-#include <boost/bind.hpp>
-#include <vector>
-#include <algorithm>
 
 typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> Cloud;
+typedef Cloud::Ptr CloudPtr;
 
-void SACPoseEstimation::doRansac() {
+void SACPoseEstimation::initialize() {
 
-  pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>);
-  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
-
+  CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud), cloud_cylinder (new Cloud);
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
-  coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
   coefficients_cylinder = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
 
+  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
   ROS_DEBUG_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
-
-  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
-  PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
-
-  PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
-  plane_seg.setDistanceThreshold(plane_distance_threshold_);
-  plane_seg.setIterations(plane_iterations_);
-  plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
+  bg_remove->setNewCloud(cloud_filtered);
+  bg_remove->initialize(cloud_filtered2, cloud_normals2);
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -42,7 +29,6 @@ void SACPoseEstimation::doRansac() {
   cyl_seg.setRadiousLimit(radious_limit_);
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
   //coefficients_cylinder = PCLTools::cylinderSegmentation(cloud_filtered2, cloud_normals2, cloud_cylinder, cylinder_distance_threshold_, cylinder_iterations_, radious_limit_);
-  // DEBUG
   //PCLTools<PointT>::showSegmentationCloudsAndModels(cloud_plane, cloud_cylinder, coefficients_plane, coefficients_cylinder);
 
   //Grasp points
@@ -57,7 +43,7 @@ void SACPoseEstimation::doRansac() {
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();
 
-  tf::Vector3 plane_normal(coefficients_plane->values[0], coefficients_plane->values[1], coefficients_plane->values[2]);
+  tf::Vector3 plane_normal(bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1], bg_remove->coefficients_plane->values[2]);
   tf::Vector3 perp = plane_normal - ( axis_dir.dot( plane_normal ) * axis_dir );
   perp=perp.normalize();
 
@@ -85,59 +71,22 @@ void SACPoseEstimation::doRansac() {
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
   vispToTF.addTransform(cMo, camera_frame_name, "/amphora2", "cMo");
 
-  /*
-  vpHomogeneousMatrix wMo;
-  wMo = wMc_ * cMo;
-
-  tf::Vector3 axis_dir2(wMo[0][1], wMo[1][1], wMo[2][1]);
-  axis_dir2=axis_dir2.normalize();
-  tf::Vector3 perp2 = tf::Vector3(0,0,1) - ( axis_dir2.dot( tf::Vector3(0,0,1) ) * axis_dir2 );
-  perp2=perp2.normalize();
-
-  tf::Vector3 result2=tf::tfCross( perp2, axis_dir2).normalize();
-  result2 = -result2;
-
-  wMo[0][0]=result2.x(); wMo[0][2]=perp2.x();
-  wMo[1][0]=result2.y(); wMo[1][2]=perp2.y();
-  wMo[2][0]=result2.z(); wMo[2][2]=perp2.z();
-
-  vispToTF.addTransform(wMo, "/world", "/amphora", "wMo");
-  */
-
-  //TONI DEBUG vispToTF.addTransform(cMg, camera_frame_name, "grasp_frame", "cMg");
-  //cMo = wMc_.inverse() * wMo;
-  //Compute modified cMg from cMo
-  //recalculate_cMg();
-  //previous_cMo_ = cMo;
 }
 
 //THIS SHOULD BE IMPROVED
-void SACPoseEstimation::redoRansac() {
+void SACPoseEstimation::process() {
 
-  pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>), cloud_filtered2 (new pcl::PointCloud<PointT>);
-  pcl::PointCloud<PointT>::Ptr cloud_cylinder (new pcl::PointCloud<PointT> ()), cloud_plane (new pcl::PointCloud<PointT> ());
+  CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud);
+  CloudPtr cloud_cylinder (new Cloud), cloud_plane (new Cloud);
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
 
   coefficients_cylinder = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);//REAL 0.89 SIM 1.4 "REMOVE FILTER" 3
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
-
-  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
-  PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
-
-  if( ransac_background_filter_ ) {
-    PlaneSegmentation<PointT> plane_seg(cloud_filtered, cloud_normals);
-    plane_seg.setDistanceThreshold(plane_distance_threshold_);
-    plane_seg.setIterations(plane_iterations_);
-    plane_seg.apply(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
-    //// @TODO plane_seg.removeFromCoefficients(cloud_filtered2, cloud_normals2, cloud_plane, coefficients_plane);
-  }else{
-    PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 0.89);//REAL 0.89 SIM 1.4 "REMOVE FILTER" 3
-    PCLTools<PointT>::estimateNormals(cloud_filtered, cloud_normals);
-    cloud_filtered2 = cloud_filtered;
-    cloud_normals2 = cloud_normals;
-  }
+  bg_remove->setNewCloud(cloud_filtered);
+  bg_remove->initialize(cloud_filtered2, cloud_normals2);
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -162,7 +111,7 @@ void SACPoseEstimation::redoRansac() {
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();
 
-  tf::Vector3 plane_normal(coefficients_plane->values[0], coefficients_plane->values[1], coefficients_plane->values[2]);
+  tf::Vector3 plane_normal(bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1], bg_remove->coefficients_plane->values[2]);
   tf::Vector3 perp = plane_normal - ( axis_dir.dot( plane_normal ) * axis_dir );
   perp=perp.normalize();
 
@@ -189,8 +138,7 @@ void SACPoseEstimation::redoRansac() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   vispToTF.resetTransform(cMo, "cMo");
 
-/*
-  // @TODO Improve with a proper filter.
+/*// @TODO Improve with a proper filter.
   ROS_INFO_STREAM(cMo[0][3] << " :: " << cMo[1][3] << " :: " << cMo[2][3]);
   ROS_INFO_STREAM(previous_cMo_[0][3] << " :: " << previous_cMo_[1][3] << " :: " << previous_cMo_[2][3]);
   double distance = (cMo[0][3]-previous_cMo_[0][3]) * (cMo[0][3]-previous_cMo_[0][3])
@@ -216,8 +164,8 @@ void SACPoseEstimation::redoRansac() {
   }*/
 }
 
-///Ordenar en función de la proyección del punto sobre el eje definido
-///por axis_point_g y normal_g (globales)
+//Ordenar en función de la proyección del punto sobre el eje definido
+//por axis_point_g y normal_g (globales)
 bool SACPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
 {
   double t1 = (normal_g.x()*(d1.x-axis_point_g.x) + normal_g.y()*(d1.y-axis_point_g.y) + normal_g.z()*(d1.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
@@ -226,8 +174,8 @@ bool SACPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
   return t1 < t2;
 }
 
-///Obtiene los máximos y mínimos del cilindro para encontrar la altura del cilindro con un margen
-///de descarte de outlier percentage (normalmente 10%).
+//Obtiene los máximos y mínimos del cilindro para encontrar la altura del cilindro con un margen
+//de descarte de outlier percentage (normalmente 10%).
 void SACPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
 {
   axis_point_g=axis_point;

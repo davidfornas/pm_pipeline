@@ -9,67 +9,61 @@
 #define BACKGROUNDREMOVAL_H_
 
 #include <pcl/io/pcd_io.h>
+#include <pm_tools/pcl_segmentation.h>
 
-/** Description
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> Cloud;
+typedef Cloud::Ptr CloudPtr;
+
+/** Remove background from a PointCloud. Uses RANSAC plane fitting or theresholding.
  */
 class BackgroundRemoval {
 
+  CloudPtr cloud_;
 
-    public:
-	/** Constructor.
-	 * @param cloud, background_remover, segmentator, hypothesis_generator
-	 * */
-        BackgroundRemoval(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
+public:
+  pcl::ModelCoefficients::Ptr coefficients_plane;
+  double plane_distance_threshold_;
+  int plane_iterations_;
+  bool ransac_background_filter_;
 
-	}
 
-        void setParameters(){}
-	void process();
+  /** Constructor.
+   * @param source cloud
+   */
+  BackgroundRemoval(CloudPtr source,  double distanceThreshold = 0.05){
+    setPlaneSegmentationParams(distanceThreshold);
+    ransac_background_filter_ = true;
+    coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+  }
 
-	~BackgroundRemoval(){}
+  /** Set background removal mode */
+  void setRansacBackgroundFilter( bool ransac_background_filter ){ ransac_background_filter_ = ransac_background_filter; }
+
+  /** Set plane segmentation parameters: distance to the inliers to the plane
+   * and number of iterations.
+   */
+  void setPlaneSegmentationParams(double distanceThreshold = 0.03, int iterations = 100){
+    plane_distance_threshold_=distanceThreshold;
+    plane_iterations_=iterations;
+  }
+  /** Set new input cloud */
+  void setNewCloud(CloudPtr cloud){ cloud_ = cloud; }
+
+  //void setParameters(){}
+
+  /* Remove plane and filter source cloud into output */
+  void initialize(CloudPtr & output, pcl::PointCloud<pcl::Normal>::Ptr &output_normals);
+
+  /* Remove plane and filter source cloud into output */
+  void process(CloudPtr & output, pcl::PointCloud<pcl::Normal>::Ptr &output_normals);
+
+  /* Remove bg plane iteratively */
+  void removeIteratively(CloudPtr & output);
+
+  ~BackgroundRemoval(){}
+
+  typedef boost::shared_ptr<BackgroundRemoval> Ptr;
 };
 
 #endif /* BACKGROUNDREMOVAL_H_ */
-
-/*    ITERATIVE PLANE EXTRACTION
-// Create the segmentation object for the planar model and set all the parameters
-typename pcl::SACSegmentation<PointT> seg;
-pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-CloudPtr cloud_plane (new typename pcl::PointCloud<PointT> ());
-pcl::PCDWriter writer;
-seg.setOptimizeCoefficients (true);
-seg.setModelType (pcl::SACMODEL_PLANE);
-seg.setMethodType (pcl::SAC_RANSAC);
-seg.setMaxIterations (100);
-seg.setDistanceThreshold (0.02);
-
-int i=0, nr_points = (int) cloud_filtered->points.size ();
-while (cloud_filtered->points.size () > 0.3 * nr_points)
-{
-  // Segment the largest planar component from the remaining cloud
-  seg.setInputCloud (cloud_filtered);
-  seg.segment (*inliers, *coefficients);
-  if (inliers->indices.size () == 0)
-  {
-    std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-    break;
-  }
-
-  // Extract the planar inliers from the input cloud
-  typename pcl::ExtractIndices<PointT> extract;
-  extract.setInputCloud (cloud_filtered);
-  extract.setIndices (inliers);
-  extract.setNegative (false);
-
-  // Get the points associated with the planar surface
-  extract.filter (*cloud_plane);
-  std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
-
-  // Remove the planar inliers, extract the rest
-  extract.setNegative (true);
-  extract.filter (*cloud_f);
-  *cloud_filtered = *cloud_f;
-
-  std::cout << "PointCloud representing cloud filterd: " << cloud_filtered->points.size () << " data points." << std::endl;
-}*/
