@@ -251,6 +251,30 @@ public:
   }
 };
 
+template <typename PointT>
+class PCLView
+{
+  typedef typename pcl::PointCloud<PointT> Cloud;
+  typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
+
+public:
+  /** Show cloud */
+  static void showCloud(CloudPtr source)
+  {
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("CViewer"));
+
+    viewer->addPointCloud<PointT>(source, "Plane cloud");
+    viewer->initCameraParameters();
+    while (!viewer->wasStopped())
+    {
+      viewer->spinOnce(100);
+      boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+    }
+  }
+
+
+};
+
 class EigenTools
 {
 
