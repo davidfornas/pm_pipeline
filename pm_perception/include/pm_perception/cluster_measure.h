@@ -88,9 +88,6 @@ Eigen::Matrix4f ClusterMeasure<PointT>::getAxis()
   Eigen::Vector4f centroid;
   pcl::compute3DCentroid<PointT>(*cloud_, centroid);
 
-  pcl::visualization::PCLVisualizer viewer("Cluster axis viewer");
-  viewer.addPointCloud(cloud_);
-
   //Eigen::Matrix3f m = pca.getEigenVectors();
   Eigen::Matrix3f covariance;
   computeCovarianceMatrixNormalized(*cloud_, centroid, covariance);
@@ -111,6 +108,8 @@ Eigen::Matrix4f ClusterMeasure<PointT>::getAxis()
   t(2,3) = centroid[2];
 
   if(visualize_){
+    pcl::visualization::PCLVisualizer viewer("Cluster axis viewer");
+    viewer.addPointCloud(cloud_);
     viewer.addCoordinateSystem(0.15, Eigen::Affine3f(t));
     viewer.spin();
   }

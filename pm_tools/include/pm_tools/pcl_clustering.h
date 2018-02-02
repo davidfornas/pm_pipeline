@@ -31,9 +31,7 @@ class CloudClustering
 
   typedef typename pcl::PointCloud<PointT> Cloud;
   typedef typename Cloud::Ptr CloudPtr;
-
   CloudPtr cloud_;
-  bool display_clusters_;
 
   /** Store the clusters in a vector of clouds  */
   void extract();
@@ -44,11 +42,10 @@ public:
 
   std::vector<pcl::PointIndices> cluster_indices;
   std::vector<CloudPtr> cloud_clusters;
-
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud;
 
   CloudClustering(CloudPtr in_cloud, bool display_clusters = true) :
-      cloud_(in_cloud), display_clusters_(display_clusters)
+      cloud_(in_cloud)
   {
   }
 
@@ -140,7 +137,7 @@ void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int min
   ec.extract (cluster_indices);
 
   extract();
-  if(display_clusters_) getColoredCloud();
+  getColoredCloud();
 }
 
 template<typename PointT>

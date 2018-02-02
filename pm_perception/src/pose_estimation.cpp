@@ -12,7 +12,7 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 
-void PCAPoseEstimation::initialize() {
+void PCAPoseEstimation::process() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   bg_remove->setNewCloud(cloud_);
@@ -20,13 +20,13 @@ void PCAPoseEstimation::initialize() {
 
   CloudClustering<PointT> cluster(cloud_);
   cluster.applyEuclidianClustering();
-  cluster.displayColoured();
-  cluster.save("euclidian");
-  PCLView<PointT>::showCloud(cluster.cloud_clusters[0]);
-  //Display
+  //cluster.displayColoured();
+  //cluster.save("euclidian");
+  //PCLView<PointT>::showCloud(cluster.cloud_clusters[0]);
 
   // PCA
-  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0]);
+  if (cluster.cloud_clusters.size() == 0) return;
+  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], false);
   cm.getCentroid();
   cm.getAxis();
 

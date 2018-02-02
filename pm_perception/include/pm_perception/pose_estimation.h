@@ -84,7 +84,8 @@ public:
 
   PCAPoseEstimation(CloudPtr source) : PoseEstimation(source){}
 
-  void initialize();
+  void initialize(){process();}
+  void process();
 
 };
 

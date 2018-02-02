@@ -44,6 +44,7 @@ class SliderGraspPlanner {
 
 public:
 
+//  boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
   boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
 
   vpHomogeneousMatrix cMg, cMo; ///< Grasp frame with respect to the camera after planning
@@ -80,6 +81,7 @@ public:
     pos_pub = nh.advertise<geometry_msgs::Pose>( object_pose, 1); //"/gripperPose"
     do_ransac = true;
 
+//    pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
     pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
   }
 
