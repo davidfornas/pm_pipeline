@@ -25,7 +25,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${VISP_INCLUDE_DI
 add_library(${PROJECT_NAME} 
   src/background_removal.cpp
   src/border_detection.cpp
-  src/pose_estimation.cpp
+        src/image_pose_estimation.cpp
   src/cluster_measure.cpp
   src/octomap.cpp
   src/sac_pose_estimation.cpp

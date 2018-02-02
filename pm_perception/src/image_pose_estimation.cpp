@@ -4,19 +4,19 @@
  *  Created on: 16/04/2014
  *      Author: dfornas
  */
-#include <pm_perception/pose_estimation.h>
+#include <pm_perception/image_pose_estimation.h>
 #include <visp/vpPose.h>
 #include <visp/vpImageConvert.h>
 #include <visp/vpPixelMeterConversion.h>
 #include <visp/vpDisplayX.h>
 #include <pm_tools/visp_tools.h>
-#include <geometry_msgs/Transform.h>
+
 
 const double TSIZE_X = 0.140, TSIZE_Y = 0.30, TSIZE_Z = 0.160;
 //Real black box dimensions -> 140, 300, 160 (mm)
 const int NUM_POINTS = 6; // @ TODO Use parameter server or init at constructor.
 
-vpHomogeneousMatrix PoseEstimation::process()
+vpHomogeneousMatrix ImagePoseEstimation::process()
 {
   VirtualImage g(*nh_, image_topic_, image_info_topic_);
   ros::Rate r(4);
@@ -180,7 +180,7 @@ vpHomogeneousMatrix PoseEstimation::process()
 
 }
 
-void PoseEstimation::displayClicks(vpImage<vpRGBa> & Ic, int nclicks)
+void ImagePoseEstimation::displayClicks(vpImage<vpRGBa> & Ic, int nclicks)
 {
   vpDisplay::display(Ic);
   if (nclicks >= 1)
@@ -209,7 +209,7 @@ void PoseEstimation::displayClicks(vpImage<vpRGBa> & Ic, int nclicks)
   }
 }
 
-void PoseEstimation::display5Clicks(vpImage<vpRGBa> & Ic, int nclicks)
+void ImagePoseEstimation::display5Clicks(vpImage<vpRGBa> & Ic, int nclicks)
 {
   vpDisplay::display(Ic);
   if (nclicks >= 1)
@@ -244,7 +244,7 @@ void PoseEstimation::display5Clicks(vpImage<vpRGBa> & Ic, int nclicks)
   }
 }
 
-void PoseEstimation::display6Clicks(vpImage<vpRGBa> & Ic, int nclicks)
+void ImagePoseEstimation::display6Clicks(vpImage<vpRGBa> & Ic, int nclicks)
 {
   vpDisplay::display(Ic);
   if (nclicks >= 1)

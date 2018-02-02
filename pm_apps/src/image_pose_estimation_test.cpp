@@ -6,7 +6,7 @@
  */
 
 #include <ros/ros.h>
-#include <pm_perception/pose_estimation.h>
+#include <pm_perception/image_pose_estimation.h>
 #include <pm_tools/tf_tools.h>
 
 int main(int argc, char** argv)
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     if (counter % 2 == 0)
     {
       ROS_DEBUG("Estimating from left camera");
-      PoseEstimation pose_est(&nh, "stereo/left/image_rect", "stereo/left/camera_info");
+      ImagePoseEstimation pose_est(&nh, "stereo/left/image_rect", "stereo/left/camera_info");
       left = pose_est.process();
 
       if (left_weight == 0)
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
     if (counter % 2 == 1)
     {
       ROS_DEBUG("Estimating from right camera");
-      PoseEstimation pose_est_r(&nh, "stereo/right/image_rect", "stereo/right/camera_info");
+      ImagePoseEstimation pose_est_r(&nh, "stereo/right/image_rect", "stereo/right/camera_info");
       right = pose_est_r.process();
 
       if (right_weight == 0)

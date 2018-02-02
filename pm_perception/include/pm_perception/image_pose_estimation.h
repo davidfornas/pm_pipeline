@@ -6,15 +6,15 @@
  *      Author: dfornas
  */
 
-#ifndef POSEESTIMATION_H_
-#define POSEESTIMATION_H_
+#ifndef IMAGEPOSEESTIMATION_H_
+#define IMAGEPOSEESTIMATION_H_
 
 #include<ros/ros.h>
 #include <pm_tools/virtual_image.h>
 #include <visp/vpHomogeneousMatrix.h>
 
 /** Estimates the pose of a box of known dimensions using user clicks. */
-class PoseEstimation
+class ImagePoseEstimation
 {
 
   ros::NodeHandle * nh_;
@@ -26,7 +26,7 @@ public:
    * @nh Node handler
    * @ TODO Add box dimensions and number of points as parameters
    * */
-  PoseEstimation(ros::NodeHandle * nh) :
+  ImagePoseEstimation(ros::NodeHandle * nh) :
       nh_(nh)
   {
     //Defaults @ TODO unify contructors
@@ -34,7 +34,7 @@ public:
     image_info_topic_ = "stereo/left/camera_info";
   }
 
-  PoseEstimation(ros::NodeHandle * nh, std::string im_topic, std::string im_info_topic) :
+  ImagePoseEstimation(ros::NodeHandle * nh, std::string im_topic, std::string im_info_topic) :
       nh_(nh), image_topic_(im_topic), image_info_topic_(im_info_topic)
   {
   }
@@ -42,7 +42,7 @@ public:
   /** Get image and user input to compute the box pose **/
   vpHomogeneousMatrix process();
 
-  ~PoseEstimation()
+  ~ImagePoseEstimation()
   {
   }
 
@@ -54,4 +54,4 @@ private:
   void display6Clicks(vpImage<vpRGBa> & Ic, int num_clicks);
 };
 
-#endif /* POSEESTIMATION_H_ */
+#endif /* IMAGEPOSEESTIMATION_H_ */
