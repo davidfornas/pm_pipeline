@@ -89,6 +89,30 @@ public:
 
 };
 
+/** Box Pose Estimation using RANSAC Plane Extraction*/
+class BoxPoseEstimation : public PoseEstimation{
+
+public:
+
+  BoxPoseEstimation(CloudPtr source) : PoseEstimation(source){}
+
+  void initialize(){process();}
+  void process();
+
+};
+
+/** Pose Estimation using SQ */
+class SQPoseEstimation : public PoseEstimation{
+
+public:
+
+  SQPoseEstimation(CloudPtr source) : PoseEstimation(source){}
+
+  void initialize(){}
+  void process(){}
+
+};
+
 /** Pose Estimation using RANSAC Cylinder extraction */
 class CylinderPoseEstimation : public PoseEstimation{
 

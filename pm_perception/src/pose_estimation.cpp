@@ -12,6 +12,33 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 
+void BoxPoseEstimation::process() {
+
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+  bg_remove->setNewCloud(cloud_);
+  bg_remove->initialize(cloud_, cloud_normals);
+
+  CloudPtr output (new Cloud), cloud_plane (new Cloud);
+  pcl::PointCloud<pcl::Normal>::Ptr output_normals (new pcl::PointCloud<pcl::Normal>);
+  pcl::ModelCoefficients::Ptr coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+  PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
+
+  PlaneSegmentation<PointT> plane_seg(cloud_, cloud_normals);
+  plane_seg.setDistanceThreshold(0.04);
+  //plane_seg.setIterations(plane_iterations_);
+  plane_seg.apply(output, output_normals, cloud_plane, coefficients_plane);
+  CloudClustering<PointT> cluster(cloud_plane);
+  cluster.applyEuclidianClustering();
+  cluster.displayColoured();
+  // PCA
+  if (cluster.cloud_clusters.size() == 0) return;
+  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], true);
+
+  Eigen::Vector4f centroid = cm.getCentroid();
+//  pcl::compute3DCentroid<PointT>(*cloud_plane, centroid);
+  //cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
+}
+
 void PCAPoseEstimation::process() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);

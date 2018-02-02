@@ -18,21 +18,30 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "pose_estimation_test");
   ros::NodeHandle nh;
 
-  //Get cloud from topic
   pcl::PointCloud<PointT>::Ptr point_cloud_ptr(new pcl::PointCloud<PointT>);
-  PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, "/stereo_camera/points2");
+  //std::string filename("/stereo_camera/points2");
+  std::string filename("/stereo/points2");
+  PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
   PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
-
-  //Filtering
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
+  BoxPoseEstimation pose_est(point_cloud_ptr);
+//  CylinderPoseEstimation pose_est(point_cloud_ptr);
+//  PCAPoseEstimation pose_est(point_cloud_ptr);
 
-  PCAPoseEstimation pose_est(point_cloud_ptr);
   pose_est.initialize();
   ROS_INFO_STREAM(pose_est.get_cMo());
+  while(ros::ok()){
+    PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
+    PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
+    PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
+    PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-
+    pose_est.setNewCloud(point_cloud_ptr);
+    pose_est.process();
+    ROS_INFO_STREAM(pose_est.get_cMo());
+  }
   return 0;
 }
 
