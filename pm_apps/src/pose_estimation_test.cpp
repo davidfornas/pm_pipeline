@@ -6,7 +6,7 @@
  */
 
 #include <pm_tools/pcl_tools.h>
-#include <pm_perception/sac_pose_estimation.h>
+#include <pm_perception/pose_estimation.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef typename pcl::PointCloud<PointT> Cloud;
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
 
-  BoxPoseEstimation pose_est(point_cloud_ptr);
+  PCAPoseEstimation pose_est(point_cloud_ptr);
   pose_est.initialize();
   ROS_INFO_STREAM(pose_est.get_cMo());
 

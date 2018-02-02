@@ -4,7 +4,7 @@
  *  Created on: 29/09/2017
  *      Author: dfornas
  */
-#include <pm_perception/sac_pose_estimation.h>
+#include <pm_perception/pose_estimation.h>
 #include <pm_perception/cluster_measure.h>
 #include <pm_tools/pcl_clustering.h>
 
@@ -12,7 +12,7 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 
-void BoxPoseEstimation::initialize() {
+void PCAPoseEstimation::initialize() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   bg_remove->setNewCloud(cloud_);
@@ -38,7 +38,7 @@ void BoxPoseEstimation::initialize() {
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
 }
 
-void SACPoseEstimation::initialize() {
+void CylinderPoseEstimation::initialize() {
 
   CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud), cloud_cylinder (new Cloud);
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
@@ -100,7 +100,7 @@ void SACPoseEstimation::initialize() {
 
 }
 
-void SACPoseEstimation::process() {
+void CylinderPoseEstimation::process() {
 
   CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud);
   CloudPtr cloud_cylinder (new Cloud), cloud_plane (new Cloud);
@@ -188,7 +188,7 @@ void SACPoseEstimation::process() {
 
 //Ordenar en función de la proyección del punto sobre el eje definido
 //por axis_point_g y normal_g (globales)
-bool SACPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
+bool CylinderPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
 {
   double t1 = (normal_g.x()*(d1.x-axis_point_g.x) + normal_g.y()*(d1.y-axis_point_g.y) + normal_g.z()*(d1.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
   double t2 = (normal_g.x()*(d2.x-axis_point_g.x) + normal_g.y()*(d2.y-axis_point_g.y) + normal_g.z()*(d2.z-axis_point_g.z))/(pow(normal_g.x(),2) + pow(normal_g.y(),2) + pow(normal_g.z(),2));
@@ -197,7 +197,7 @@ bool SACPoseEstimation::sortFunction(const PointT& d1, const PointT& d2)
 
 //Obtiene los máximos y mínimos del cilindro para encontrar la altura del cilindro con un margen
 //de descarte de outlier percentage (normalmente 10%).
-void SACPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
+void CylinderPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage)
 {
   axis_point_g=axis_point;
   normal_g=*normal;
@@ -219,7 +219,7 @@ void SACPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::Cons
     list.push_back(*k);
   }
   //Ordenamos con respecto al eje de direccion y tomamos P05 y P95
-  std::sort(list.begin(), list.end(),  boost::bind(&SACPoseEstimation::sortFunction, this, _1, _2));
+  std::sort(list.begin(), list.end(),  boost::bind(&CylinderPoseEstimation::sortFunction, this, _1, _2));
   PointT max=list[(int)list.size()*outlier_percentage],min=list[(int)list.size()*(1-outlier_percentage)];
   //Proyección de los puntos reales a puntos sobre la normal.
   double t = (normal->x()*(max.x-axis_point.x) + normal->y()*(max.y-axis_point.y) + normal->z()*(max.z-axis_point.z))/(pow(normal->x(),2) + pow(normal->y(),2) + pow(normal->z(),2));

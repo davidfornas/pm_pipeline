@@ -145,7 +145,7 @@ int main(int argc, char **argv)
   if( do_ransac ){
     ROS_INFO_STREAM("Specification using RANSAC.");
     planner = new SliderGraspPlanner(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
-    planner->sac_pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
+    planner->pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
   }else{
     ROS_INFO_STREAM("Specification using a input object Pose.");
     planner = new SliderGraspPlanner(object_pose_topic);

@@ -13,7 +13,7 @@
 #include <pm_tools/tf_tools.h>
 #include <pm_tools/marker_tools.h>
 #include <pm_tools/pcl_segmentation.h>
-#include <pm_perception/sac_pose_estimation.h>
+#include <pm_perception/pose_estimation.h>
 
 #include <pcl/io/pcd_io.h>
 
@@ -44,8 +44,7 @@ class SliderGraspPlanner {
 
 public:
 
-
-  boost::shared_ptr<SACPoseEstimation> sac_pose_estimation;
+  boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
 
   vpHomogeneousMatrix cMg, cMo; ///< Grasp frame with respect to the camera after planning
   double radious, height;
@@ -66,9 +65,7 @@ public:
     topic_name = object_topic_name;
     do_ransac = false;
     change_z_ = change_z;
-
   }
-
 
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
@@ -83,12 +80,11 @@ public:
     pos_pub = nh.advertise<geometry_msgs::Pose>( object_pose, 1); //"/gripperPose"
     do_ransac = true;
 
-    sac_pose_estimation = boost::shared_ptr<SACPoseEstimation>( new SACPoseEstimation(cloud) );
-
+    pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
   }
 
   void setNewCloud(PointTPtr cloud){
-    sac_pose_estimation->setNewCloud(cloud);
+    pose_estimation->setNewCloud(cloud);
   }
 
   /** Main function */

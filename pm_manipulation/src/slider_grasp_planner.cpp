@@ -1,14 +1,10 @@
 /*
- * PMGraspPlanning.cpp
+ * SliderGraspPlanner
  *
  *  Created on: 03/03/2014
  *      Author: dfornas
  */
-
 #include <pm_manipulation/slider_grasp_planner.h>
-#include <pm_tools/pcl_tools.h>
-
-#include <visp/vpHomogeneousMatrix.h>
 
 typedef pcl::PointXYZRGB PointT;
 
@@ -17,7 +13,7 @@ void SliderGraspPlanner::perceive() {
   bool initialized;
 
   if( do_ransac ){
-    sac_pose_estimation->initialize();
+    pose_estimation->initialize();
   }else{
     ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
     if (!initialized){
@@ -28,8 +24,8 @@ void SliderGraspPlanner::perceive() {
     }else{
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name, ros::Duration(2));
       if (message == NULL){
-           ROS_INFO("No pose messages received in 2 seconds. cMo unchanged.");
-           return;
+        ROS_INFO("No pose messages received in 2 seconds. cMo unchanged.");
+        return;
       }
       cMo = VispTools::vispHomogFromGeometryPose(*message);
     }
@@ -58,23 +54,23 @@ void SliderGraspPlanner::perceive() {
 }
 
 void SliderGraspPlanner::redoRansac() {
-  sac_pose_estimation->process();
+  pose_estimation->process();
   recalculate_cMg();
 }
 
 void SliderGraspPlanner::computeMatrix( double angle, double rad, double along ){
-vpHomogeneousMatrix oMg;
+  vpHomogeneousMatrix oMg;
 
 //Apply rotations and traslation to reposition the grasp frame.
-vpHomogeneousMatrix grMgt0(0,along,0,0,0,0);
-vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
-vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
-vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle);
-vpHomogeneousMatrix grMgt(rad,0,0,0,0,0);
-oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
-cMg = cMo * oMg ;
+  vpHomogeneousMatrix grMgt0(0,along,0,0,0,0);
+  vpHomogeneousMatrix gMgrZ(0,0,0,0,0,1.57);
+  vpHomogeneousMatrix gMgrX(0,0,0,1.57,0,0);
+  vpHomogeneousMatrix gMgrY(0,0,0,0,0,angle);
+  vpHomogeneousMatrix grMgt(rad,0,0,0,0,0);
+  oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
+  cMg = cMo * oMg ;
 
-cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.14);
+  cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.14);
 }
 
 /** Compute cMg from cMo. This function is inherited from MAR where
@@ -82,14 +78,14 @@ cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.
  */
 void SliderGraspPlanner::recalculate_cMg(){
 
-  if( do_ransac ) cMo = sac_pose_estimation->get_cMo();
+  if( do_ransac ) cMo = pose_estimation->get_cMo();
 
   //Set grasp config values from interface int values.
   intToConfig();
   computeMatrix( angle_, rad_, along_ );
 
   if( iangle > 90 )
-      cMg = cMg * vpHomogeneousMatrix(0,0,0,0,0,-3.14);
+    cMg = cMg * vpHomogeneousMatrix(0,0,0,0,0,-3.14);
 
   // @DEBUG vispToTF.resetTransform( cMg, "cMg");
   // @DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
@@ -102,7 +98,6 @@ void SliderGraspPlanner::recalculate_cMg(){
   MarkerPublisher markerPub( cylinder, camera_frame_name, "visualization_marker", nh);
   markerPub.setCylinder( cylinder, camera_frame_name, 0.15, 0.5, 15);
   markerPub.publish();
-
 }
 
 //Compute the best grasp from to approach directions along the cylinder axis.

@@ -1,12 +1,12 @@
 /*
- * xxx
+ * Pose Estimation classes
  *
  *  Created on: 29/09/2017
  *      Author: dfornas
  */
 
-#ifndef SAC_POSE_ESTIMATION_H
-#define SAC_POSE_ESTIMATION_H
+#ifndef POSE_ESTIMATION_H
+#define POSE_ESTIMATION_H
 
 
 #include <pm_tools/tf_tools.h>
@@ -77,17 +77,19 @@ public:
   vpHomogeneousMatrix get_cMo() {return cMo;}
 };
 
-class BoxPoseEstimation : public PoseEstimation{
+/** Pose Estimation using PCA */
+class PCAPoseEstimation : public PoseEstimation{
 
 public:
 
-  BoxPoseEstimation(CloudPtr source) : PoseEstimation(source){}
+  PCAPoseEstimation(CloudPtr source) : PoseEstimation(source){}
 
   void initialize();
 
 };
 
-class SACPoseEstimation : public PoseEstimation{
+/** Pose Estimation using RANSAC Cylinder extraction */
+class CylinderPoseEstimation : public PoseEstimation{
 
   //Punto central del cilindro y la direccion.
   PointT axis_point_g;
@@ -104,7 +106,7 @@ public:
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
    * */
-  SACPoseEstimation(CloudPtr cloud, double distanceThreshold = 0.05) : PoseEstimation(cloud, distanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
+  CylinderPoseEstimation(CloudPtr cloud, double distanceThreshold = 0.05) : PoseEstimation(cloud, distanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
     setCylinderSegmentationParams();
   }
 
@@ -123,7 +125,7 @@ public:
     radious_limit_=rlimit;
   }
 
-  ~SACPoseEstimation() {}
+  ~CylinderPoseEstimation() {}
 
 private:
 
@@ -133,6 +135,6 @@ private:
   /** Get the grasp frame with respect to the camera frame */
   void getMinMax3DAlongAxis(const pcl::PointCloud<PointT>::ConstPtr& cloud, PointT * max_pt, PointT * min_pt, PointT axis_point, tf::Vector3 * normal, double outlier_percentage = 0.1);
 
-};//End SACPoseEstimation
+};//End CylinderPoseEstimation
 
 #endif // SAC_POSE_ESTIMATION_H
