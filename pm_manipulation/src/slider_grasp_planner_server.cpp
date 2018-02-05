@@ -20,6 +20,9 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 
+//@TODO Create a server for this planner
+#include <pm_manipulation/slider_grasp_planner.h>
+
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 

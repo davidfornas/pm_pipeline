@@ -21,7 +21,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 add_library(pm_manipulation src/slider_grasp_planner.cpp)
 target_link_libraries(pm_manipulation ${catkin_LIBRARIES}  ${PCL_LIBRARIES} ${VISP_LIBRARIES})
 
-add_executable(slider_grasp_planner_server src/slider_grasp_planner_server.cpp src/slider_grasp_planner.cpp)
+add_executable(slider_grasp_planner_server src/slider_grasp_planner_server.cpp src/slider_grasp_planner.cpp src/ranking_grasp_planner.cpp)
 add_executable(waypoint_server src/waypoint_server.cpp)
 add_executable(publish_pose src/publish_pose.cpp)
 add_executable(object_pose_from_marker_pose src/object_pose_from_marker_pose.cpp)
