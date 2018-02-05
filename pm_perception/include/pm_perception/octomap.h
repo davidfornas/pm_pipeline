@@ -64,7 +64,7 @@ public:
 template<typename PointT>
 void OctomapManager<PointT>::display()
 {
-	pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
+	pcl::visualization::PCLVisualizer viewer("Octomap cloud viewer");
     viewer.addPointCloud(cloud_);
     viewer.spin();
 }
