@@ -3,9 +3,8 @@
  *  Created on: 21/11/2017
  *      Author: dfornas
  */
-
-
 #include <pm_registration/marker_registration.h>
+
 
 void MarkerRegistration::run() {
 
@@ -41,7 +40,7 @@ void MarkerRegistration::run() {
   }
 }
 
-void MarkerRegistration::pairAlign(const CloudPtr cloud_src, const CloudPtr cloud_tgt, CloudPtr output,
+double MarkerRegistration::pairAlign(const CloudPtr cloud_src, const CloudPtr cloud_tgt, CloudPtr output,
                                    Eigen::Matrix4f &final_transform, bool downsample) {
 
   // Downsample for consistency and speed. Enable this for large datasets
@@ -157,6 +156,7 @@ void MarkerRegistration::pairAlign(const CloudPtr cloud_src, const CloudPtr clou
   *output += *cloud_src;
 
   final_transform = targetToSource;
+  return score;
 }
 
 void MarkerRegistration::showMap(const CloudPtr map, bool pause) {
@@ -218,43 +218,45 @@ void MarkerRegistration::detectionCallback(const geometry_msgs::PoseStamped::Con
   current_pose_.pose = pose->pose;
 
   CloudPtr pre_aligned_cloud;
-  pre_aligned_cloud = boost::shared_ptr<Cloud>( new Cloud() );
+  pre_aligned_cloud = boost::shared_ptr<Cloud>(new Cloud());
 
   Eigen::Matrix4f prealignTransform = Eigen::Matrix4f::Identity();
 
-  if(first_cloud_){
+  if (first_cloud_) {
     //Initialize previus cloud and pose
     prev_pose_ = current_pose_;
     first_cloud_ = false;
     prev_cloud_->header = current_cloud_->header;
     map_cloud_->header = current_cloud_->header;
-    for(int i=0; i< current_cloud_->points.size(); i++){
-      prev_cloud_->points.push_back( current_cloud_->points[i] );
-      map_cloud_->points.push_back( current_cloud_->points[i] );
+    for (int i = 0; i < current_cloud_->points.size(); i++) {
+      prev_cloud_->points.push_back(current_cloud_->points[i]);
+      map_cloud_->points.push_back(current_cloud_->points[i]);
     }
 
-  }else{
+  } else {
     //Get trasform between map and current. c stands for camera, m stands for maker, 2 is from current pose and 1 is from prev.
-    vpHomogeneousMatrix c2Mm2 = VispTools::vispHomogFromGeometryPose(  current_pose_.pose );
-    vpHomogeneousMatrix c1Mm1 = VispTools::vispHomogFromGeometryPose(  prev_pose_.pose );
+    vpHomogeneousMatrix c2Mm2 = VispTools::vispHomogFromGeometryPose(current_pose_.pose);
+    vpHomogeneousMatrix c1Mm1 = VispTools::vispHomogFromGeometryPose(prev_pose_.pose);
     vpHomogeneousMatrix wMm1(0, 0, 1, 0, 0, 0), wMm2(0, 0, 1, 0, 0, 0);
     vpHomogeneousMatrix c1Mc2;
     c1Mc2 = c1Mm1 * wMm1.inverse() * wMm2 * c2Mm2.inverse();
-    ROS_INFO_STREAM("Position transform between clouds (using markers) ->  X: " << c1Mc2[0][3] << "Y: " << c1Mc2[1][3] << "Z:" << c1Mc2[2][3]);
+    ROS_INFO_STREAM(
+            "Position transform between clouds (using markers) ->  X: " << c1Mc2[0][3] << "Y: " << c1Mc2[1][3] << "Z:"
+                                                                        << c1Mc2[2][3]);
 
     prealignTransform = VispTools::vpHomogeneousMatrixToEigenMatrix4f(c1Mc2);
 
     //Create prealigned cloud.
-    for(int i=0; i< current_cloud_->points.size(); i++){
+    for (int i = 0; i < current_cloud_->points.size(); i++) {
       PointT new_point = current_cloud_->points[i];
-      vpHomogeneousMatrix point(current_cloud_->points[i].x, current_cloud_->points[i].y, current_cloud_->points[i].z, 0, 0, 0);
-      point = c1Mc2 * point ;
-      new_point.x = static_cast<float>(point [0][3]);
-      new_point.y = static_cast<float>(point [1][3]);
-      new_point.z = static_cast<float>(point [2][3]);
-      pre_aligned_cloud->points.push_back( new_point );
-    }
-    ;
+      vpHomogeneousMatrix point(current_cloud_->points[i].x, current_cloud_->points[i].y, current_cloud_->points[i].z,
+                                0, 0, 0);
+      point = c1Mc2 * point;
+      new_point.x = static_cast<float>(point[0][3]);
+      new_point.y = static_cast<float>(point[1][3]);
+      new_point.z = static_cast<float>(point[2][3]);
+      pre_aligned_cloud->points.push_back(new_point);
+    };
 
   }
 
@@ -271,18 +273,23 @@ void MarkerRegistration::detectionCallback(const geometry_msgs::PoseStamped::Con
 
   //@ TODO filter out markers with big shifts in orientation.
   double summd;
-  summd = (current_pose_.pose.position.x - prev_pose_.pose.position.x) + (current_pose_.pose.position.y - prev_pose_.pose.position.y)
+  summd = (current_pose_.pose.position.x - prev_pose_.pose.position.x) +
+          (current_pose_.pose.position.y - prev_pose_.pose.position.y)
           + (current_pose_.pose.position.z - prev_pose_.pose.position.z);
-  ROS_INFO_STREAM("Marker difference" << summd);
+  ROS_INFO_STREAM("Marker posotion difference" << summd);
 
   showOriginalDifference(current_cloud_, prev_cloud_);
   showMarkerAlignment(pre_aligned_cloud, prev_cloud_);
 
   Eigen::Matrix4f pairTransform;
-  CloudPtr aligned_cloud (new Cloud);
-  pairAlign (prev_cloud_, pre_aligned_cloud, aligned_cloud, pairTransform, false);
+  CloudPtr aligned_cloud(new Cloud);
+  double score = pairAlign(prev_cloud_, pre_aligned_cloud, aligned_cloud, pairTransform, false);
 
-  ROS_INFO_STREAM(pre_aligned_cloud);
+  //First iteration score ==1, then cut bad alignments
+  if (score != 1 && score > 0.003) {
+    ROS_INFO_STREAM("Bad Alignment score");
+    return;
+  }
   globalTransform = pairTransform * prealignTransform * globalTransform;
   CloudPtr final_cloud = boost::shared_ptr<Cloud>( new Cloud() );
 
@@ -293,14 +300,16 @@ void MarkerRegistration::detectionCallback(const geometry_msgs::PoseStamped::Con
   uint8_t g = static_cast<uint8_t>(std::rand() % 255);
   uint8_t b = static_cast<uint8_t>(std::rand() % 255);
   for(int i=0; i< final_cloud->points.size(); i++){
+    map_cloud_->points.push_back( final_cloud->points[i] );
     final_cloud->points[i].r = r;
     final_cloud->points[i].g = g;
     final_cloud->points[i].b = b;
-    map_cloud_->points.push_back( final_cloud->points[i] );
+    color_coded_map_cloud_->points.push_back( final_cloud->points[i] );
   }
 
-  //VOXELGRID
-  showMap(map_cloud_, false);
+  bool pause = false;
+  //showMap(color_coded_map_cloud_, true);
+  showMap(map_cloud_, pause);
   ROS_INFO_STREAM("Map size: " << map_cloud_->points.size() << " points.");
   ROS_INFO_STREAM("Final: " << final_cloud->points.size() << " points.");
 
@@ -330,6 +339,7 @@ MarkerRegistration::MarkerRegistration(ros::NodeHandle &nh, int &argc, char **ar
   current_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
   prev_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
   map_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
+  color_coded_map_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
   full_res_map_cloud_ = boost::shared_ptr<Cloud>( new Cloud() );
 
   map_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/out", 1000);

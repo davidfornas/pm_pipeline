@@ -29,6 +29,7 @@ typedef typename pcl::PointCloud<NormalT> CloudWithNormals;
 typedef typename pcl::PointCloud<NormalT>::Ptr CloudWithNormalsPtr;
 
 // Define a new point representation for < x, y, z, curvature >
+// @TODO Add visualization THREADS http://pointclouds.org/documentation/tutorials/cloud_viewer.php
 class PointRepXYZCurv : public pcl::PointRepresentation <NormalT>
 {
   using pcl::PointRepresentation<NormalT>::nr_dimensions_;
@@ -65,7 +66,7 @@ class MarkerRegistration{
 
   geometry_msgs::PoseStamped current_pose_, prev_pose_;
 
-  CloudPtr current_cloud_, prev_cloud_, map_cloud_, full_res_map_cloud_;
+  CloudPtr current_cloud_, prev_cloud_, map_cloud_, color_coded_map_cloud_, full_res_map_cloud_;
   pcl::visualization::PCLVisualizer *p;
   // 4 viewports. 1)Originals. 2)Marker correction 3)Marker+ICP 4)Map
   int vp_1, vp_2, vp_3, vp_4;
@@ -108,7 +109,7 @@ public:
   * \param output the resultant aligned source PointCloud
   * \param final_transform the resultant transform between source and target
   */
-  void pairAlign (const CloudPtr cloud_src, const CloudPtr cloud_tgt, CloudPtr output, Eigen::Matrix4f &final_transform, bool downsample = false);
+  double pairAlign (const CloudPtr cloud_src, const CloudPtr cloud_tgt, CloudPtr output, Eigen::Matrix4f &final_transform, bool downsample = false);
 };
 
 
