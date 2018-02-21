@@ -13,7 +13,8 @@ int main(int argc, char** argv)
 
   pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>), cloud_hull(new pcl::PointCloud<PointT>);
   pcl::PCDReader reader;
-  reader.read("piramide2.pcd", *cloud);
+  //reader.read("piramide2.pcd", *cloud);
+  PCLTools<PointT>::cloudFromTopic(cloud, "/stereo/points2");
 
   //With polymorphism should be:
   //BorderDetection * border_detector = new ConcaveHullBorderDetection(cloud);

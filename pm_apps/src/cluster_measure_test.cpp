@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 
   //Get cloud from topic
   pcl::PointCloud<PointT>::Ptr point_cloud_ptr(new pcl::PointCloud<PointT>);
-  PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, "/stereo_down/points2");
+  PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, "/stereo/points2");
   PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
 
   //Filtering
