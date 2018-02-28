@@ -1,34 +1,34 @@
+/* ROBOT Wrapper to ARM5E to execute grasping
+ * Author dfornas
+ * Date 28/02/2018
+ **/
+
 #include <ros/ros.h>
 #include <mar_robot_arm5e/ARM5Arm.h>
-#include <pm_manipulation/joint_offset.h>
 #include <mar_ros_bridge/mar_params.h>
 #include <mar_perception/VirtualImage.h>
-
+#include <pm_manipulation/joint_offset.h>
 
 class ArmWrapper{
 
     ros::NodeHandle nh_;
-//	std::string action_name_;
 
     vpColVector initial_posture_;
     vpHomogeneousMatrix cartesian_waypoint_;
     vpColVector joint_waypoint_;
-    std::string joint_state_, joint_state_command_, joint_state_fixed_;
-    JointOffset* joint_offset_;
+    std::string joint_state_, joint_state_command_;
     ARM5Arm* robot_;
-    vpHomogeneousMatrix cMh_;
+    vpHomogeneousMatrix cMg_, bMc_;
     double max_current_, max_velocity_;
     double velocity_aperture_;
     double gripper_manipulation_;
     double gripper_closed_;
-
 
 public:
     ArmWrapper(){
 
       nh_.getParam("joint_state", joint_state_);
       nh_.getParam("joint_state_command", joint_state_command_);
-      nh_.getParam("joint_state_fixed", joint_state_fixed_);
       cartesian_waypoint_=mar_params::paramToVispHomogeneousMatrix(&nh_, "cartesian_waypoint_");
       joint_waypoint_=mar_params::paramToVispColVector(&nh_, "joint_waypoint_");
       initial_posture_=mar_params::paramToVispColVector(&nh_, "initial_posture");
@@ -38,10 +38,12 @@ public:
       nh_.getParam("gripper_manipulation", gripper_manipulation_);
       nh_.getParam("gripper_closed", gripper_closed_);
 
-      //joint_offset_=new JointOffset(nh_, joint_state_, joint_state_command_, joint_state_fixed_);
       robot_=new ARM5Arm(nh_, joint_state_, joint_state_command_);
-      //robot_=new ARM5Arm(nh_, joint_state_fixed_, joint_state_command_);
     }
+
+    void getbMc(){
+      //Get bMc from TF...
+    };
 
     vpHomogeneousMatrix tfToVisp(tf::StampedTransform matrix_tf){
       vpHomogeneousMatrix matrix_visp;
@@ -51,34 +53,36 @@ public:
       return matrix_visp;
     }
 
-    void detectConnector(bool valve_detected){
-      tf::StampedTransform cMh_tf;
+    // Obtain desired cMg_ from TF
+    void cMgFromTF(){
+      tf::StampedTransform cMg_tf;
       tf::TransformListener listener;
+      bool tf_detected = false;
       do{
         try{
-          listener.lookupTransform("/stereo_down_optical", "/connector", ros::Time(0), cMh_tf);
-          valve_detected=true;
+          listener.lookupTransform("/stereo", "/cMg", ros::Time(0), cMg_tf);
+          tf_detected=true;
         }
         catch(tf::TransformException &ex){
         }
         ros::spinOnce();
-      }while(!valve_detected && ros::ok());
-      cMh_=ArmWrapper::tfToVisp(cMh_tf);
-      /*cMh_[0][0]=-0.07913152724;  cMh_[0][1]=0.9883773439;  cMh_[0][2]=-0.1298014922; cMh_[0][3]=0.02322718259;
-      cMh_[1][0]=-0.160249269;  cMh_[1][1]=-0.1411287379;  cMh_[1][2]=-0.9769354386; cMh_[1][3]=-0.1983788169;
-      cMh_[2][0]=-0.9838995747;  cMh_[2][1]=-0.05650579903;  cMh_[2][2]=0.1695544794; cMh_[2][3]=0.579123645;*/
-      valve_detected=true;
+      }while(!tf_detected && ros::ok());
+      cMg_=ArmWrapper::tfToVisp(cMg_tf);
+      tf_detected=true;
     }
 
-    void reachPosition(vpHomogeneousMatrix waypoint){
-      vpHomogeneousMatrix bMc, bMe, cMe, cMgoal;
-      joint_offset_->get_bMc(bMc);
+    //Set desired cMg
+    void setcMg( vpHomogeneousMatrix cMg){
+      cMg_ = cMg;
+    }
 
-      ArmWrapper::detectConnector(true);
-      cMgoal=cMh_*waypoint;
+    // Go to goal with respect to camera.
+    void reachPositionWrtCamera(vpHomogeneousMatrix cMgoal){
+      vpHomogeneousMatrix bMe, cMe;
 
       robot_->getPosition(bMe);
-      cMe=bMc.inverse()*bMe;
+      cMe=bMc_.inverse()*bMe;
+
       while((cMe.getCol(4)-cMgoal.getCol(4)).euclideanNorm()>0.015 && ros::ok()){
         std::cout<<"Error: "<<(cMe.getCol(4)-cMgoal.getCol(4)).euclideanNorm()<<std::endl;
         vpColVector xdot(6);
@@ -91,45 +95,58 @@ public:
         ros::spinOnce();
 
         robot_->getPosition(bMe);
-        cMe=bMc.inverse()*bMe;
-        ArmWrapper::detectConnector(true);
+        cMe=bMc_.inverse()*bMe;
       }
     }
 
-    void reachPositionStraight(vpHomogeneousMatrix waypoint){
-      vpHomogeneousMatrix bMc, bMe, cMe, cMgoal;
-      joint_offset_->get_bMc(bMc);
+    // Go to waypoint on goal cMg_*waypoint.
+    void reachPositionWithWaypoint(vpHomogeneousMatrix cMgoal, vpHomogeneousMatrix waypoint){
+      cMgoal=cMgoal*waypoint;
+      reachPositionWrtCamera(cMgoal);
+    }
 
-      ArmWrapper::detectConnector(true);
-      cMgoal=cMh_*waypoint;
+    //Move to a cartesian increment joint by joint.
+    void moveCartesianDistance(double x, double y, double z){
+      vpHomogeneousMatrix bMe;
+      vpColVector js;
+      ros::spinOnce();
+      robot_->getPosition(bMe);
+      bMe[0][3] += x;
+      bMe[1][3] += y;
+      bMe[2][3] += z;
+      js = robot_->armIK(bMe);
+      reachJointPositionByJoint(js);
+    }
 
-      vpColVector q(5);
-      cMgoal[0][3]=cMe[0][3];
-      while((cMe.getCol(4)-cMgoal.getCol(4)).euclideanNorm()>0.02 && ros::ok()){
-        std::cout<<"Error: "<<(cMe.getCol(4)-cMgoal.getCol(4)).euclideanNorm()<<std::endl;
-        vpColVector finalJoints(5), current_joints;
-        vpHomogeneousMatrix bMv=bMc*cMgoal;
-        robot_->getJointValues(current_joints);
-        vpHomogeneousMatrix bMe;
-        robot_->getPosition(bMe);
-        bMv[1][3]=bMe[1][3];
-        finalJoints=robot_->armIK(bMv);
-        if(finalJoints[0]>-1.57 && finalJoints[0]<2.1195 && finalJoints[1]>0 && finalJoints[1]<1.58665 && finalJoints[2]>0 && finalJoints[2]<2.15294){
-          q=finalJoints-current_joints;
-          std::cout<<"q: "<<q<<std::endl;
-          q[0]=0;
-          q[3]=0;
-          q[4]=0;
-          robot_->setJointVelocity(q);
-        }
-        else{
-          std::cout<<"Point no reachable final Joints: "<<finalJoints<<std::endl;
-        }
+    //Move to a cartesian increment joint by joint.
+    void moveCartesianDistance2(double x, double y, double z){
+      vpHomogeneousMatrix bMe;
+      vpColVector js;
+      ros::spinOnce();
+      robot_->getPosition(bMe);
+      bMe[0][3] += x;
+      bMe[1][3] += y;
+      bMe[2][3] += z;
+      reachCartesianPosition(bMe);
+    }
+
+
+    void reachCartesianPosition(vpHomogeneousMatrix bMg){
+
+      vpHomogeneousMatrix bMe;
+      robot_->getPosition(bMe);
+      // 0.25, beacuse with 0.15 it stops moving
+      while((bMg.getCol(3)-bMe.getCol(3)).euclideanNorm()>0.025 && ros::ok()){
+        std::cout<<"Error: "<<(bMg.getCol(3)-bMe.getCol(3)).euclideanNorm()<<std::endl;
+        vpColVector xdot(6);
+        xdot=0;
+        vpHomogeneousMatrix eMg=bMe.inverse()*bMg;
+        xdot[0]=eMg[0][3]*0.6;
+        xdot[1]=eMg[1][3]*0.6;
+        xdot[2]=eMg[2][3]*0.6;
+        robot_->setCartesianVelocity(xdot);
         ros::spinOnce();
         robot_->getPosition(bMe);
-        cMe=bMc.inverse()*bMe;
-        ArmWrapper::detectConnector(true);
-        cMgoal[0][3]=cMe[0][3];
       }
     }
 
@@ -257,21 +274,29 @@ public:
     void testFunctions(){
 
       //joint_offset_->reset_bMc(initial_posture_);
-      ArmWrapper::reachJointPositionByJoint(joint_waypoint_);
-      ROS_INFO("Joint position reached");
-      //ArmWrapper::reachPosition(cartesian_waypoint_);
+      //ArmWrapper::reachJointPositionByJoint(joint_waypoint_);
+      ROS_INFO("Joint position reached. Trying cartesian...");
 
+      //Needed to udate the postion...
+      ros::Duration(0.3).sleep();
+      ros::spinOnce();
 
-      //De momento van bien
-      return;
+      //DF: Movimiento cartesiano utilizando incrementos y el movimientos joint by joint.
+      ROS_INFO("Moving 10cm. joint by joint.");
+      moveCartesianDistance(0.0, 0.0, 0.1);
+
+      ROS_INFO("Moving 10cm. with setCartesianVelocity.");
+      moveCartesianDistance2(0.0, 0.0, -0.1);
+
+      //SHould test with obstacles
       ROS_INFO("Open the gripper until manipulation aperture");
       ArmWrapper::openGripper(velocity_aperture_, gripper_manipulation_, max_current_);
       ROS_INFO("Close the gripper");
       ArmWrapper::openGripper(-velocity_aperture_, gripper_closed_, max_current_);
 
+      ROS_INFO("Finished testing...");
     }
 };
-
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "robot_test");
