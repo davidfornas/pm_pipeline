@@ -2,7 +2,6 @@
  * Author dfornas
  * Date 28/02/2018
  **/
-
 #include <ros/ros.h>
 #include <mar_robot_arm5e/ARM5Arm.h>
 #include <mar_ros_bridge/mar_params.h>
@@ -29,9 +28,11 @@ public:
 
       nh_.getParam("joint_state", joint_state_);
       nh_.getParam("joint_state_command", joint_state_command_);
+
       cartesian_waypoint_=mar_params::paramToVispHomogeneousMatrix(&nh_, "cartesian_waypoint_");
       joint_waypoint_=mar_params::paramToVispColVector(&nh_, "joint_waypoint_");
       initial_posture_=mar_params::paramToVispColVector(&nh_, "initial_posture");
+
       nh_.getParam("max_current", max_current_);
       nh_.getParam("max_velocity", max_velocity_);
       nh_.getParam("velocity_aperture", velocity_aperture_);
@@ -41,10 +42,6 @@ public:
       robot_=new ARM5Arm(nh_, joint_state_, joint_state_command_);
     }
 
-    void getbMc(){
-      //Get bMc from TF...
-    };
-
     vpHomogeneousMatrix tfToVisp(tf::StampedTransform matrix_tf){
       vpHomogeneousMatrix matrix_visp;
       matrix_visp[0][0]=matrix_tf.getBasis()[0][0]; matrix_visp[0][1]=matrix_tf.getBasis()[0][1]; matrix_visp[0][2]=matrix_tf.getBasis()[0][2]; matrix_visp[0][3]=matrix_tf.getOrigin().x();
@@ -52,6 +49,25 @@ public:
       matrix_visp[2][0]=matrix_tf.getBasis()[2][0]; matrix_visp[2][1]=matrix_tf.getBasis()[2][1]; matrix_visp[2][2]=matrix_tf.getBasis()[2][2]; matrix_visp[2][3]=matrix_tf.getOrigin().z();
       return matrix_visp;
     }
+
+    void getbMc(){
+      //Get bMc from TF...
+      tf::StampedTransform bMc_tf;
+      tf::TransformListener listener;
+      bool tf_detected = false;
+      do{
+        try{
+          listener.lookupTransform("arm5/kinematic_base", "stereo", ros::Time(0), bMc_tf);
+          tf_detected=true;
+        }
+        catch(tf::TransformException &ex){
+        }
+        ros::spinOnce();
+      }while(!tf_detected && ros::ok());
+      bMc_=ArmWrapper::tfToVisp(bMc_tf);
+      tf_detected=true;
+      ROS_INFO_STREAM("Got new bMc: " << bMc_);
+    };
 
     // Obtain desired cMg_ from TF
     void cMgFromTF(){
@@ -69,6 +85,7 @@ public:
       }while(!tf_detected && ros::ok());
       cMg_=ArmWrapper::tfToVisp(cMg_tf);
       tf_detected=true;
+      ROS_INFO_STREAM("Got new cMg: " << cMg_);
     }
 
     //Set desired cMg
@@ -76,37 +93,8 @@ public:
       cMg_ = cMg;
     }
 
-    // Go to goal with respect to camera.
-    void reachPositionWrtCamera(vpHomogeneousMatrix cMgoal){
-      vpHomogeneousMatrix bMe, cMe;
-
-      robot_->getPosition(bMe);
-      cMe=bMc_.inverse()*bMe;
-
-      while((cMe.getCol(4)-cMgoal.getCol(4)).euclideanNorm()>0.015 && ros::ok()){
-        std::cout<<"Error: "<<(cMe.getCol(4)-cMgoal.getCol(4)).euclideanNorm()<<std::endl;
-        vpColVector xdot(6);
-        xdot=0;
-        vpHomogeneousMatrix eMgoal=cMe.inverse()*cMgoal;
-        xdot[0]=eMgoal[0][3]*0.6;
-        xdot[1]=eMgoal[1][3]*0.6;
-        xdot[2]=eMgoal[2][3]*0.6;
-        robot_->setCartesianVelocity(xdot);
-        ros::spinOnce();
-
-        robot_->getPosition(bMe);
-        cMe=bMc_.inverse()*bMe;
-      }
-    }
-
-    // Go to waypoint on goal cMg_*waypoint.
-    void reachPositionWithWaypoint(vpHomogeneousMatrix cMgoal, vpHomogeneousMatrix waypoint){
-      cMgoal=cMgoal*waypoint;
-      reachPositionWrtCamera(cMgoal);
-    }
-
     //Move to a cartesian increment joint by joint.
-    void moveCartesianDistance(double x, double y, double z){
+    void moveCartesianDistanceJointByJoint(double x, double y, double z){
       vpHomogeneousMatrix bMe;
       vpColVector js;
       ros::spinOnce();
@@ -119,7 +107,7 @@ public:
     }
 
     //Move to a cartesian increment joint by joint.
-    void moveCartesianDistance2(double x, double y, double z){
+    void moveCartesianDistance(double x, double y, double z){
       vpHomogeneousMatrix bMe;
       vpColVector js;
       ros::spinOnce();
@@ -148,6 +136,35 @@ public:
         ros::spinOnce();
         robot_->getPosition(bMe);
       }
+    }
+
+    // Go to goal with respect to camera.
+    void reachPositionWrtCamera(vpHomogeneousMatrix cMgoal){
+      vpHomogeneousMatrix bMe, cMe;
+
+      robot_->getPosition(bMe);
+      cMe=bMc_.inverse()*bMe;
+
+      while((cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()>0.025 && ros::ok()){
+        std::cout<<"Error: "<<(cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()<<std::endl;
+        vpColVector xdot(6);
+        xdot=0;
+        vpHomogeneousMatrix eMgoal=cMe.inverse()*cMgoal;
+        xdot[0]=eMgoal[0][3]*0.1;
+        xdot[1]=eMgoal[1][3]*0.1;
+        xdot[2]=eMgoal[2][3]*0.1;
+        robot_->setCartesianVelocity(xdot);
+        ros::spinOnce();
+
+        robot_->getPosition(bMe);
+        cMe=bMc_.inverse()*bMe;
+      }
+    }
+
+    // Go to waypoint on goal cMg_*waypoint.
+    void reachPositionWithWaypoint(vpHomogeneousMatrix cMgoal, vpHomogeneousMatrix waypoint){
+      cMgoal=cMgoal*waypoint;
+      reachPositionWrtCamera(cMgoal);
     }
 
     //Reach position joint by joint to avoid overcurrent.
@@ -283,10 +300,10 @@ public:
 
       //DF: Movimiento cartesiano utilizando incrementos y el movimientos joint by joint.
       ROS_INFO("Moving 10cm. joint by joint.");
-      moveCartesianDistance(0.0, 0.0, 0.1);
+      moveCartesianDistanceJointByJoint(0.0, 0.0, 0.1);
 
       ROS_INFO("Moving 10cm. with setCartesianVelocity.");
-      moveCartesianDistance2(0.0, 0.0, -0.1);
+      moveCartesianDistance(0.0, 0.0, -0.1);
 
       //SHould test with obstacles
       ROS_INFO("Open the gripper until manipulation aperture");
@@ -296,12 +313,23 @@ public:
 
       ROS_INFO("Finished testing...");
     }
+
+    void testOther(){
+      getbMc();
+      cMgFromTF();
+      reachPositionWrtCamera(cMg_);
+    }
 };
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "robot_test");
   ArmWrapper robot;
-  robot.testFunctions();
+
+  //Test simple moving functions.
+  //robot.testFunctions();
+
+  //Test grasping with processing
+  robot.testOther();
   return 1;
 }
 
