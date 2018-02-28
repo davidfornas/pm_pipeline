@@ -1,9 +1,14 @@
 <launch>
 
-  <param name="input_topic" value="/stereo_camera/points2/" />
-  <param name="cloud_frame_id" value="bumblebee2/left" />
+  <!--param name="input_topic" value="/stereo_camera/points2/" />
+  <param name="cloud_frame_id" value="bumblebee2/left" /-->
 
-  <param name="grasp_pose_topic" value="/task_priority_pose" />
+  <param name="input_topic" value="/stereo/points2/" />
+  <param name="cloud_frame_id" value="stereo" />
+
+  <!--param name="grasp_pose_topic" value="/task_priority_pose" /-->
+  <param name="grasp_pose_topic" value="/cMg" />
+
   <param name="object_pose_topic" value="/object_pose" />
 
   <node name="slider_grasp_planner_server" pkg="pm_manipulation" type="slider_grasp_planner_server" output="screen" respawn="false"/>
