@@ -2,6 +2,7 @@
  * Author dfornas
  * Date 28/02/2018
  **/
+#include <vector>
 #include <ros/ros.h>
 #include <mar_robot_arm5e/ARM5Arm.h>
 #include <mar_ros_bridge/mar_params.h>
@@ -40,6 +41,9 @@ public:
       nh_.getParam("gripper_closed", gripper_closed_);
 
       robot_=new ARM5Arm(nh_, joint_state_, joint_state_command_);
+
+      //@TODO Make this optional. WrtCamera functions only if there is camera information.
+      getbMc();
     }
 
     vpHomogeneousMatrix tfToVisp(tf::StampedTransform matrix_tf){
@@ -48,6 +52,36 @@ public:
       matrix_visp[1][0]=matrix_tf.getBasis()[1][0]; matrix_visp[1][1]=matrix_tf.getBasis()[1][1]; matrix_visp[1][2]=matrix_tf.getBasis()[1][2]; matrix_visp[1][3]=matrix_tf.getOrigin().y();
       matrix_visp[2][0]=matrix_tf.getBasis()[2][0]; matrix_visp[2][1]=matrix_tf.getBasis()[2][1]; matrix_visp[2][2]=matrix_tf.getBasis()[2][2]; matrix_visp[2][3]=matrix_tf.getOrigin().z();
       return matrix_visp;
+    }
+
+    vpColVector initColVector( double a, double b, double c){
+      vpColVector j;
+      j.resize(3);
+      j[0] = a;
+      j[1] = b;
+      j[2] = c;
+      return j;
+    }
+
+    vpColVector initColVector( double a, double b, double c, double d){
+      vpColVector j;
+      j.resize(4);
+      j[0] = a;
+      j[1] = b;
+      j[2] = c;
+      j[3] = d;
+      return j;
+    }
+
+    vpColVector initColVector( double a, double b, double c, double d, double e){
+      vpColVector j;
+      j.resize(5);
+      j[0] = a;
+      j[1] = b;
+      j[2] = c;
+      j[3] = d;
+      j[4] = e;
+      return j;
     }
 
     void getbMc(){
@@ -123,15 +157,19 @@ public:
 
       vpHomogeneousMatrix bMe;
       robot_->getPosition(bMe);
-      // 0.25, beacuse with 0.15 it stops moving
       while((bMg.getCol(3)-bMe.getCol(3)).euclideanNorm()>0.025 && ros::ok()){
-        std::cout<<"Error: "<<(bMg.getCol(3)-bMe.getCol(3)).euclideanNorm()<<std::endl;
+        ROS_INFO_STREAM("Position error norm: "<<(bMg.getCol(3)-bMe.getCol(3)).euclideanNorm());
         vpColVector xdot(6);
         xdot=0;
         vpHomogeneousMatrix eMg=bMe.inverse()*bMg;
         xdot[0]=eMg[0][3]*0.6;
         xdot[1]=eMg[1][3]*0.6;
         xdot[2]=eMg[2][3]*0.6;
+
+        while(xdot.euclideanNorm() > 0.6) xdot /= 1.5;
+        while(xdot.euclideanNorm() < 0.25) xdot *= 1.5;
+
+        ROS_DEBUG_STREAM("XDOT:" << xdot);
         robot_->setCartesianVelocity(xdot);
         ros::spinOnce();
         robot_->getPosition(bMe);
@@ -146,19 +184,34 @@ public:
       cMe=bMc_.inverse()*bMe;
 
       while((cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()>0.025 && ros::ok()){
-        std::cout<<"Error: "<<(cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()<<std::endl;
+        ROS_INFO_STREAM("Position error norm: "<<(cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm());
         vpColVector xdot(6);
         xdot=0;
         vpHomogeneousMatrix eMgoal=cMe.inverse()*cMgoal;
-        xdot[0]=eMgoal[0][3]*0.1;
-        xdot[1]=eMgoal[1][3]*0.1;
-        xdot[2]=eMgoal[2][3]*0.1;
+        xdot[0]=eMgoal[0][3]*0.8;
+        xdot[1]=eMgoal[1][3]*0.8;
+        xdot[2]=eMgoal[2][3]*0.8;
+
+        while(xdot.euclideanNorm() > 0.6) xdot /= 1.5;
+        while(xdot.euclideanNorm() < 0.25) xdot *= 1.5;
+
+        ROS_DEBUG_STREAM("XDOT:" << xdot);
         robot_->setCartesianVelocity(xdot);
         ros::spinOnce();
 
         robot_->getPosition(bMe);
         cMe=bMc_.inverse()*bMe;
       }
+    }
+
+    // Go to goal with respect to camera.
+    void reachPositionWrtCameraJointByJoint(vpHomogeneousMatrix cMgoal){
+      vpHomogeneousMatrix bMgoal;
+      vpColVector js;
+
+      bMgoal = bMc_ * cMgoal;
+      js = robot_->armIK(bMgoal);
+      reachJointPositionByJoint(js);
     }
 
     // Go to waypoint on goal cMg_*waypoint.
@@ -172,21 +225,19 @@ public:
       vpColVector current_joints;
       robot_->getJointValues(current_joints);
       desired_joints[4]=current_joints[4];
-      ros::Rate r(20);
-
+      ros::Rate r(30);
       int joint = 0;
       while(joint<5) {
         while ( std::abs(desired_joints[joint] - current_joints[joint]) > 0.015 && ros::ok()) {
           //std::cout<<"Error: "<<(desired_joints-current_joints).euclideanNorm()<<"X"<<desired_joints<<"X"<<current_joints<<std::endl;
           vpColVector cmd_vel(5, 0.0);
           cmd_vel[joint] = desired_joints[joint] - current_joints[joint];
-          while (cmd_vel[joint] > max_velocity_ || cmd_vel[joint] < -max_velocity_) {
+          while (cmd_vel[joint] > 0.5 || cmd_vel[joint] < -0.5) {
             cmd_vel[joint] /= 1.2;
           }
           robot_->setJointVelocity(cmd_vel);
           ros::spinOnce();
           r.sleep();
-
           robot_->getJointValues(current_joints);
           desired_joints[4] = current_joints[4];
         }
@@ -196,23 +247,19 @@ public:
 
     //Reach joint position all at once. @TODO Limit each joint to avoid overcurrent.
     void reachJointPosition(vpColVector desired_joints){
+
       vpColVector current_joints;
       robot_->getJointValues(current_joints);
       desired_joints[4]=current_joints[4];
-      ros::Rate r(20);
 
+      ros::Rate r(20);
       vpColVector cmd_vel(5, 0.0);
-      cmd_vel[0]=0.02;
-      robot_->setJointVelocity(cmd_vel);
 
       while((desired_joints-current_joints).euclideanNorm()>0.015 && ros::ok()){
         //std::cout<<"Error: "<<(desired_joints-current_joints).euclideanNorm()<<"X"<<desired_joints<<"X"<<current_joints<<std::endl;
         vpColVector cmd_vel = desired_joints-current_joints;
-        while(cmd_vel.euclideanNorm()>max_velocity_){
-          cmd_vel/=1.2;
-          //std::cout<<"CmdVel: "<<cmd_vel<<"Norm:"<< cmd_vel.euclideanNorm()<<std::endl;
-        }
-        //std::cout<<"CmdVel: "<<cmd_vel<<std::endl;
+        while(cmd_vel.euclideanNorm()>0.45) cmd_vel/=1.2;
+        ROS_DEBUG_STREAM("Joint velocities sent: "<<cmd_vel);
         robot_->setJointVelocity(cmd_vel);
         ros::spinOnce();
         r.sleep();
@@ -290,46 +337,69 @@ public:
 
     void testFunctions(){
 
-      //joint_offset_->reset_bMc(initial_posture_);
-      //ArmWrapper::reachJointPositionByJoint(joint_waypoint_);
-      ROS_INFO("Joint position reached. Trying cartesian...");
-
-      //Needed to udate the postion...
-      ros::Duration(0.3).sleep();
-      ros::spinOnce();
+      ROS_INFO("Probando joint by joint.");
+      vpColVector js = initColVector(-0.8508754461803698, 0.3820938630929661, 1.42683938097373, -0.9393362034233482, 0.3839724354387525);
+      reachJointPositionByJoint(js);
+      reachJointPosition(js);
 
       //DF: Movimiento cartesiano utilizando incrementos y el movimientos joint by joint.
       ROS_INFO("Moving 10cm. joint by joint.");
-      moveCartesianDistanceJointByJoint(0.0, 0.0, 0.1);
+      moveCartesianDistanceJointByJoint(0.0, 0.1, 0.15);
 
       ROS_INFO("Moving 10cm. with setCartesianVelocity.");
-      moveCartesianDistance(0.0, 0.0, -0.1);
+      moveCartesianDistance(0.0, 0.2, 0.45);
 
-      //SHould test with obstacles
+      //Should test grasping object
       ROS_INFO("Open the gripper until manipulation aperture");
       ArmWrapper::openGripper(velocity_aperture_, gripper_manipulation_, max_current_);
       ROS_INFO("Close the gripper");
       ArmWrapper::openGripper(-velocity_aperture_, gripper_closed_, max_current_);
 
-      ROS_INFO("Finished testing...");
     }
 
-    void testOther(){
-      getbMc();
+    void testCartesianWrtCamera(){
+      vpHomogeneousMatrix cMg, I;
+      cMg[0][3] = 0.195;
+      cMg[1][3] = 0.174;
+      cMg[2][3] = 0.738;
+      reachPositionWrtCamera(cMg);
+      ROS_INFO("With waypoint");
+      reachPositionWithWaypoint(cMg, I);
+    }
+
+    void testCartesian(){
+      vpHomogeneousMatrix bMg;
+      bMg[0][3] = -0.0495;
+      bMg[1][3] = 0.031;
+      bMg[2][3] = 0.565;
+      reachCartesianPosition(bMg);
+    }
+
+    void testCartesianAbsMoves(){
+
+      testCartesianWrtCamera();
+      testCartesian();
+
+      //TEST WITH VISION
       cMgFromTF();
-      reachPositionWrtCamera(cMg_);
+      reachPositionWrtCameraJointByJoint(cMg_);
     }
 };
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "robot_test");
   ArmWrapper robot;
+  //Needed to udate the postion...
+  ros::Duration(0.3).sleep();
+  ros::spinOnce();
 
   //Test simple moving functions.
   //robot.testFunctions();
 
   //Test grasping with processing
-  robot.testOther();
+  //robot.testCartesianAbsMoves();
+
+
   return 1;
 }
 
