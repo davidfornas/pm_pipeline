@@ -26,9 +26,9 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-  BoxPoseEstimation pose_est(point_cloud_ptr);
-//  CylinderPoseEstimation pose_est(point_cloud_ptr);
-//  PCAPoseEstimation pose_est(point_cloud_ptr);
+  //BoxPoseEstimation pose_est(point_cloud_ptr);
+  CylinderPoseEstimation pose_est(point_cloud_ptr);
+  //PCAPoseEstimation pose_est(point_cloud_ptr);
 
   pose_est.initialize();
   ROS_INFO_STREAM(pose_est.get_cMo());
