@@ -29,8 +29,8 @@ int main(int argc, char** argv)
   JointOffset* joint_offset = new JointOffset(nh, joint_state, joint_state_command, joint_state_fixed);
 
   vpColVector initJoints;
-  joint_offset->reset_bMc(initJoints);
-
+  //joint_offset->setbMcWithMarker(initJoints);
+  joint_offset->setbMcFromTf();
   ros::spin();
 
   return (0);

@@ -122,6 +122,10 @@ public:
       ROS_INFO_STREAM("Got new cMg: " << cMg_);
     }
 
+    vpHomogeneousMatrix getcMg(){
+      return cMg_;
+    }
+
     //Set desired cMg
     void setcMg( vpHomogeneousMatrix cMg){
       cMg_ = cMg;
@@ -166,7 +170,7 @@ public:
         xdot[1]=eMg[1][3]*0.6;
         xdot[2]=eMg[2][3]*0.6;
 
-        while(xdot.euclideanNorm() > 0.6) xdot /= 1.5;
+        while(xdot.euclideanNorm() > 0.4) xdot /= 1.5;
         while(xdot.euclideanNorm() < 0.25) xdot *= 1.5;
 
         ROS_DEBUG_STREAM("XDOT:" << xdot);
@@ -192,7 +196,7 @@ public:
         xdot[1]=eMgoal[1][3]*0.8;
         xdot[2]=eMgoal[2][3]*0.8;
 
-        while(xdot.euclideanNorm() > 0.6) xdot /= 1.5;
+        while(xdot.euclideanNorm() > 0.4) xdot /= 1.5;
         while(xdot.euclideanNorm() < 0.25) xdot *= 1.5;
 
         ROS_DEBUG_STREAM("XDOT:" << xdot);
@@ -351,10 +355,14 @@ public:
 
       //Should test grasping object
       ROS_INFO("Open the gripper until manipulation aperture");
-      ArmWrapper::openGripper(velocity_aperture_, gripper_manipulation_, max_current_);
+      openGripper(velocity_aperture_, gripper_manipulation_, max_current_);
       ROS_INFO("Close the gripper");
-      ArmWrapper::openGripper(-velocity_aperture_, gripper_closed_, max_current_);
+      openGripper(-velocity_aperture_, gripper_closed_, max_current_);
 
+    }
+
+    void testClose(){
+      openGripper(-velocity_aperture_, gripper_closed_, max_current_);
     }
 
     void testCartesianWrtCamera(){
@@ -398,6 +406,12 @@ int main(int argc, char** argv){
 
   //Test grasping with processing
   //robot.testCartesianAbsMoves();
+
+  //robot.cMgFromTF();
+  //robot.reachPositionWrtCamera(robot.getcMg());
+
+  robot.testClose();
+
 
 
   return 1;
