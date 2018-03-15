@@ -21,7 +21,7 @@
     <node name="tf_stereo_from_solid" type="static_transform_publisher" pkg="tf" args="-0.29465 0.045 0.11951 -1.57 0 -0.4625123 $(arg arm_base_link) stereo 100"/>
 
 
-     <param name="robot_description" textfile="arm5e_with_sensor.urdf"/>
+     <param name="robot_description" textfile="$(find pm_manipulation)/launch/arm5e_with_sensor.urdf"/>
      <node pkg="robot_state_publisher" type="state_publisher" name="rob_st_pub" >
       <remap from="joint_states" to="/arm5e/joint_state_angle" />
       <param name="publish_frequency" type="double" value="100.0" />
