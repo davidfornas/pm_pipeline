@@ -19,6 +19,7 @@
     <!--node name="tf_stereo_from_bumblebe" type="static_transform_publisher" pkg="tf" args="-0.356612 0.045 0.119828 -1.57 0 -0.511419 $(arg arm_base_link) stereo 100"/-->
 
     <node name="tf_stereo_from_solid" type="static_transform_publisher" pkg="tf" args="-0.29465 0.045 0.11951 -1.57 0 -0.4625123 $(arg arm_base_link) stereo 100"/>
+    <node name="rviz" type="rviz" pkg="rviz" />
 
     <include file="$(find pm_manipulation)/launch/joint_offset.launch"/>
 

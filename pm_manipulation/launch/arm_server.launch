@@ -10,7 +10,6 @@
 		 
 	 <param name="joint_state" value="$(arg joint_state)" />
 	 <param name="joint_state_command" value="$(arg joint_state_command)" />
-	 <param name="joint_state_fixed" value="$(arg joint_state_fixed)" />
 	 <param name="max_current" value="$(arg max_current)" />
 	 <param name="max_velocity" value="$(arg max_velocity)" />
 	 <param name="velocity_aperture" value="$(arg velocity_aperture)" />

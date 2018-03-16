@@ -186,9 +186,12 @@ public:
 
       robot_->getPosition(bMe);
       cMe=bMc_.inverse()*bMe;
+      ROS_INFO_STREAM("cMe" << std::endl << cMe);
+      ROS_INFO_STREAM("cMgoal" << std::endl << cMgoal);
 
-      while((cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()>0.025 && ros::ok()){
+      while((cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()>0.03 && ros::ok()){
         ROS_INFO_STREAM("Position error norm: "<<(cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm());
+
         vpColVector xdot(6);
         xdot=0;
         vpHomogeneousMatrix eMgoal=cMe.inverse()*cMgoal;
@@ -196,10 +199,12 @@ public:
         xdot[1]=eMgoal[1][3]*0.8;
         xdot[2]=eMgoal[2][3]*0.8;
 
-        while(xdot.euclideanNorm() > 0.4) xdot /= 1.5;
-        while(xdot.euclideanNorm() < 0.25) xdot *= 1.5;
+        ROS_INFO_STREAM("XDOT:" << xdot);
+        while(xdot.euclideanNorm() > 0.35) xdot /= 1.2;
+        while(xdot.euclideanNorm() < 0.08) xdot *= 1.2;
 
-        ROS_DEBUG_STREAM("XDOT:" << xdot);
+        ROS_INFO_STREAM("XDOT filtered:" << xdot);
+        //return;
         robot_->setCartesianVelocity(xdot);
         ros::spinOnce();
 
@@ -365,6 +370,10 @@ public:
       openGripper(-velocity_aperture_, gripper_closed_, max_current_);
     }
 
+    void testOpen(){
+      openGripper(velocity_aperture_, gripper_manipulation_, max_current_);
+    }
+
     void testCartesianWrtCamera(){
       vpHomogeneousMatrix cMg, I;
       cMg[0][3] = 0.195;
@@ -407,9 +416,12 @@ int main(int argc, char** argv){
   //Test grasping with processing
   //robot.testCartesianAbsMoves();
 
-  //robot.cMgFromTF();
-  //robot.reachPositionWrtCamera(robot.getcMg());
+  robot.testOpen();
+  robot.cMgFromTF();
+  robot.reachPositionWrtCamera(robot.getcMg());
 
+  ROS_INFO_STREAM("Closing...");
+  ros::Duration(2).sleep();
   robot.testClose();
 
 
