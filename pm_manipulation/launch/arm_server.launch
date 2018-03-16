@@ -1,8 +1,7 @@
 <launch>
 	<rosparam command="load" file="$(find pm_manipulation)/launch/arm_server.yaml" />
-	 <arg name="joint_state" default="/arm5e/joint_state_angle" />
+	 <arg name="joint_state" default="/arm5e/joint_state_angle_fixed" />
 	 <arg name="joint_state_command" default="/arm5e/command_angle" />
-	 <arg name="joint_state_fixed" default="/arm5e/joint_state_angle_fixed" />
 	 <arg name="max_current" default="1.0" />
 	 <arg name="max_velocity" default="0.25" />
 	 <arg name="velocity_aperture" default="0.4" /><!--0.4-->

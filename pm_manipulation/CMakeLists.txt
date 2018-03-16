@@ -25,7 +25,7 @@ add_executable(slider_grasp_planner_server src/slider_grasp_planner_server.cpp s
 add_executable(waypoint_server src/waypoint_server.cpp)
 add_executable(publish_pose src/publish_pose.cpp)
 add_executable(object_pose_from_marker_pose src/object_pose_from_marker_pose.cpp)
-add_executable(joint_offset_test src/joint_offset_test.cpp src/joint_offset.cpp)
+add_executable(joint_offset_node src/joint_offset_node.cpp src/joint_offset.cpp)
 add_executable(set_joint_position src/set_joint_position.cpp)
 add_executable(arm_server src/arm_server.cpp src/joint_offset.cpp)
 
@@ -33,6 +33,6 @@ target_link_libraries(slider_grasp_planner_server ${catkin_LIBRARIES} ${PCL_LIBR
 target_link_libraries(waypoint_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(publish_pose ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(object_pose_from_marker_pose ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
-target_link_libraries(joint_offset_test ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
+target_link_libraries(joint_offset_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(set_joint_position ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 target_link_libraries(arm_server ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES})
