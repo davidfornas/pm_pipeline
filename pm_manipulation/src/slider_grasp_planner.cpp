@@ -29,24 +29,6 @@ void SliderGraspPlanner::perceive() {
       }
       cMo = VispTools::vispHomogFromGeometryPose(*message);
     }
-
-    change_z_ = false;
-    //Director vectors: cylinder axis and perpendicular vector.
-    if(change_z_){
-      // @TODO fix this!!!
-      ROS_INFO_STREAM("Changing Z...");
-      tf::Vector3 axis_dir(cMo[0][1], cMo[1][1], cMo[2][1]);
-      axis_dir=axis_dir.normalize();
-      tf::Vector3 perp = tf::Vector3(0,0,1) - ( axis_dir.dot( tf::Vector3(0,0,1) ) * axis_dir );
-      perp=perp.normalize();
-
-      tf::Vector3 result=tf::tfCross( perp, axis_dir).normalize();
-      result = -result;
-
-      cMo[0][0]=result.x(); cMo[0][2]=perp.x();
-      cMo[1][0]=result.y(); cMo[1][2]=perp.y();
-      cMo[2][0]=result.z(); cMo[2][2]=perp.z();
-    }
     // @DEBUG vispToTF.addTransform(cMo, "/world", "/amphora_from_pose", "cMo");
   }
   //Compute modified cMg from cMo

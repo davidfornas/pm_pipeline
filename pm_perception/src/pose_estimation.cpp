@@ -163,6 +163,12 @@ void CylinderPoseEstimation::process() {
   tf::Vector3 axis_dir(coefficients_cylinder->values[3], coefficients_cylinder->values[4], coefficients_cylinder->values[5]);
   axis_dir=axis_dir.normalize();
 
+  //Add consistency to the axis direction.
+  tf::Vector3 camera_y_axis(0, 1, 0), axis_opposite_dir;
+  axis_opposite_dir = -axis_dir;
+  if(axis_dir.angle(camera_y_axis) < axis_opposite_dir.angle(camera_y_axis))
+    axis_dir = axis_opposite_dir;
+
   tf::Vector3 plane_normal(bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1], bg_remove->coefficients_plane->values[2]);
   tf::Vector3 perp = plane_normal - ( axis_dir.dot( plane_normal ) * axis_dir );
   perp=perp.normalize();
