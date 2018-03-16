@@ -34,13 +34,14 @@ class JointOffset{
 
 public:
 
+    JointOffset(ros::NodeHandle& nh, std::string topic_joint_state, std::string topic_command_joint, std::string topic_joint_state_fixed);
+    JointOffset(ros::NodeHandle& nh, std::string topic_joint_state, std::string topic_command_joint, std::string topic_joint_state_fixed, float elbow_offset);
+
     int setbMcWithMarker(vpColVector initial_posture);
 
     int setbMcFromTf();
 
     int setcMeFromTf();
-
-    JointOffset(ros::NodeHandle& nh, std::string topic_joint_state, std::string topic_command_joint, std::string topic_joint_state_fixed);
 
     int getbMc(vpHomogeneousMatrix &bMc_ret){
       if(bMc_init){

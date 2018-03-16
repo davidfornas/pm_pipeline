@@ -1,7 +1,6 @@
 #include <pm_manipulation/joint_offset.h>
 
 void JointOffset::readJointsCallback(const sensor_msgs::JointState::ConstPtr& m){
-  if(bMc_init && marker_found){
     sensor_msgs::JointState joints_fixed;
     for(uint i=0; i<m->name.size(); i++){
       joints_fixed.name.push_back(m->name[i]);
@@ -10,7 +9,6 @@ void JointOffset::readJointsCallback(const sensor_msgs::JointState::ConstPtr& m)
     }
     joints_fixed.header.stamp=ros::Time::now();
     joint_state_pub.publish(joints_fixed);
-  }
 }
 
 void JointOffset::markerCallback(const geometry_msgs::PoseStamped::ConstPtr &m){
@@ -46,27 +44,27 @@ JointOffset::JointOffset(ros::NodeHandle& nh, std::string topic_joint_state, std
 
   joint_state_sub=nh.subscribe<sensor_msgs::JointState>(topic_joint_state, 1, &JointOffset::readJointsCallback, this);
   marker_sub=nh.subscribe<geometry_msgs::PoseStamped>("/marker_filter_node/marker_pose", 1, &JointOffset::markerCallback, this);
+  joint_state_pub=nh.advertise<sensor_msgs::JointState>(topic_joint_state_fixed,1);
+}
 
+JointOffset::JointOffset(ros::NodeHandle& nh, std::string topic_joint_state, std::string topic_command_joint, std::string topic_joint_state_fixed, float elbow_offset): nh_(nh){
+
+  robot=new ARM5Arm(nh_, topic_joint_state, topic_command_joint);
+
+  cMe_found=false;
+  bMc_init=false;
+  offset_.resize(5);
+  offset_=0;
+  offset_[2]=elbow_offset; //Recomended offset: 0.3
+
+  joint_state_sub=nh.subscribe<sensor_msgs::JointState>(topic_joint_state, 1, &JointOffset::readJointsCallback, this);
+  marker_found = true;
   joint_state_pub=nh.advertise<sensor_msgs::JointState>(topic_joint_state_fixed,1);
 }
 
 //Get new base to camera. Use if considering bad camera position (not the case).
 int JointOffset::setbMcWithMarker(vpColVector initial_posture){
 
-  //@TODO Before enabling this shoud check that it moves without overcurrent.
-  //For now manually move the arm to the proper position.
-  /*
-  vpColVector current_joints;
-  robot->getJointValues(current_joints);
-  if(initial_posture.size()!=5)
-    initial_posture=current_joints;
-  while((initial_posture-current_joints).euclideanNorm()>0.02 && ros::ok()){
-    robot->setJointVelocity(initial_posture-current_joints);
-    ros::spinOnce();
-    robot->getJointValues(current_joints);
-    std::cout<<(initial_posture-current_joints).euclideanNorm()<<std::endl;
-  }
-  */
   ros::spinOnce();
   setcMeFromTf();
   robot->getPosition(bMe);
