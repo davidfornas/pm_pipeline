@@ -416,8 +416,10 @@ int main(int argc, char** argv){
   //Test grasping with processing
   //robot.testCartesianAbsMoves();
 
+  ROS_INFO_STREAM("Opening...");
   robot.testOpen();
   robot.cMgFromTF();
+  ROS_INFO_STREAM("Reaching...");
   robot.reachPositionWrtCamera(robot.getcMg());
 
   ROS_INFO_STREAM("Closing...");
