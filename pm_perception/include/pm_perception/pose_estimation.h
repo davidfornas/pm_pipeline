@@ -50,6 +50,9 @@ public:
 
   }
 
+  virtual void initialize(){}
+  virtual void process(){}
+
   /** Set new input cloud */
   void setNewCloud(CloudPtr cloud){
     cloud_ = cloud;

@@ -26,21 +26,22 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-  //BoxPoseEstimation pose_est(point_cloud_ptr);
-  CylinderPoseEstimation pose_est(point_cloud_ptr);
-  //PCAPoseEstimation pose_est(point_cloud_ptr);
+  PoseEstimation * pose_est;
+  pose_est = new CylinderPoseEstimation(point_cloud_ptr);
+  //pose_est = new PCAPoseEstimation(point_cloud_ptr);
+  //pose_est = new BoxPoseEstimation(point_cloud_ptr);
 
-  pose_est.initialize();
-  ROS_INFO_STREAM(pose_est.get_cMo());
+  pose_est->initialize();
+  ROS_INFO_STREAM(pose_est->get_cMo());
   while(ros::ok()){
     PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
     PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
     PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
     PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-    pose_est.setNewCloud(point_cloud_ptr);
-    pose_est.process();
-    ROS_INFO_STREAM(pose_est.get_cMo());
+    pose_est->setNewCloud(point_cloud_ptr);
+    pose_est->process();
+    ROS_INFO_STREAM(pose_est->get_cMo());
   }
   return 0;
 }

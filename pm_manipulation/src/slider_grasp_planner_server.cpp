@@ -28,13 +28,19 @@ typedef pcl::PointCloud<PointT> Cloud;
 
 
 bool marker_status, compute_initial_cMg, reset_marker, execute, do_ransac;
+Method method;
 
 void stringCallback(const std_msgs::String &msg ){
   // DF initFromPose initFromRansac
-  if( msg.data == "initFromPose" || msg.data == "initFromRansac" ){
+  if( msg.data == "initFromPose" || msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"){
     compute_initial_cMg = true;
-    if( msg.data == "initFromRansac" )
+    //@TODO RENAME do_ransac
+    if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"){
       do_ransac = true;
+      if(msg.data == "initFromRansac") method = RANSACCylinder;
+      if(msg.data == "initFromBox") method = BoxPlane;
+      if(msg.data == "initFromPCA") method = PCA;
+    }
   }else if( msg.data == "guided" || msg.data == "interactive"){
     marker_status = (msg.data == "guided" ?  false : true );
   }else if(msg.data == "markerReset"){
@@ -147,7 +153,7 @@ int main(int argc, char **argv)
   SliderGraspPlanner * planner;
   if( do_ransac ){
     ROS_INFO_STREAM("Specification using RANSAC.");
-    planner = new SliderGraspPlanner(cloud, nh, object_pose_topic); //, VispTools::vispHomogFromTfTransform( wMc ));
+    planner = new SliderGraspPlanner(cloud, nh, object_pose_topic, method); //, VispTools::vispHomogFromTfTransform( wMc ));
     planner->pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
   }else{
     ROS_INFO_STREAM("Specification using a input object Pose.");

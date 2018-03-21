@@ -28,7 +28,7 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
-
+enum Method { RANSACCylinder, PCA, BoxPlane, Topic };
 
 /** Grasp planning from object pose */
 class SliderGraspPlanner {
@@ -44,8 +44,8 @@ class SliderGraspPlanner {
 
 public:
 
-//  boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
-  boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
+  Method method_;
+  boost::shared_ptr<PoseEstimation> pose_estimation;
 
   vpHomogeneousMatrix cMg, cMo; ///< Grasp frame with respect to the camera after planning
   double radious, height;
@@ -66,12 +66,13 @@ public:
     topic_name = object_topic_name;
     do_ransac = false;
     change_z_ = change_z;
+    method_ = Topic;
   }
 
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
    * */
-  SliderGraspPlanner(PointTPtr cloud, ros::NodeHandle & nh, std::string object_pose ){
+  SliderGraspPlanner(PointTPtr cloud, ros::NodeHandle & nh, std::string object_pose, Method method = RANSACCylinder ){
 
     angle_=0;iangle=0;
     rad_=0;irad=0;
@@ -81,8 +82,18 @@ public:
     pos_pub = nh.advertise<geometry_msgs::Pose>( object_pose, 1); //"/gripperPose"
     do_ransac = true;
 
-//    pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
-    pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
+    switch(method) {
+      case RANSACCylinder:
+        pose_estimation = boost::shared_ptr<CylinderPoseEstimation>(new CylinderPoseEstimation(cloud));
+        break;
+      case PCA:
+        pose_estimation = boost::shared_ptr<PCAPoseEstimation>(new PCAPoseEstimation(cloud));
+        break;
+      case BoxPlane:
+        pose_estimation = boost::shared_ptr<BoxPoseEstimation>(new BoxPoseEstimation(cloud));
+        break;
+    }
+    method_ = method;
   }
 
   void setNewCloud(PointTPtr cloud){
