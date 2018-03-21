@@ -1,6 +1,10 @@
 /*
  * Grasp planning based on Pose Estimation in pm_perception
  *
+ * This class (or classes) obtain from the object pose a list of possible grasps and ranks them depending on
+ * different parameters. See pcl_manipulation. Kinematic constraints, similarity with the target pose, angle with floor,
+ * among other options.
+ *
  *  Created on: 05/02/2018
  *      Author: dfornas
  */
@@ -22,23 +26,18 @@ class RankingGraspPlanner {
   FrameToTF vispToTF;
   ros::Publisher grasp_pub;
 
-  //Start having the cloud stored in the pose estimator.
-  //CloudPtr cloud_;
-
 public:
 
-//  boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
-  boost::shared_ptr<CylinderPoseEstimation> pose_estimation;
+  boost::shared_ptr<PoseEstimation> pose_estimation;
 
-  vpHomogeneousMatrix cMg, cMo; // Camera to grasp, camera to object
-  std::vector<vpHomogeneousMatrix> grasp_list; // Grasp positions list
+  vpHomogeneousMatrix cMo; // Camera to object
+  std::vector<vpHomogeneousMatrix> grasp_list; // Grasp positions list, cMg list
 
-  //Geometric parameters of the object
+  //Geometric parameters of the object, this depends on the Pose Estimator, atm is Cylinder RANSAC
   double radious, height;
 
-  /** Constructor  * */
+  /** Constructor, @TODO Add METHOD Enum  * */
   RankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose ){
-    //cloud_ = cloud;
     pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
   }
 
@@ -53,7 +52,7 @@ public:
   /** Get best rasp based on ranking */
   vpHomogeneousMatrix getBestGrasp();
 
-  /** Publish object pose. Mainly to display in UWSim **/
+  /** Publish one object pose. Mainly to display in UWSim **/
   void publishObjectPose(){
     //pos_pub.publish( VispTools::geometryPoseFromVispHomog(cMo) );
     //ros::spinOnce();
@@ -66,7 +65,6 @@ public:
   void publishGraspList(){}
 
   ~RankingGraspPlanner() {}
-
 
 };
 
