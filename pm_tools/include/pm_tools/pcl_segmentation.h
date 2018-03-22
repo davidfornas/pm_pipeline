@@ -29,7 +29,6 @@
 
 #include <pcl/search/kdtree.h>
 
-
 template <typename PointT>
 class RemoveModel
 {
@@ -45,10 +44,7 @@ public:
     filter.setInputCloud(in);
     filter.filter(*out);
   }
-
 };
-
-
 
 template <typename PointT>
 class PlaneSegmentation
@@ -146,6 +142,52 @@ public:
   }
 };
 
+
+template <typename PointT>
+class SphereSegmentation
+{
+
+  typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
+
+  CloudPtr in_cloud_;
+  pcl::PointCloud<pcl::Normal>::Ptr in_normals_;
+  pcl::PointIndices::Ptr inliers_cylinder_;
+
+  double distance_threshold_, radious_limit_;
+  int num_iterations_;
+
+public:
+  SphereSegmentation(CloudPtr in_cloud, pcl::PointCloud<pcl::Normal>::Ptr in_normals) :
+          in_cloud_(in_cloud), in_normals_(in_normals)
+  {
+    //Default values
+    distance_threshold_ = 0.05;
+    num_iterations_ = 100;
+    radious_limit_ = 0.05;
+    inliers_cylinder_ = boost::shared_ptr<pcl::PointIndices>(new pcl::PointIndices);
+  }
+  bool apply(CloudPtr cloud_cylinder, pcl::ModelCoefficients::Ptr coeffs);
+  void setIterations(int iterations)
+  {
+    num_iterations_ = iterations;
+  }
+  void setDistanceThreshold(double threshold)
+  {
+    distance_threshold_ = threshold;
+  }
+  void setRadiousLimit(double radious)
+  {
+    radious_limit_ = radious;
+  }
+  void getInliers(pcl::PointIndices::Ptr & inliers)
+  {
+    inliers = inliers_cylinder_;
+  }
+  ~SphereSegmentation()
+  {
+  }
+};
+
 /** Remove the plane from the cloud, easy to use method. ZPassthrough used.  */
 template<typename PointT>
 void PlaneSegmentation<PointT>::removeBackground(CloudPtr in, CloudPtr out, int iterations, double threshold){
@@ -211,6 +253,51 @@ bool CylinderSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoef
   {
     ROS_DEBUG_STREAM(
         "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points.");
+    writer.write("scene_cylinder.pcd", *cloud_cylinder, false);
+  }
+  return true;
+}
+
+
+/** RANSAC cylinder estimation */
+template<typename PointT>
+bool SphereSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoefficients::Ptr coeffs)
+{
+
+  clock_t begin = clock();
+  pcl::PointIndices::Ptr inliers_cylinder(new pcl::PointIndices);
+  typename pcl::ExtractIndices<PointT> extract;
+  pcl::PCDWriter writer;
+  typename pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
+
+  // Create the segmentation object for cylinder segmentation and set all the parameters
+  seg.setOptimizeCoefficients(true);
+  seg.setModelType(pcl::SACMODEL_SPHERE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setNormalDistanceWeight(0.1);
+  seg.setMaxIterations(num_iterations_); //10000
+  seg.setDistanceThreshold(distance_threshold_); //0.05
+  seg.setRadiusLimits(0, radious_limit_); //0, 0.1
+  seg.setInputCloud(in_cloud_);
+  seg.setInputNormals(in_normals_);
+
+  // Obtain the cylinder inliers and coefficients
+  seg.segment(*inliers_cylinder_, *coeffs);
+  ROS_DEBUG_STREAM("Cylinder coefficients: " << *coeffs);
+  clock_t end = clock();
+  ROS_DEBUG_STREAM("Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC);
+
+  // Write the cylinder inlier1s to disk
+  extract.setInputCloud(in_cloud_);
+  extract.setIndices(inliers_cylinder_);
+  extract.setNegative(false);
+  extract.filter(*cloud_cylinder);
+  if (cloud_cylinder->points.empty())
+    ROS_DEBUG_STREAM("Can't find the cylindrical component.");
+  else
+  {
+    ROS_DEBUG_STREAM(
+            "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points.");
     writer.write("scene_cylinder.pcd", *cloud_cylinder, false);
   }
   return true;
