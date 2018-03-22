@@ -35,6 +35,7 @@ void BoxPoseEstimation::process() {
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], true);
 
   Eigen::Vector4f centroid = cm.getCentroid();
+  // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 //  pcl::compute3DCentroid<PointT>(*cloud_plane, centroid);
   //cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
 }
@@ -193,30 +194,7 @@ void CylinderPoseEstimation::process() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   vispToTF.resetTransform(cMo, "cMo");
 
-/*// @TODO Improve with a proper filter.
-  ROS_INFO_STREAM(cMo[0][3] << " :: " << cMo[1][3] << " :: " << cMo[2][3]);
-  ROS_INFO_STREAM(previous_cMo_[0][3] << " :: " << previous_cMo_[1][3] << " :: " << previous_cMo_[2][3]);
-  double distance = (cMo[0][3]-previous_cMo_[0][3]) * (cMo[0][3]-previous_cMo_[0][3])
-      + (cMo[1][3]-previous_cMo_[1][3]) * (cMo[1][3]-previous_cMo_[1][3])
-      + (cMo[2][3]-previous_cMo_[2][3]) * (cMo[2][3]-previous_cMo_[2][3]);
-  ROS_DEBUG_STREAM("cMo: "<< cMo);
-  ROS_DEBUG_STREAM("previous_cMo_: "<< previous_cMo_);
-
-  ROS_INFO_STREAM("dis: "<< distance);
-  //todo improve this
-  if(distance < 0.2){
-    tf::Vector3 y(cMo[0][1],cMo[1][1],cMo[2][1]);
-    tf::Vector3 previous_y(previous_cMo_[0][1],previous_cMo_[1][1],previous_cMo_[2][1]);
-    double angle_diff = y.angle(previous_y);
-    ROS_INFO_STREAM("Angle: "<< angle_diff);
-    if (angle_diff < 3.3 && angle_diff > 2.9){
-      cMo = cMo * vpHomogeneousMatrix(0,0,0,0,0,0);
-      ROS_INFO_STREAM("TURN");
-    }
-    previous_cMo_ = cMo;
-  }else{//If bad (big distance), restore...
-    cMo = previous_cMo_;
-  }*/
+  // @TODO Filter may be here or not. To avoid bad  detections.
 }
 
 //Ordenar en función de la proyección del punto sobre el eje definido
