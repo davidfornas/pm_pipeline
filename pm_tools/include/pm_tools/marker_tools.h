@@ -12,6 +12,8 @@
 #include <std_msgs/String.h>
 
 #include <interactive_markers/interactive_marker_server.h>
+#include <underwater_sensor_msgs/SpawnMarker.h>
+#include <tf/transform_datatypes.h>
 
 #include <visp/vpHomogeneousMatrix.h>
 #include <pm_tools/visp_tools.h>
@@ -208,6 +210,106 @@ public:
     marker.pose.orientation.y = pose.getOrigin().y();
     marker.pose.orientation.z = pose.getOrigin().z();
     marker.pose.orientation.w = pose.getOrigin().w();
+  }
+};
+
+// Add or modify a static Marker in UWSim. Cube or cylinder shapes.
+class UWSimMarkerPublisher{
+public:
+  static bool publishCylinderMarker(vpHomogeneousMatrix cMo, float sizex, float sizey, float sizez, int id = 0){
+
+
+    ros::NodeHandle n;
+    ros::ServiceClient client = n.serviceClient<underwater_sensor_msgs::SpawnMarker>("SpawnMarker");
+    underwater_sensor_msgs::SpawnMarker srv;
+
+    srv.request.marker.header.frame_id = "/localizedWorld"; // while stereo is in (0,0,0)
+    srv.request.marker.header.stamp = ros::Time::now();
+
+    srv.request.marker.ns = "pose_estimation";
+    srv.request.marker.id = id;
+    srv.request.marker.type = visualization_msgs::Marker::CYLINDER;
+    srv.request.marker.action = visualization_msgs::Marker::ADD;
+
+    srv.request.marker.pose.position.x = cMo[0][3];
+    srv.request.marker.pose.position.y = cMo[1][3];
+    srv.request.marker.pose.position.z = cMo[2][3];
+
+    vpQuaternionVector q;
+    cMo.extract(q);
+    srv.request.marker.pose.orientation.x = q.x();
+    srv.request.marker.pose.orientation.y = q.y();
+    srv.request.marker.pose.orientation.z = q.z();
+    srv.request.marker.pose.orientation.w = q.w();
+
+    srv.request.marker.scale.x = sizex;
+    srv.request.marker.scale.y = sizey;
+    srv.request.marker.scale.z = sizez;
+
+    // @TODO Customizable color
+    srv.request.marker.color.r = 1.0f;
+    srv.request.marker.color.g = 0.8f;
+    srv.request.marker.color.b = 1.0f;
+    srv.request.marker.color.a = 1.0;
+
+    if (client.call(srv))
+    {
+      ROS_DEBUG("Operation exited with %d", srv.response.success);
+      ROS_DEBUG_STREAM(srv.response.status_message);
+    }
+    else
+    {
+      ROS_ERROR("Failed to call service SpawnMarker (is uwsim running?)");
+      return false;
+    }
+    return true;
+  }
+
+  static bool publishCubeMarker(vpHomogeneousMatrix cMo, float sizex, float sizey, float sizez, int id = 0){
+    ros::NodeHandle n;
+    ros::ServiceClient client = n.serviceClient<underwater_sensor_msgs::SpawnMarker>("SpawnMarker");
+    underwater_sensor_msgs::SpawnMarker srv;
+
+    srv.request.marker.header.frame_id = "/localizedWorld"; // while stereo is in (0,0,0)
+    srv.request.marker.header.stamp = ros::Time::now();
+
+    srv.request.marker.ns = "pose_estimation";
+    srv.request.marker.id = id;
+    srv.request.marker.type = visualization_msgs::Marker::CUBE;
+    srv.request.marker.action = visualization_msgs::Marker::ADD;
+
+    srv.request.marker.pose.position.x = cMo[0][3];
+    srv.request.marker.pose.position.y = cMo[1][3];
+    srv.request.marker.pose.position.z = cMo[2][3];
+
+    vpQuaternionVector q;
+    cMo.extract(q);
+    srv.request.marker.pose.orientation.x = q.x();
+    srv.request.marker.pose.orientation.y = q.y();
+    srv.request.marker.pose.orientation.z = q.z();
+    srv.request.marker.pose.orientation.w = q.w();
+
+    srv.request.marker.scale.x = sizex;
+    srv.request.marker.scale.y = sizey;
+    srv.request.marker.scale.z = sizez;
+
+    // @TODO Customizable color
+    srv.request.marker.color.r = 1.0f;
+    srv.request.marker.color.g = 0.8f;
+    srv.request.marker.color.b = 1.0f;
+    srv.request.marker.color.a = 1.0;
+
+    if (client.call(srv))
+    {
+      ROS_DEBUG("Operation exited with %d", srv.response.success);
+      ROS_DEBUG_STREAM(srv.response.status_message);
+    }
+    else
+    {
+      ROS_ERROR("Failed to call service SpawnMarker (is uwsim running?)");
+      return false;
+    }
+    return true;
   }
 };
 
