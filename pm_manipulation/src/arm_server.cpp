@@ -8,6 +8,7 @@
 #include <mar_ros_bridge/mar_params.h>
 #include <mar_perception/VirtualImage.h>
 #include <pm_manipulation/joint_offset.h>
+#include <std_msgs/String.h>
 
 class ArmWrapper{
 
@@ -161,19 +162,18 @@ public:
 
       vpHomogeneousMatrix bMe;
       robot_->getPosition(bMe);
-      while((bMg.getCol(3)-bMe.getCol(3)).euclideanNorm()>0.025 && ros::ok()){
-        ROS_INFO_STREAM("Position error norm: "<<(bMg.getCol(3)-bMe.getCol(3)).euclideanNorm());
+      while((bMg.getCol(3)-bMe.getCol(3)).euclideanNorm()>0.04 && ros::ok()){
+        ROS_DEBUG_STREAM("Position error norm: "<<(bMg.getCol(3)-bMe.getCol(3)).euclideanNorm());
         vpColVector xdot(6);
         xdot=0;
         vpHomogeneousMatrix eMg=bMe.inverse()*bMg;
-        xdot[0]=eMg[0][3]*0.6;
-        xdot[1]=eMg[1][3]*0.6;
-        xdot[2]=eMg[2][3]*0.6;
-
-        while(xdot.euclideanNorm() > 0.4) xdot /= 1.5;
-        while(xdot.euclideanNorm() < 0.25) xdot *= 1.5;
-
+        xdot[0]=eMg[0][3]*0.8;
+        xdot[1]=eMg[1][3]*0.8;
+        xdot[2]=eMg[2][3]*0.8;
         ROS_DEBUG_STREAM("XDOT:" << xdot);
+        while(xdot.euclideanNorm() > 0.35) xdot /= 1.2;
+        while(xdot.euclideanNorm() < 0.08) xdot *= 1.2;
+        ROS_DEBUG_STREAM("XDOT filtered:" << xdot);
         robot_->setCartesianVelocity(xdot);
         ros::spinOnce();
         robot_->getPosition(bMe);
@@ -189,8 +189,8 @@ public:
       ROS_INFO_STREAM("cMe" << std::endl << cMe);
       ROS_INFO_STREAM("cMgoal" << std::endl << cMgoal);
 
-      while((cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()>0.03 && ros::ok()){
-        ROS_INFO_STREAM("Position error norm: "<<(cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm());
+      while((cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm()>0.04 && ros::ok()){
+        ROS_DEBUG_STREAM("Position error norm: "<<(cMe.getCol(3)-cMgoal.getCol(3)).euclideanNorm());
 
         vpColVector xdot(6);
         xdot=0;
@@ -198,13 +198,10 @@ public:
         xdot[0]=eMgoal[0][3]*0.8;
         xdot[1]=eMgoal[1][3]*0.8;
         xdot[2]=eMgoal[2][3]*0.8;
-
-        ROS_INFO_STREAM("XDOT:" << xdot);
+        ROS_DEBUG_STREAM("XDOT:" << xdot);
         while(xdot.euclideanNorm() > 0.35) xdot /= 1.2;
         while(xdot.euclideanNorm() < 0.08) xdot *= 1.2;
-
-        ROS_INFO_STREAM("XDOT filtered:" << xdot);
-        //return;
+        ROS_DEBUG_STREAM("XDOT filtered:" << xdot);
         robot_->setCartesianVelocity(xdot);
         ros::spinOnce();
 
@@ -403,31 +400,47 @@ public:
     }
 };
 
+
+void execCallback(const std_msgs::String &msg ){
+  if( msg.data == "execute"){
+    ArmWrapper robot;
+
+    //Needed to udate the postion...
+    ros::Duration(0.3).sleep();
+    ros::spinOnce();
+
+    //Test simple moving functions.
+    //robot.testFunctions();
+
+    //Test grasping with processing
+    //robot.testCartesianAbsMoves();
+
+    ROS_INFO_STREAM("Opening...");
+    robot.testOpen();
+    ros::Duration(3).sleep();
+    robot.cMgFromTF();
+    ROS_INFO_STREAM("Reaching...");
+    robot.reachPositionWrtCamera(robot.getcMg());
+    ros::Duration(3).sleep();
+    ROS_INFO_STREAM("Approaching...");
+    robot.moveCartesianDistance(0.0, 0.0, 0.08);
+    ros::Duration(3).sleep();
+    ROS_INFO_STREAM("Closing...");
+    robot.testClose();
+    ros::Duration(3).sleep();
+    ROS_INFO_STREAM("Object transport...");
+    robot.moveCartesianDistance(0.0, 0.0, -0.15);
+  }
+}
+
+
 int main(int argc, char** argv){
+
   ros::init(argc, argv, "robot_test");
-  ArmWrapper robot;
-  //Needed to udate the postion...
-  ros::Duration(0.3).sleep();
-  ros::spinOnce();
+  ros::NodeHandle nh;
+  ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, execCallback);
+  ros::spin();
 
-  //Test simple moving functions.
-  //robot.testFunctions();
-
-  //Test grasping with processing
-  //robot.testCartesianAbsMoves();
-
-  ROS_INFO_STREAM("Opening...");
-  robot.testOpen();
-  robot.cMgFromTF();
-  ROS_INFO_STREAM("Reaching...");
-  robot.reachPositionWrtCamera(robot.getcMg());
-
-  ROS_INFO_STREAM("Closing...");
-  ros::Duration(2).sleep();
-  robot.testClose();
-
-
-
-  return 1;
+  return 0;
 }
 
