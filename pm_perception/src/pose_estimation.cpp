@@ -194,6 +194,10 @@ void CylinderPoseEstimation::process() {
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   vispToTF.resetTransform(cMo, "cMo");
 
+  vpHomogeneousMatrix cylinder;
+  cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
+  UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious,radious,height);
+
   // @TODO Filter may be here or not. To avoid bad  detections.
 }
 

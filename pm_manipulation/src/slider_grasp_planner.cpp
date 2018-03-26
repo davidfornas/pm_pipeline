@@ -73,13 +73,13 @@ void SliderGraspPlanner::recalculate_cMg(){
   // @DEBUG: VISUALIZE CYLINDER DETECTION FRAMES.
   vispToTF.publish();
 
-  // Send detected cylinder marker.
-  ros::NodeHandle nh;
+  // Send detected cylinder marker. @TODO FIX THIS CODE IS NOT DOING ANYTHING
+  /*ros::NodeHandle nh;
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   MarkerPublisher markerPub( cylinder, camera_frame_name, "visualization_marker", nh);
   markerPub.setCylinder( cylinder, camera_frame_name, 0.15, 0.5, 15);
-  markerPub.publish();
+  markerPub.publish();*/
 }
 
 //Compute the best grasp from to approach directions along the cylinder axis.
