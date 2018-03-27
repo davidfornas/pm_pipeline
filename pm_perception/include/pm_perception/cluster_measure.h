@@ -45,8 +45,11 @@ public:
   /** Visualize PCA axis */
   Eigen::Matrix4f getAxis();
 
-  /** Return the object aligned Bounding Box (minimal) */
+  /** Return the object aligned Bounding Box (minimal) and cMo as return */
   Eigen::Matrix4f getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth);
+
+  /** Return the object aligned cMo as return */
+  Eigen::Matrix4f getOABBox();
 
   /** Display result  */
   void displayCluster();
@@ -117,7 +120,17 @@ Eigen::Matrix4f ClusterMeasure<PointT>::getAxis()
   return t;
 }
 
-//AO BB
+template<typename PointT>
+Eigen::Matrix4f ClusterMeasure<PointT>::getOABBox() {
+
+  Eigen::Quaternionf q;
+  Eigen::Vector3f t;
+  float width, height, depth;
+
+  return getOABBox( q, t, width, height, depth );
+}
+
+
 template<typename PointT>
 Eigen::Matrix4f ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, Eigen::Vector3f & tfinal, float & width, float & height, float & depth)
 {
