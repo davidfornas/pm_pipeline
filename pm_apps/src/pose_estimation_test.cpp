@@ -27,10 +27,11 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
   PoseEstimation * pose_est;
-  pose_est = new CylinderPoseEstimation(point_cloud_ptr);
-  //pose_est = new PCAPoseEstimation(point_cloud_ptr);
+  //pose_est = new CylinderPoseEstimation(point_cloud_ptr);
+  pose_est = new PCAPoseEstimation(point_cloud_ptr);
   //pose_est = new BoxPoseEstimation(point_cloud_ptr);
 
+  pose_est->setDebug(true);
   pose_est->initialize();
   ROS_INFO_STREAM(pose_est->get_cMo());
   while(ros::ok()){

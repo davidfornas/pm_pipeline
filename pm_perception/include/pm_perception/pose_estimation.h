@@ -35,6 +35,7 @@ protected:
   CloudPtr cloud_;
   std::string camera_frame_name, topic_name;
   FrameToTF vispToTF;
+  bool debug_;
 
 public:
 
@@ -47,11 +48,18 @@ public:
     cloud_ = cloud;
     camera_frame_name = cloud->header.frame_id;
     bg_remove = new BackgroundRemoval(cloud, distanceThreshold);
-
+    debug_ = false;
+    // @TODO Actual camera frame...
+    vispToTF.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMo", "cMo");
   }
 
   virtual void initialize(){}
   virtual void process(){}
+
+  //Set pose estimation debug, manily visualization with PCL Viewer.
+  void setDebug( bool debug ){
+    debug_ = debug;
+  }
 
   /** Set new input cloud */
   void setNewCloud(CloudPtr cloud){

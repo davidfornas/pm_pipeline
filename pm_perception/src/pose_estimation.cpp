@@ -38,6 +38,13 @@ void BoxPoseEstimation::process() {
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 //  pcl::compute3DCentroid<PointT>(*cloud_plane, centroid);
   //cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
+
+  //UWSimMarkerPublisher::publishCubeMarker(cMo ,width, height, depth);
+
+  if(debug_) {
+    vispToTF.resetTransform(cMo, "cMo");
+    vispToTF.publish();
+  }
 }
 
 void PCAPoseEstimation::process() {
@@ -48,13 +55,21 @@ void PCAPoseEstimation::process() {
 
   CloudClustering<PointT> cluster(cloud_);
   cluster.applyEuclidianClustering();
-  //cluster.displayColoured();
-  //cluster.save("euclidian");
-  //PCLView<PointT>::showCloud(cluster.cloud_clusters[0]);
+
+  if(debug_) {
+    ROS_INFO_STREAM("Cluster list: ");
+    for (int i = 0; i < cluster.cloud_clusters.size(); ++i) {
+      ROS_INFO_STREAM("Cluster " << i << "size: " << cluster.cloud_clusters[i]->points.size());
+    }
+    cluster.displayColoured();
+    //cluster.save("euclidean");
+    PCLView<PointT>::showCloud(cloud_);
+    PCLView<PointT>::showCloud(cluster.cloud_clusters[0]);
+  }
 
   // PCA
   if (cluster.cloud_clusters.size() == 0) return;
-  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], false);
+  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], debug_);
   cm.getCentroid();
   cm.getAxis();
 
@@ -63,7 +78,14 @@ void PCAPoseEstimation::process() {
   Eigen::Matrix4f cMo_eigen;
   float width, height, depth;
   cMo_eigen = cm.getOABBox( q, t, width, height, depth );
-  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
+
+  if(debug_) {
+    vispToTF.resetTransform(cMo, "cMo");
+    vispToTF.publish();
+  }
+  ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
 }
 
 void CylinderPoseEstimation::initialize() {
@@ -123,8 +145,11 @@ void CylinderPoseEstimation::initialize() {
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  ROS_INFO_STREAM("cMo is...: " << std::endl << cMo << "Is homog: " << cMo.isAnHomogeneousMatrix()?"yes":"no");
-  vispToTF.addTransform(cMo, camera_frame_name, "/amphora2", "cMo");
+  ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
+  if(debug_) {
+    vispToTF.resetTransform(cMo, "cMo");
+    vispToTF.publish();
+  }
 
 }
 
@@ -192,8 +217,10 @@ void CylinderPoseEstimation::process() {
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  vispToTF.resetTransform(cMo, "cMo");
-
+  if(debug_) {
+    vispToTF.resetTransform(cMo, "cMo");
+    vispToTF.publish();
+  }
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious,radious,height);
