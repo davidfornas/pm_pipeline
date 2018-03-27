@@ -34,12 +34,17 @@ void BoxPoseEstimation::process() {
   if (cluster.cloud_clusters.size() == 0) return;
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], true);
 
-  Eigen::Vector4f centroid = cm.getCentroid();
+  //Eigen::Vector4f centroid = cm.getCentroid();
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 //  pcl::compute3DCentroid<PointT>(*cloud_plane, centroid);
-  //cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);
 
-  //UWSimMarkerPublisher::publishCubeMarker(cMo ,width, height, depth);
+  Eigen::Quaternionf q;
+  Eigen::Vector3f t;
+  Eigen::Matrix4f cMo_eigen;
+  float width, height, depth;
+  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
 
   if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
