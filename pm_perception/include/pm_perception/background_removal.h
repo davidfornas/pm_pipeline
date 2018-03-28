@@ -27,6 +27,8 @@ public:
   int plane_iterations_;
   bool ransac_background_filter_;
 
+  CloudPtr cloud_plane;
+
 
   /** Constructor.
    * @param source cloud
@@ -35,6 +37,7 @@ public:
     setPlaneSegmentationParams(distanceThreshold);
     ransac_background_filter_ = true;
     coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+    cloud_plane = CloudPtr( new Cloud );
   }
 
   /** Set background removal mode */

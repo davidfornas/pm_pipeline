@@ -33,12 +33,40 @@ void BoxPoseEstimation::process() {
   cluster.displayColoured();
   // PCA
   if (cluster.cloud_clusters.size() == 0) return;
-  ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], true);
-  PCLTools<PointT>::cloudToPCD(cluster.cloud_clusters[0], "prueba_mirror.pcd");
-
-  //Eigen::Vector4f centroid = cm.getCentroid();
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
-//  pcl::compute3DCentroid<PointT>(*cloud_plane, centroid);
+
+  CloudPtr full_model(new Cloud);
+  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
+
+  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
+  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
+  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
+
+  box_plane_normal.x() = coefficients_plane->values[0];
+  box_plane_normal.y() = coefficients_plane->values[1];
+  box_plane_normal.z() = coefficients_plane->values[2];
+
+  Eigen::Vector4f boxtop_centroid;
+  pcl::compute3DCentroid<PointT>(*cluster.cloud_clusters[0], boxtop_centroid);
+  Eigen::Vector3f boxtop_centroid_3f(boxtop_centroid.x(), boxtop_centroid.y(), boxtop_centroid.z());
+
+  Eigen::Vector4f plane_centroid;
+  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
+  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
+
+  Eigen::Vector3f boxtop_centroid_projected_into_plane;
+  pcl::geometry::project(boxtop_centroid_3f, plane_centroid_3f, ground_plane_normal, boxtop_centroid_projected_into_plane);
+
+  Eigen::Vector3f box_to_plane(boxtop_centroid_3f-boxtop_centroid_projected_into_plane);
+
+  plane_origin.x() = boxtop_centroid_projected_into_plane[0]+ 0.5 * box_to_plane[0];
+  plane_origin.y() = boxtop_centroid_projected_into_plane[1]+ 0.5 * box_to_plane[1];
+  plane_origin.z() = boxtop_centroid_projected_into_plane[2]+ 0.5 * box_to_plane[2];
+
+  MirrorCloud mc(cluster.cloud_clusters[0], plane_origin, ground_plane_normal);
+  mc.apply(full_model);
+
+  ClusterMeasure<PointT> cm(full_model, true);
 
   Eigen::Quaternionf q;
   Eigen::Vector3f t;
@@ -77,8 +105,8 @@ void PCAPoseEstimation::process() {
   // PCA
   if (cluster.cloud_clusters.size() == 0) return;
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], debug_);
-  cm.getCentroid();
-  cm.getAxis();
+//  cm.getCentroid();
+//  cm.getAxis();
 
   Eigen::Quaternionf q;
   Eigen::Vector3f t;
