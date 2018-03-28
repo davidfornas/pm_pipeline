@@ -6,6 +6,7 @@
  */
 #include <pm_perception/pose_estimation.h>
 #include <pm_perception/cluster_measure.h>
+#include <pm_perception/symmetry.h>
 #include <pm_tools/pcl_clustering.h>
 
 typedef pcl::PointXYZRGB PointT;
@@ -33,6 +34,7 @@ void BoxPoseEstimation::process() {
   // PCA
   if (cluster.cloud_clusters.size() == 0) return;
   ClusterMeasure<PointT> cm(cluster.cloud_clusters[0], true);
+  PCLTools<PointT>::cloudToPCD(cluster.cloud_clusters[0], "prueba_mirror.pcd");
 
   //Eigen::Vector4f centroid = cm.getCentroid();
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)

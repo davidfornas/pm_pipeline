@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME}
         src/cluster_measure.cpp
         src/octomap.cpp
         src/pose_estimation.cpp
+        src/symmetry.cpp
 )
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} ${OpenCV} ${OCTOMAP_LIBRARIES} )
