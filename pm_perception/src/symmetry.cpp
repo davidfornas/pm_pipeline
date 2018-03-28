@@ -8,21 +8,6 @@
 
 void MirrorCloud::apply( CloudPtr & mirrored ) {
   ClusterMeasure<PointT> cm(cloud_);
-//  CloudPtr centered(cloud_);
-//  cloud_centered_ = centered;
-//  Eigen::Vector4f centroid = cm.getCentroid();
-//  for (int i = 0; i < cloud_centered_->points.size(); ++i) {
-//    cloud_centered_->points[i].x -= centroid.x();
-//    cloud_centered_->points[i].y -= centroid.y();
-//    cloud_centered_->points[i].z -= centroid.z();
-//  }
-//  ROS_INFO_STREAM("Size"<< cloud_centered_->points.size());
-//  PCLView<PointT>::showCloud(cloud_centered_);
-
-//  CloudPtr mirror(new Cloud), projection(new Cloud);
-//  mirror->points.resize( cloud_centered_->points.size() );
-//  projection->points.resize( cloud_centered_->points.size() );
-
   for (int i = 0; i < cloud_->points.size(); ++i) {
 
     Eigen::Vector3f pt;
@@ -44,31 +29,6 @@ void MirrorCloud::apply( CloudPtr & mirrored ) {
     mirrored_->push_back(mirrored);
     projection_->push_back(projected);
   }
-//  mirror_->width = cloud_->width;
-//  projection_->width = cloud_->width;
-//  mirrored_->width = cloud_->width * 2;
-//  mirrored_->
-//  PCLView<PointT>::showCloud(mirror_);
-//  PCLView<PointT>::showCloud(projection_);
-//  ROS_INFO_STREAM("Size"<< mirror_->points.size());
-//  mirror_ = mirror;
-//  projection_ = projection;
-
-//  CloudPtr cloud_copy(cloud_);
-//  mirrored_ = cloud_copy;
-//  mirrored_->points.resize( cloud_->points.size() + mirror_->points.size() );
-
-//  ROS_INFO_STREAM("Size"<< mirrored_->points.size());
-//  mirrored->width *= 2;
-//  for (int i = 0; i < mirror_->points.size(); ++i) {
-//    PointT p(mirror_->points[i]);
-//    p.x += centroid.x();
-//    p.y += centroid.y();
-//    p.z += centroid.z();
-//    mirrored_->points[cloud_->points.size() + i] = p;
-//  }
-
-//  PCLView<PointT>::showCloud(mirrored_);
   mirrored = mirrored_;
 
 }
@@ -95,15 +55,6 @@ void MirrorCloud::displayMirrored() {
   p = new pcl::visualization::PCLVisualizer("Result");
 
   p->addPointCloud(mirrored_);
-  /*pcl::ModelCoefficients coeffs;
-  coeffs.values.resize(4);
-  coeffs.values[0] = 0.0;
-  coeffs.values[1] = 0.0;
-  coeffs.values[2] = 1.0;
-  coeffs.values[3] = 0.0;
-  coeffs.values[4] = 0.0;
-  coeffs.values[5] = 0.7;
-  p->addPlane(coeffs);*/
   p->addCoordinateSystem(0.1, 0, 0, 0);
   p->spin();
 
