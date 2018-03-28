@@ -50,6 +50,19 @@ public:
 
 };
 
+class SymmetryPlaneEstimation
+{
+  CloudPtr cloud_;
+
+public:
+
+  SymmetryPlaneEstimation(CloudPtr cloud) : cloud_(cloud){
+
+  }
+
+
+};
+
 
 
 #endif

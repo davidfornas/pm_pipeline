@@ -218,6 +218,20 @@ public:
         a->points[i] = b->points[i];
   }
 
+
+  static int findFurthest(CloudPtr cloud, double a, double b, double c, double d, int & max_index, double & max_distance){
+    max_index = -1;
+    max_distance = 0;
+
+    for (int i = 0; i < cloud->points.size(); ++i) {
+      double distance = fabs( a * cloud->points[i].x + b * cloud->points[i].y + c * cloud->points[i].z + d );
+      if(distance > max_distance){
+        max_distance = distance;
+        max_index = i;
+      }
+    }
+  }
+
   /** Show segmented cloud and plane by coefficients and inliers */
   static void showSegmentationCloudsAndModels(CloudPtr c1, CloudPtr c2, pcl::ModelCoefficients::Ptr plane_coeffs,
                                               pcl::ModelCoefficients::Ptr cylinder_coeffs)
