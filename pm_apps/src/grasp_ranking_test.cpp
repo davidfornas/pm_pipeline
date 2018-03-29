@@ -26,7 +26,9 @@ int main(int argc, char **argv)
 
 
   RankingGraspPlanner rgp(point_cloud_ptr, nh);
+  ROS_INFO("XXX");
   rgp.generateGraspList();
+  ROS_INFO("Voy a mostrar la lista:");
   rgp.publishGraspList();
   ros::spinOnce();
 

@@ -47,7 +47,8 @@ public:
 
   vpHomogeneousMatrix cMo, bMc; // Camera to object, camera to kinematic base
   ARM5Arm robot;
-  std::list<vpHomogeneousMatrix> grasp_list; // Grasp positions list, cMg list
+  std::vector<vpHomogeneousMatrix> grasp_list; // Grasp positions list, cMg list
+  std::vector<GraspHypothesis> grasps;
 
   //Geometric parameters of the object, this depends on the Pose Estimator, atm is Cylinder RANSAC
   double radious, height;
@@ -56,6 +57,8 @@ public:
   RankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh){
     // @TODO SWITCH METHOD.
     pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
+    vispToTF.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMg", "cMg");
+    vispToTF.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMg_ik", "cMg_ik");
   }
 
   /** Cloud set */
@@ -81,7 +84,18 @@ public:
   void publishBestGrasp(){}
 
   /** Publish grasp list sequentially. **/
-  void publishGraspList(){}
+  void publishGraspList(){
+    while (ros::ok()){
+      for (int i = 0; i < grasps.size(); ++i) {
+        vispToTF.resetTransform(grasps[i].cMg, "cMg");
+        vispToTF.resetTransform(grasps[i].cMg_ik, "cMg_ik");
+        vispToTF.publish();
+        ros::spinOnce();
+        ros::Duration(0.3).sleep();
+      }
+    }
+
+  }
 
   //  @TODO Get camera to base transform from TF.
   void getbMc();

@@ -14,7 +14,6 @@ void RankingGraspPlanner::generateGraspList()
   cMo = pose_estimation->get_cMo();
   getbMc();
 
-  std::vector<GraspHypothesis> grasps;
   for (double d = -0.2; d <= 0.2; d += 0.04)
   {
     for (double a = 40; a <= 140; a += 8)
@@ -22,6 +21,7 @@ void RankingGraspPlanner::generateGraspList()
       for (double r = -0.5; r <= -0.2; r += 0.05)
       {
         double angle = a * 2 * 3.1416 / 360; // Deg -> Rad
+
         vpHomogeneousMatrix grMgt0(0, d, 0, 0, 0, 0);
         vpHomogeneousMatrix gMgrZ(0, 0, 0, 0, 0, 1.57);
         vpHomogeneousMatrix gMgrX(0, 0, 0, 1.57, 0, 0);
@@ -29,15 +29,16 @@ void RankingGraspPlanner::generateGraspList()
         vpHomogeneousMatrix grMgt(r, 0, 0, 0, 0, 0);
         vpHomogeneousMatrix oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
         vpHomogeneousMatrix cMg = cMo * oMg;
-        vpHomogeneousMatrix rot(0, 0, 0, 0, 1.57, 0);
-        cMg=cMg*rot;
+        //vpHomogeneousMatrix rot(0, 0, 0, 0, 1.57, 0);
+        //cMg=cMg*rot;
+        cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.14);
         grasp_list.push_back(cMg);
         GraspHypothesis g = generateGraspHypothesis( cMg );
         grasps.push_back(g);
       }
     }
   }
-  std::sort(grasps.begin(), grasps.end(), sortByScore);
+  //std::sort(grasps.begin(), grasps.end(), sortByScore);
 }
 
 //Generate Hypotheiss list @TODO Fix and Improve
@@ -57,10 +58,10 @@ GraspHypothesis RankingGraspPlanner::generateGraspHypothesis( vpHomogeneousMatri
   bMg_fk = robot.directKinematics(final_joints2);
   g.cMg_ik=bMc.inverse()*bMg_fk;
   //Compute score
-  g.distance_ik_score=(g.cMg.getCol(4) - g.cMg_ik.getCol(4)).euclideanNorm();
-  g.angle_ik_score=abs(angle(g.cMg.getCol(3), g.cMg_ik.getCol(3)));
-  g.angle_axis_score=abs(abs(angle(cMo.getCol(2), g.cMg_ik.getCol(3)))-1);//Angle between cylinder axis and grasp axis.1 rad is preferred
-  g.distance_score=abs((cMo.getCol(4) - g.cMg_ik.getCol(4)).euclideanNorm()-0.35);//35cm is preferred
+  g.distance_ik_score=(g.cMg.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm();
+  g.angle_ik_score=abs(angle(g.cMg.getCol(2), g.cMg_ik.getCol(2)));
+  g.angle_axis_score=abs(abs(angle(cMo.getCol(1), g.cMg_ik.getCol(2)))-1);//Angle between cylinder axis and grasp axis.1 rad is preferred
+  g.distance_score=abs((cMo.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm()-0.35);//35cm is preferred
   g.overall_score=g.distance_ik_score*100+g.angle_ik_score*10+g.angle_axis_score+g.distance_score*2;//Should be argued. Know is only a matter of priority.
   return g;
 }
@@ -95,13 +96,13 @@ vpHomogeneousMatrix RankingGraspPlanner::tfToVisp(tf::StampedTransform matrix_tf
 //As a kinematic filter will be applied, I prefered to do it externally to avoid adding more deps.
 void RankingGraspPlanner::filterGraspList(){
 
-  std::list<vpHomogeneousMatrix>::iterator i = grasp_list.begin();
-  while (i != grasp_list.end())
-  {
-    if (!false)//Replace with desired condition
-    {
-      grasp_list.erase(i++);  // alternatively, i = items.erase(i);
-    }
-  }
+//  std::list<vpHomogeneousMatrix>::iterator i = grasp_list.begin();
+//  while (i != grasp_list.end())
+//  {
+//    if (!false)//Replace with desired condition
+//    {
+//      grasp_list.erase(i++);  // alternatively, i = items.erase(i);
+//    }
+//  }
 }
 
