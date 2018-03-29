@@ -29,6 +29,7 @@ int main(int argc, char **argv)
   ROS_INFO("XXX");
   rgp.generateGraspList();
   ROS_INFO("Voy a mostrar la lista:");
+  rgp.getBestGrasp();
   rgp.publishGraspList();
   ros::spinOnce();
 

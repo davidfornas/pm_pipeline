@@ -72,7 +72,13 @@ public:
   void filterGraspList();
 
   /** Get best rasp based on ranking */
-  vpHomogeneousMatrix getBestGrasp();
+  vpHomogeneousMatrix getBestGrasp(){
+    std::sort(grasps.begin(), grasps.end(), sortByScore);
+    //Bigger score is worse.
+    ROS_INFO_STREAM("Best grasp "<<0<<grasps[0].overall_score);
+    ROS_INFO_STREAM("Worst grasp "<<grasps.size()<<grasps[grasps.size()-1].overall_score);
+
+  }
 
   /** Publish one object pose. Mainly to display in UWSim **/
   void publishObjectPose(){
@@ -80,10 +86,10 @@ public:
     //ros::spinOnce();
   }
 
-  /** Publish grasp pose. **/
+  /** Publish grasp pose. Once sorted publish first grasp. **/
   void publishBestGrasp(){}
 
-  /** Publish grasp list sequentially. **/
+  /** Publish grasp list sequentially in TF. **/
   void publishGraspList(){
     while (ros::ok()){
       for (int i = 0; i < grasps.size(); ++i) {
@@ -97,10 +103,11 @@ public:
 
   }
 
-  //  @TODO Get camera to base transform from TF.
+  //Get camera to base transform from TF.
   void getbMc();
-  vpHomogeneousMatrix tfToVisp(tf::StampedTransform matrix_tf);
 
+  // Helper function
+  vpHomogeneousMatrix tfToVisp(tf::StampedTransform matrix_tf);
 
   ~RankingGraspPlanner() {}
 

@@ -29,8 +29,6 @@ void RankingGraspPlanner::generateGraspList()
         vpHomogeneousMatrix grMgt(r, 0, 0, 0, 0, 0);
         vpHomogeneousMatrix oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
         vpHomogeneousMatrix cMg = cMo * oMg;
-        //vpHomogeneousMatrix rot(0, 0, 0, 0, 1.57, 0);
-        //cMg=cMg*rot;
         cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.14);
         grasp_list.push_back(cMg);
         GraspHypothesis g = generateGraspHypothesis( cMg );
@@ -62,7 +60,7 @@ GraspHypothesis RankingGraspPlanner::generateGraspHypothesis( vpHomogeneousMatri
   g.angle_ik_score=abs(angle(g.cMg.getCol(2), g.cMg_ik.getCol(2)));
   g.angle_axis_score=abs(abs(angle(cMo.getCol(1), g.cMg_ik.getCol(2)))-1);//Angle between cylinder axis and grasp axis.1 rad is preferred
   g.distance_score=abs((cMo.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm()-0.35);//35cm is preferred
-  g.overall_score=g.distance_ik_score*100+g.angle_ik_score*10+g.angle_axis_score+g.distance_score*2;//Should be argued. Know is only a matter of priority.
+  g.overall_score=g.distance_ik_score*100+g.angle_ik_score*10+g.angle_axis_score+g.distance_score*2;//Should be argued. Now is only a matter of priority.
   return g;
 }
 
@@ -82,7 +80,6 @@ void RankingGraspPlanner::getbMc(){
   }while(!tf_detected && ros::ok());
   bMc=tfToVisp(bMc_tf);
   tf_detected=true;
-  ROS_INFO_STREAM("Got new bMc: " << bMc);
 };
 
 vpHomogeneousMatrix RankingGraspPlanner::tfToVisp(tf::StampedTransform matrix_tf){
