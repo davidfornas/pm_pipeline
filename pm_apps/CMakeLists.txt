@@ -21,6 +21,7 @@ add_executable(cluster_measure_test src/cluster_measure_test.cpp)
 add_executable(mirror_cloud_test src/mirror_cloud_test.cpp)
 add_executable(pose_estimation_test src/pose_estimation_test.cpp)
 add_executable(octomap_test src/octomap_test.cpp)
+add_executable(grasp_ranking_test src/grasp_ranking_test.cpp)
 
 
 target_link_libraries(border_following ${catkin_LIBRARIES} )
@@ -36,3 +37,4 @@ target_link_libraries(cluster_measure_test ${catkin_LIBRARIES} )
 target_link_libraries(mirror_cloud_test ${catkin_LIBRARIES} )
 target_link_libraries(pose_estimation_test ${catkin_LIBRARIES} )
 target_link_libraries(octomap_test ${catkin_LIBRARIES} )
+target_link_libraries(grasp_ranking_test ${catkin_LIBRARIES} )

@@ -18,7 +18,7 @@ catkin_package(
 include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
-add_library(pm_manipulation src/slider_grasp_planner.cpp)
+add_library(pm_manipulation src/slider_grasp_planner.cpp src/ranking_grasp_planner.cpp)
 target_link_libraries(pm_manipulation ${catkin_LIBRARIES}  ${PCL_LIBRARIES} ${VISP_LIBRARIES})
 
 add_executable(slider_grasp_planner_server src/slider_grasp_planner_server.cpp src/slider_grasp_planner.cpp src/ranking_grasp_planner.cpp)
