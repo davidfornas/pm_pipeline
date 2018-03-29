@@ -237,7 +237,7 @@ void CylinderPoseEstimation::process() {
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
   cyl_seg.setIterations(cylinder_iterations_);
-  cyl_seg.setRadiousLimit(this->radious+0.01);
+  cyl_seg.setRadiousLimit(radious+0.01);
 
   cyl_seg.apply(cloud_cylinder, coefficients_cylinder);
   ROS_INFO_STREAM("Found cylinder size: " << cloud_cylinder->size());
@@ -344,5 +344,75 @@ void CylinderPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>:
   p.z = axis_point.z + normal->z() * t;
   *min_pt=p;
 }
+
+void SpherePoseEstimation::initialize(){
+  process();
+}
+
+void SpherePoseEstimation::process() {
+
+  CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud), cloud_sphere (new Cloud);
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
+  coefficients_sphere = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+
+  // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
+  PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
+  ROS_DEBUG_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
+  bg_remove->setNewCloud(cloud_filtered);
+  bg_remove->initialize(cloud_filtered2, cloud_normals2);
+
+  SphereSegmentation<PointT> sph_seg(cloud_filtered2, cloud_normals2);
+  sph_seg.setDistanceThreshold(sphere_distance_threshold_);
+  sph_seg.setIterations(sphere_iterations_);
+  sph_seg.setRadiousLimit(radious_limit_);
+  sph_seg.apply(cloud_sphere, coefficients_sphere);
+
+  PCLView<PointT>::showCloud(cloud_sphere);
+  PCLView<PointT>::showCloud(bg_remove->cloud_plane);
+  ROS_INFO_STREAM("DEBUG" << cloud_sphere->points.size());
+
+  Eigen::Vector3f sphere_centre;
+  sphere_centre.x() = coefficients_sphere->values[0];
+  sphere_centre.y() = coefficients_sphere->values[1];
+  sphere_centre.z() = coefficients_sphere->values[2];
+  radious = coefficients_sphere->values[3];
+
+  Eigen::Vector3f plane_origin, ground_plane_normal;
+
+  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
+  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
+  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
+
+  Eigen::Vector4f plane_centroid;
+  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
+  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
+
+  Eigen::Vector3f sphere_centre_projected;
+  pcl::geometry::project(sphere_centre, plane_centroid_3f, ground_plane_normal, sphere_centre_projected);
+
+  Eigen::Vector3f ground_plane_vector(sphere_centre_projected-plane_centroid_3f);
+  ground_plane_vector.normalize();
+  ground_plane_normal.normalize();
+
+  tf::Vector3 tf_ground_plane_vector(ground_plane_vector.x(), ground_plane_vector.y(), ground_plane_vector.z());
+  tf::Vector3 tf_ground_plane_normal(ground_plane_normal.x(), ground_plane_normal.y(), ground_plane_normal.z());
+  tf::Vector3 result=tf::tfCross( tf_ground_plane_vector, tf_ground_plane_normal).normalize();
+  result = -result;
+
+  cMo[0][0]=result.x(); cMo[0][1]=ground_plane_normal.x(); cMo[0][2]=ground_plane_vector.x();cMo[0][3]=sphere_centre.x();
+  cMo[1][0]=result.y(); cMo[1][1]=ground_plane_normal.y(); cMo[1][2]=ground_plane_vector.y();cMo[1][3]=sphere_centre.y();
+  cMo[2][0]=result.z(); cMo[2][1]=ground_plane_normal.z(); cMo[2][2]=ground_plane_vector.z();cMo[2][3]=sphere_centre.z();
+  cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
+  ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
+  if(debug_) {
+    vispToTF.resetTransform(cMo, "cMo");
+    vispToTF.publish();
+  }
+  vpHomogeneousMatrix sphere;
+  sphere = cMo ;//* vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
+  UWSimMarkerPublisher::publishSphereMarker(sphere ,radious,radious,radious);
+
+}
+
 
 

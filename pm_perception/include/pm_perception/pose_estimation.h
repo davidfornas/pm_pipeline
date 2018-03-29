@@ -173,4 +173,46 @@ private:
 
 };//End CylinderPoseEstimation
 
+
+/** Pose Estimation using RANSAC Sphere extraction */
+class SpherePoseEstimation : public PoseEstimation{
+
+  //Punto central de la esfera y la direccion.
+  PointT axis_point_g;
+  tf::Vector3 normal_g;
+
+  pcl::ModelCoefficients::Ptr coefficients_sphere;
+  double sphere_distance_threshold_, radious_limit_;
+  int sphere_iterations_;
+
+public:
+
+  double radious, height;
+
+  /** Constructor.
+   * @params: Get pose using RANSAC & the input cloud.
+   * */
+  SpherePoseEstimation(CloudPtr cloud, double distanceThreshold = 0.05) : PoseEstimation(cloud, distanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
+    setSphereSegmentationParams();
+  }
+
+  /** Where segmentation is done */
+  void initialize();
+
+  /** Online planning **/
+  void process();
+
+  /** Set sphere segmentation parameters: distance to the inliers to the plane,
+   * number of iterations and radious limit.
+   */
+  void setSphereSegmentationParams(double distanceThreshold = 0.05,int iterations = 20000, double rlimit = 0.08){
+    sphere_distance_threshold_=distanceThreshold;
+    sphere_iterations_=iterations;
+    radious_limit_=rlimit;
+  }
+  ~SpherePoseEstimation() {}
+
+};//End SpherePoseEstimation
+
+
 #endif // SAC_POSE_ESTIMATION_H

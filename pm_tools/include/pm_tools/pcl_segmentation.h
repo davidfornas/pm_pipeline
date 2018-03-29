@@ -151,7 +151,7 @@ class SphereSegmentation
 
   CloudPtr in_cloud_;
   pcl::PointCloud<pcl::Normal>::Ptr in_normals_;
-  pcl::PointIndices::Ptr inliers_cylinder_;
+  pcl::PointIndices::Ptr inliers_sphere_;
 
   double distance_threshold_, radious_limit_;
   int num_iterations_;
@@ -163,8 +163,8 @@ public:
     //Default values
     distance_threshold_ = 0.05;
     num_iterations_ = 100;
-    radious_limit_ = 0.05;
-    inliers_cylinder_ = boost::shared_ptr<pcl::PointIndices>(new pcl::PointIndices);
+    radious_limit_ = 0.15;
+    inliers_sphere_ = boost::shared_ptr<pcl::PointIndices>(new pcl::PointIndices);
   }
   bool apply(CloudPtr cloud_cylinder, pcl::ModelCoefficients::Ptr coeffs);
   void setIterations(int iterations)
@@ -181,7 +181,7 @@ public:
   }
   void getInliers(pcl::PointIndices::Ptr & inliers)
   {
-    inliers = inliers_cylinder_;
+    inliers = inliers_sphere_;
   }
   ~SphereSegmentation()
   {
@@ -261,11 +261,11 @@ bool CylinderSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoef
 
 /** RANSAC cylinder estimation */
 template<typename PointT>
-bool SphereSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoefficients::Ptr coeffs)
+bool SphereSegmentation<PointT>::apply(CloudPtr cloud_sphere, pcl::ModelCoefficients::Ptr coeffs)
 {
 
   clock_t begin = clock();
-  pcl::PointIndices::Ptr inliers_cylinder(new pcl::PointIndices);
+  pcl::PointIndices::Ptr inliers_sphere_(new pcl::PointIndices);
   typename pcl::ExtractIndices<PointT> extract;
   pcl::PCDWriter writer;
   typename pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
@@ -282,23 +282,23 @@ bool SphereSegmentation<PointT>::apply(CloudPtr cloud_cylinder, pcl::ModelCoeffi
   seg.setInputNormals(in_normals_);
 
   // Obtain the cylinder inliers and coefficients
-  seg.segment(*inliers_cylinder_, *coeffs);
-  ROS_DEBUG_STREAM("Cylinder coefficients: " << *coeffs);
+  seg.segment(*inliers_sphere_, *coeffs);
+  ROS_DEBUG_STREAM("Sphere coefficients: " << *coeffs);
   clock_t end = clock();
   ROS_DEBUG_STREAM("Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC);
 
   // Write the cylinder inlier1s to disk
   extract.setInputCloud(in_cloud_);
-  extract.setIndices(inliers_cylinder_);
+  extract.setIndices(inliers_sphere_);
   extract.setNegative(false);
-  extract.filter(*cloud_cylinder);
-  if (cloud_cylinder->points.empty())
-    ROS_DEBUG_STREAM("Can't find the cylindrical component.");
+  extract.filter(*cloud_sphere);
+  if (cloud_sphere->points.empty())
+    ROS_DEBUG_STREAM("Can't find the spherical component.");
   else
   {
     ROS_DEBUG_STREAM(
-            "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points.");
-    writer.write("scene_cylinder.pcd", *cloud_cylinder, false);
+            "PointCloud representing the spherical component: " << cloud_sphere->points.size () << " data points.");
+    writer.write("scene_sphere.pcd", *cloud_sphere, false);
   }
   return true;
 }

@@ -32,12 +32,13 @@ Method method;
 
 void stringCallback(const std_msgs::String &msg ){
   // DF initFromPose initFromRansac
-  if( msg.data == "initFromPose" || msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"){
+  if( msg.data == "initFromPose" || msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA" || msg.data == "initFromSphere"){
     compute_initial_cMg = true;
     //@TODO RENAME do_ransac
-    if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"){
+    if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA" || msg.data == "initFromSphere"){
       do_ransac = true;
       if(msg.data == "initFromRansac") method = RANSACCylinder;
+      if(msg.data == "initFromSphere") method = RANSACSphere;
       if(msg.data == "initFromBox") method = BoxPlane;
       if(msg.data == "initFromPCA") method = PCA;
     }
