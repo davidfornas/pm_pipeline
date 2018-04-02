@@ -108,7 +108,7 @@ void PCAPoseEstimation::process() {
 
   int max_index;
   double max_dist;
-  PCLTools<PointT>::findFurthest(cluster.cloud_clusters[0], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
+  PCLTools<PointT>::findFurthest(cluster.cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
                                  bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
 
 
