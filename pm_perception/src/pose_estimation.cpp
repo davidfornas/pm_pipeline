@@ -81,6 +81,7 @@ void BoxPoseEstimation::process() {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
   }
+  object_cloud_ = full_model;
 }
 
 void PCAPoseEstimation::process() {
@@ -154,6 +155,7 @@ void PCAPoseEstimation::process() {
     vispToTF.publish();
   }
   ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
+  object_cloud_ = full_model;
 }
 
 void CylinderPoseEstimation::initialize() {
@@ -218,6 +220,7 @@ void CylinderPoseEstimation::initialize() {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
   }
+  object_cloud_ = cloud_cylinder;
 
 }
 
@@ -292,7 +295,7 @@ void CylinderPoseEstimation::process() {
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious,radious,height);
-
+  object_cloud_ = cloud_cylinder;
   // @TODO Filter may be here or not. To avoid bad  detections.
 }
 
@@ -411,6 +414,7 @@ void SpherePoseEstimation::process() {
   vpHomogeneousMatrix sphere;
   sphere = cMo ;//* vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishSphereMarker(sphere ,radious,radious,radious);
+  object_cloud_ = cloud_sphere;
 
 }
 

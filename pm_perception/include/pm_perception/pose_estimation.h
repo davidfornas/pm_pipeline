@@ -32,7 +32,7 @@ class PoseEstimation{
 
 protected:
 
-  CloudPtr cloud_;
+  CloudPtr cloud_, object_cloud_;
   std::string camera_frame_name, topic_name;
   FrameToTF vispToTF;
   bool debug_;
@@ -86,6 +86,12 @@ public:
 
   /** Get the object frame with respect to the camera frame */
   vpHomogeneousMatrix get_cMo() {return cMo;}
+
+
+  /** Get the object cloud extracted */
+  CloudPtr getObjectCloud() {return object_cloud_;}
+
+
 };
 
 /** Pose Estimation using PCA */
