@@ -97,12 +97,15 @@ public:
 /** Pose Estimation using PCA */
 class PCAPoseEstimation : public PoseEstimation{
 
+  int cluster_index_;
+
 public:
 
-  PCAPoseEstimation(CloudPtr source) : PoseEstimation(source){}
+  PCAPoseEstimation(CloudPtr source) : PoseEstimation(source){ cluster_index_ = 0; }
 
-  void initialize(){process();}
+  void initialize(){ process(); }
   void process();
+  void nextCluster(){ cluster_index_++; }
 
 };
 

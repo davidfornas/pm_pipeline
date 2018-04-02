@@ -101,7 +101,7 @@ void PCAPoseEstimation::process() {
     cluster.displayColoured();
     //cluster.save("euclidean");
     PCLView<PointT>::showCloud(cloud_);
-    PCLView<PointT>::showCloud(cluster.cloud_clusters[0]);
+    PCLView<PointT>::showCloud(cluster.cloud_clusters[cluster_index_]);
   }
 
   if (cluster.cloud_clusters.size() == 0) return;
@@ -121,9 +121,9 @@ void PCAPoseEstimation::process() {
   ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
   ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
 
-  Eigen::Vector3f point_in_object(cluster.cloud_clusters[0]->points[max_index].x,
-                                  cluster.cloud_clusters[0]->points[max_index].y,
-                                  cluster.cloud_clusters[0]->points[max_index].z);
+  Eigen::Vector3f point_in_object(cluster.cloud_clusters[cluster_index_]->points[max_index].x,
+                                  cluster.cloud_clusters[cluster_index_]->points[max_index].y,
+                                  cluster.cloud_clusters[cluster_index_]->points[max_index].z);
 
   Eigen::Vector4f plane_centroid;
   pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
@@ -138,7 +138,7 @@ void PCAPoseEstimation::process() {
   plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
   plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
 
-  MirrorCloud mc(cluster.cloud_clusters[0], plane_origin, ground_plane_normal);
+  MirrorCloud mc(cluster.cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
   mc.apply(full_model);
 
   ClusterMeasure<PointT> cm(full_model, debug_);
