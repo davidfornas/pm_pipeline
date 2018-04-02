@@ -7,7 +7,6 @@
 #include <pm_perception/pose_estimation.h>
 #include <pm_perception/cluster_measure.h>
 #include <pm_perception/symmetry.h>
-#include <pm_tools/pcl_clustering.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -90,25 +89,25 @@ void PCAPoseEstimation::process() {
   bg_remove->setNewCloud(cloud_);
   bg_remove->initialize(cloud_, cloud_normals);
 
-  CloudClustering<PointT> cluster(cloud_);
-  cluster.applyEuclidianClustering();
+  cloud_clustering_ = new CloudClustering<PointT>(cloud_);
+  cloud_clustering_->applyEuclidianClustering();
 
   if(debug_) {
     ROS_INFO_STREAM("Cluster list: ");
-    for (int i = 0; i < cluster.cloud_clusters.size(); ++i) {
-      ROS_INFO_STREAM("Cluster " << i << "size: " << cluster.cloud_clusters[i]->points.size());
+    for (int i = 0; i < cloud_clustering_->cloud_clusters.size(); ++i) {
+      ROS_INFO_STREAM("Cluster " << i << "size: " << cloud_clustering_->cloud_clusters[i]->points.size());
     }
-    cluster.displayColoured();
+    cloud_clustering_->displayColoured();
     //cluster.save("euclidean");
     PCLView<PointT>::showCloud(cloud_);
-    PCLView<PointT>::showCloud(cluster.cloud_clusters[cluster_index_]);
+    PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
   }
 
-  if (cluster.cloud_clusters.size() == 0) return;
+  if (cloud_clustering_->cloud_clusters.size() == 0) return;
 
   int max_index;
   double max_dist;
-  PCLTools<PointT>::findFurthest(cluster.cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
+  PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
                                  bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
 
 
@@ -121,9 +120,9 @@ void PCAPoseEstimation::process() {
   ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
   ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
 
-  Eigen::Vector3f point_in_object(cluster.cloud_clusters[cluster_index_]->points[max_index].x,
-                                  cluster.cloud_clusters[cluster_index_]->points[max_index].y,
-                                  cluster.cloud_clusters[cluster_index_]->points[max_index].z);
+  Eigen::Vector3f point_in_object(cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].x,
+                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].y,
+                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].z);
 
   Eigen::Vector4f plane_centroid;
   pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
@@ -138,7 +137,7 @@ void PCAPoseEstimation::process() {
   plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
   plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
 
-  MirrorCloud mc(cluster.cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
+  MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
   mc.apply(full_model);
 
   ClusterMeasure<PointT> cm(full_model, debug_);
@@ -156,6 +155,69 @@ void PCAPoseEstimation::process() {
   }
   ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
   object_cloud_ = full_model;
+}
+
+// @TODO Refactor...
+void PCAPoseEstimation::processNext() {
+
+  cluster_index_++;
+  if (cluster_index_ >= cloud_clustering_->cloud_clusters.size()) return;
+  // @TODO Find best value. 25 for now.
+  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size()<25) return;
+
+  if(debug_) {
+      PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
+  }
+
+  int max_index;
+  double max_dist;
+  PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
+                                 bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
+
+  // ESTIMATON OF THE SYMMETRY PLANE
+  CloudPtr full_model(new Cloud);
+  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
+
+  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
+  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
+  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
+
+  Eigen::Vector3f point_in_object(cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].x,
+                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].y,
+                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].z);
+
+  Eigen::Vector4f plane_centroid;
+  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
+  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
+
+  Eigen::Vector3f point_in_object_projected_into_plane;
+  pcl::geometry::project(point_in_object, plane_centroid_3f, ground_plane_normal, point_in_object_projected_into_plane);
+
+  Eigen::Vector3f object_to_plane(point_in_object-point_in_object_projected_into_plane);
+
+  plane_origin.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
+  plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
+  plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
+
+  MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
+  mc.apply(full_model);
+
+  ClusterMeasure<PointT> cm(full_model, debug_);
+  Eigen::Quaternionf q;
+  Eigen::Vector3f t;
+  Eigen::Matrix4f cMo_eigen;
+  float width, height, depth;
+  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
+
+  if(debug_) {
+    vispToTF.resetTransform(cMo, "cMo");
+    vispToTF.publish();
+  }
+  ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
+  object_cloud_ = full_model;
+
 }
 
 void CylinderPoseEstimation::initialize() {

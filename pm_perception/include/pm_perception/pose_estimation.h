@@ -12,6 +12,7 @@
 #include <pm_tools/tf_tools.h>
 #include <pm_tools/marker_tools.h>
 #include <pm_tools/pcl_segmentation.h>
+#include <pm_tools/pcl_clustering.h>
 #include <pm_perception/background_removal.h>
 
 #include <pcl/io/pcd_io.h>
@@ -98,14 +99,19 @@ public:
 class PCAPoseEstimation : public PoseEstimation{
 
   int cluster_index_;
+  CloudClustering<PointT> * cloud_clustering_;
 
 public:
 
   PCAPoseEstimation(CloudPtr source) : PoseEstimation(source){ cluster_index_ = 0; }
 
   void initialize(){ process(); }
+
+  // Use process multiple times with ner clouds.
   void process();
-  void nextCluster(){ cluster_index_++; }
+
+  //Use process next to process other cluster without repeating clustering.
+  void processNext();
 
 };
 
