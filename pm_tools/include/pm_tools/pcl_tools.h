@@ -182,6 +182,18 @@ public:
     return count;
   }
 
+  /** Center cloud on origin */
+  static int moveToOrigin(CloudPtr p)
+  {
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid<PointT>(*p, centroid);
+    for (size_t i = 0; i < p->points.size(); ++i) {
+      p->points[i].x -= centroid.x();
+      p->points[i].y -= centroid.y();
+      p->points[i].z -= centroid.z();
+    }
+  }
+
   /** Remove NaN points, @TODO compare with PCL method */
   static void removeNanPoints(CloudPtr p, CloudPtr copy){
     /* COMPARE WITH ...

@@ -45,24 +45,28 @@ int main(int argc, char **argv)
     pose_est->process();
     ROS_INFO_STREAM(pose_est->get_cMo());
 
+    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
     PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster0.pcd");
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
     ros::Duration(1).sleep();
     ((PCAPoseEstimation*)pose_est)->processNext();
 
+    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
     PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster1.pcd");
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
     ros::Duration(1).sleep();
     ((PCAPoseEstimation*)pose_est)->processNext();
 
+    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
     PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster2.pcd");
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
     ros::Duration(1).sleep();
     ((PCAPoseEstimation*)pose_est)->processNext();
 
+    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
     PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster3.pcd");
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
