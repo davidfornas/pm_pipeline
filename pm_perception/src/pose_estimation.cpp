@@ -91,6 +91,8 @@ void PCAPoseEstimation::process() {
 
   cloud_clustering_ = new CloudClustering<PointT>(cloud_);
   cloud_clustering_->applyEuclidianClustering();
+  //Set to process first cluster only.
+  cluster_index_ = 0;
 
   if(debug_) {
     ROS_INFO_STREAM("Cluster list: ");
@@ -109,7 +111,6 @@ void PCAPoseEstimation::process() {
   double max_dist;
   PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
                                  bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
-
 
 
   // ESTIMATON OF THE SYMMETRY PLANE
@@ -162,8 +163,8 @@ void PCAPoseEstimation::processNext() {
 
   cluster_index_++;
   if (cluster_index_ >= cloud_clustering_->cloud_clusters.size()) return;
-  // @TODO Find best value. 25 for now.
-  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size()<25) return;
+  // @TODO Find best value. 400 for now. Stone is 300.
+  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < 400) return;
 
   if(debug_) {
       PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
