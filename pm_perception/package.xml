@@ -15,12 +15,14 @@
   <build_depend>nav_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>pm_tools</build_depend>
+  <build_depend>pm_superquadrics</build_depend>
   <build_depend>octomap</build_depend>
   
   <run_depend>roscpp</run_depend>
   <run_depend>nav_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>pm_tools</run_depend>
+  <run_depend>pm_superquadrics</run_depend>
   <run_depend>octomap</run_depend>
 
 </package>

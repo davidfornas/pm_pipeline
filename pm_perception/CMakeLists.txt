@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pm_perception)
 
-find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs geometry_msgs pm_tools)
+find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs geometry_msgs pm_tools pm_superquadrics)
 
 find_package(PCL REQUIRED)
 find_package(Boost REQUIRED)
@@ -12,7 +12,7 @@ find_package(octomap REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp nav_msgs geometry_msgs pm_tools
+  CATKIN_DEPENDS roscpp nav_msgs geometry_msgs pm_tools pm_superquadrics
   DEPENDS PCL Boost VISP OpenCV octomap
 )
 link_directories(${catkin_LIBRARY_DIRS})

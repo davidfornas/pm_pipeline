@@ -1,7 +1,7 @@
 /** 
- * Test PoseEstimation and variants
+ * Test SQPoseEstimation
  *
- *  Created on: 01/02/2018
+ *  Created on: 03/02/2018
  *      Author: dfornas
  */
 
@@ -15,27 +15,20 @@ typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "pose_estimation_test");
+  ros::init(argc, argv, "sq_pose_estimation_test");
   ros::NodeHandle nh;
 
   pcl::PointCloud<PointT>::Ptr point_cloud_ptr(new pcl::PointCloud<PointT>);
-  //std::string filename("/stereo_camera/points2");
   std::string filename("/stereo/points2");
   PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
   PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-  PoseEstimation * pose_est;
-//  pose_est = new SpherePoseEstimation(point_cloud_ptr);
-//  pose_est = new CylinderPoseEstimation(point_cloud_ptr);
-  pose_est = new PCAPoseEstimation(point_cloud_ptr);
-  //pose_est = new BoxPoseEstimation(point_cloud_ptr);
+  SQPoseEstimation * pose_est;
+  pose_est = new SQPoseEstimation(point_cloud_ptr);
 
   pose_est->setDebug(true);
-  pose_est->initialize();
-  //pose_est->setPlaneSegmentationParams(0.7);
-  ROS_INFO_STREAM(pose_est->get_cMo());
   while(ros::ok()){
     PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
     PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
@@ -46,30 +39,25 @@ int main(int argc, char **argv)
     pose_est->process();
     ROS_INFO_STREAM(pose_est->get_cMo());
 
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster0.pcd");
+    /* DEBUG SQ Pose Estimation */
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
+    *point_cloud_ptr += *((SQPoseEstimation*)pose_est)->getSQCloud();
+    //PCLView<PointT>::showCloudDuring(((SQPoseEstimation*)pose_est)->getSQCloud());
 
-    ros::Duration(1).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster1.pcd");
+    ((SQPoseEstimation*)pose_est)->processNext();
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
+    *point_cloud_ptr += *((SQPoseEstimation*)pose_est)->getSQCloud();
 
-    ros::Duration(1).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster2.pcd");
+    ((SQPoseEstimation*)pose_est)->processNext();
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
+    *point_cloud_ptr += *((SQPoseEstimation*)pose_est)->getSQCloud();
 
-    ros::Duration(1).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster3.pcd");
+    ((SQPoseEstimation*)pose_est)->processNext();
     PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
+    *point_cloud_ptr += *((SQPoseEstimation*)pose_est)->getSQCloud();
+
+    PCLView<PointT>::showCloudDuring(point_cloud_ptr);
+    PCLTools<PointT>::cloudToPCD(point_cloud_ptr, "result.pcd");
 
   }
   return 0;

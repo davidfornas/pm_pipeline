@@ -15,6 +15,8 @@
 #include <pm_tools/pcl_clustering.h>
 #include <pm_perception/background_removal.h>
 
+#include <pm_superquadrics/fit_superquadric_ceres.h>
+
 #include <pcl/io/pcd_io.h>
 
 #include <visp/vpImage.h>
@@ -107,7 +109,7 @@ public:
 
   void initialize(){ process(); }
 
-  // Use process multiple times with ner clouds.
+  // Use process multiple times with new clouds.
   void process();
 
   //Use process next to process other cluster without repeating clustering.
@@ -130,12 +132,27 @@ public:
 /** Pose Estimation using SQ */
 class SQPoseEstimation : public PoseEstimation{
 
+  int cluster_index_;
+  CloudClustering<PointT> * cloud_clustering_;
+
+  CloudPtr sq_cloud_;
+  double sq_params_[5];
+  Eigen::Matrix4f sq_transform_;
+
 public:
 
   SQPoseEstimation(CloudPtr source) : PoseEstimation(source){}
 
-  void initialize(){}
-  void process(){}
+  void initialize(){ process(); }
+
+  // Use process multiple times with new clouds.
+  void process();
+
+  //Use process next to process other cluster without repeating clustering.
+  void processNext();
+
+  /** Get the object cloud extracted */
+  CloudPtr getSQCloud() {return sq_cloud_;}
 
 };
 
