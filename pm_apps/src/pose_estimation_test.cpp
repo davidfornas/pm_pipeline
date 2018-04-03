@@ -32,7 +32,7 @@ int main(int argc, char **argv)
   pose_est = new PCAPoseEstimation(point_cloud_ptr);
   //pose_est = new BoxPoseEstimation(point_cloud_ptr);
 
-  pose_est->setDebug(true);
+  pose_est->setDebug(false);
   pose_est->initialize();
   ROS_INFO_STREAM(pose_est->get_cMo());
   while(ros::ok()){
@@ -45,31 +45,26 @@ int main(int argc, char **argv)
     pose_est->process();
     ROS_INFO_STREAM(pose_est->get_cMo());
 
-    ros::Duration(2).sleep();
+    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster0.pcd");
+    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
+
+    ros::Duration(1).sleep();
     ((PCAPoseEstimation*)pose_est)->processNext();
-    //PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "name.pcd");
-    PCLView<PointT>::showCloud(pose_est->getObjectCloud());
 
+    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster1.pcd");
+    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
-
-    ros::Duration(2).sleep();
+    ros::Duration(1).sleep();
     ((PCAPoseEstimation*)pose_est)->processNext();
-    //PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "name.pcd");
-    PCLView<PointT>::showCloud(pose_est->getObjectCloud());
 
+    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster2.pcd");
+    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
-
-    ros::Duration(2).sleep();
+    ros::Duration(1).sleep();
     ((PCAPoseEstimation*)pose_est)->processNext();
-    //PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "name.pcd");
-    PCLView<PointT>::showCloud(pose_est->getObjectCloud());
 
-
-
-    ros::Duration(2).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-    //PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "name.pcd");
-    PCLView<PointT>::showCloud(pose_est->getObjectCloud());
+    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster3.pcd");
+    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
 
 
   }

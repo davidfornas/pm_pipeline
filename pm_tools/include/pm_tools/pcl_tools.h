@@ -287,6 +287,24 @@ public:
   }
 
 
+  /** Show cloud during ms miliseconds */
+  static void showCloudDuring(CloudPtr source, int ms = 1000)
+  {
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("CViewer"));
+
+    int elapsed = 0;
+    viewer->addPointCloud<PointT>(source, "Plane cloud");
+    viewer->initCameraParameters();
+    while (!viewer->wasStopped() && elapsed < ms )
+    {
+      elapsed += 20;
+      viewer->spinOnce(20);
+      boost::this_thread::sleep(boost::posix_time::microseconds(20000));
+    }
+    viewer->close();
+  }
+
+
 };
 
 class EigenTools
