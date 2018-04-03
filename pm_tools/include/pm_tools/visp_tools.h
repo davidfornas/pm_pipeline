@@ -31,6 +31,7 @@ public:
   static void quaternionFromRpy(double, double, double, double&, double&, double&, double&);
   static Eigen::Matrix4f vpHomogeneousMatrixToEigenMatrix4f(vpHomogeneousMatrix &);
   static vpHomogeneousMatrix EigenMatrix4fToVpHomogeneousMatrix(Eigen::Matrix4f &in);
+  static vpHomogeneousMatrix EigenMatrixDouble44ToVpHomogeneousMatrix(Eigen::Matrix<double,4,4> &in);
 };
 
 
