@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
     PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-    *original_cloud = *point_cloud_ptr;
+    pcl::copyPointCloud<PointT,PointT>(*point_cloud_ptr, *original_cloud);
 
     pose_est->setNewCloud(point_cloud_ptr);
     bool success = pose_est->process();
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     }
 
     PCLView<PointT>::showCloudDuring(original_cloud);
-    PCLTools<PointT>::cloudToPCD(point_cloud_ptr, "result.pcd");
+    PCLTools<PointT>::cloudToPCD(original_cloud, "result.pcd");
   }
   return 0;
 }

@@ -269,6 +269,12 @@ bool SQPoseEstimation::processNext() {
   sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
   sampling.generatePointCloud (*sq_cloud_);
 
+  for (int j = 0; j < sq_cloud_->points.size(); ++j) {
+    sq_cloud_->points[j].r = 128;
+    sq_cloud_->points[j].g = 0;
+    sq_cloud_->points[j].b = 0;
+  }
+
   if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
