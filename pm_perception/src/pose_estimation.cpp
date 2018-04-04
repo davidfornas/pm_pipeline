@@ -18,7 +18,7 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 
-void BoxPoseEstimation::process() {
+bool BoxPoseEstimation::process() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   bg_remove->setNewCloud(cloud_);
@@ -37,7 +37,7 @@ void BoxPoseEstimation::process() {
   cluster.applyEuclidianClustering();
   cluster.displayColoured();
   // PCA
-  if (cluster.cloud_clusters.size() == 0) return;
+  if (cluster.cloud_clusters.size() == 0) return false;
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 
   // ESTIMATON OF THE SYMMETRY PLANE
@@ -87,9 +87,10 @@ void BoxPoseEstimation::process() {
     vispToTF.publish();
   }
   object_cloud_ = full_model;
+  return true;
 }
 
-void PCAPoseEstimation::process() {
+bool PCAPoseEstimation::process() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   bg_remove->setNewCloud(cloud_);
@@ -110,16 +111,16 @@ void PCAPoseEstimation::process() {
     PCLView<PointT>::showCloud(cloud_);
     PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[0]);
   }
-  processNext();
+  return processNext();
 }
 
 // @TODO Refactor...
-void PCAPoseEstimation::processNext() {
+bool PCAPoseEstimation::processNext() {
 
   cluster_index_++;
-  if (cluster_index_ >= cloud_clustering_->cloud_clusters.size()) return;
+  if (cluster_index_ >= cloud_clustering_->cloud_clusters.size()) return false;
   // @TODO Find best value. 400 for now. Stone is 300.
-  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < 400) return;
+  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
   if(debug_) {
       PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
@@ -173,10 +174,11 @@ void PCAPoseEstimation::processNext() {
   }
   ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
   object_cloud_ = full_model;
+  return true;
 
 }
 
-void SQPoseEstimation::process() {
+bool SQPoseEstimation::process() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   bg_remove->setNewCloud(cloud_);
@@ -187,18 +189,18 @@ void SQPoseEstimation::process() {
   //Set to process first cluster only.
   cluster_index_ = -1;
 
-  if (cloud_clustering_->cloud_clusters.size() == 0) return;
-  processNext();
+  if (cloud_clustering_->cloud_clusters.size() == 0) return false;
+  return processNext();
 
 }
 
 // @TODO Refactor...
-void SQPoseEstimation::processNext() {
+bool SQPoseEstimation::processNext() {
 
   cluster_index_++;
-  if (cluster_index_ >= cloud_clustering_->cloud_clusters.size()) return;
+  if (cluster_index_ >= cloud_clustering_->cloud_clusters.size()) return false;
   // @TODO Find best value. 400 for now. Stone is 300.
-  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < 400) return;
+  if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
   int max_index;
   double max_dist;
@@ -266,18 +268,12 @@ void SQPoseEstimation::processNext() {
   sampling.setParameters (min_params);
   sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
   sampling.generatePointCloud (*sq_cloud_);
-  for (int j = 0; j < sq_cloud_->points.size(); ++j) {
-    sq_cloud_->points[j].r = 128;
-    sq_cloud_->points[j].g = 128;
-    sq_cloud_->points[j].b = 128;
-  }
 
   if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
   }
   object_cloud_ = full_model;
-  *object_cloud_ += *sq_cloud_;
 
   pcl::PolygonMesh mesh;
   min_params.transform.setIdentity();
@@ -288,10 +284,11 @@ void SQPoseEstimation::processNext() {
 
   //"package://pm_perception/data/temp.obj"
   UWSimMarkerPublisher::publishMeshMarker(cMo ,1, 1, 1, std::string("package://pm_perception/data/temp.obj"), cluster_index_ );
+  return true;
 }
 
 
-void CylinderPoseEstimation::initialize() {
+bool CylinderPoseEstimation::initialize() {
 
   CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud), cloud_cylinder (new Cloud);
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
@@ -354,10 +351,11 @@ void CylinderPoseEstimation::initialize() {
     vispToTF.publish();
   }
   object_cloud_ = cloud_cylinder;
+  return true;
 
 }
 
-void CylinderPoseEstimation::process() {
+bool CylinderPoseEstimation::process() {
 
   CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud);
   CloudPtr cloud_cylinder (new Cloud), cloud_plane (new Cloud);
@@ -379,7 +377,7 @@ void CylinderPoseEstimation::process() {
   ROS_INFO_STREAM("Found cylinder size: " << cloud_cylinder->size());
 
   // @TODO return boolean and treat it later
-  if(cloud_cylinder->size() < 100) return;
+  if(cloud_cylinder->size() < 100) return false;
 
   //Grasp points
   PointT mean, max, min;
@@ -430,6 +428,7 @@ void CylinderPoseEstimation::process() {
   UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious,radious,height);
   object_cloud_ = cloud_cylinder;
   // @TODO Filter may be here or not. To avoid bad  detections.
+  return true;
 }
 
 //Ordenar en función de la proyección del punto sobre el eje definido
@@ -481,11 +480,11 @@ void CylinderPoseEstimation::getMinMax3DAlongAxis(const pcl::PointCloud<PointT>:
   *min_pt=p;
 }
 
-void SpherePoseEstimation::initialize(){
-  process();
+bool SpherePoseEstimation::initialize(){
+  return process();
 }
 
-void SpherePoseEstimation::process() {
+bool SpherePoseEstimation::process() {
 
   CloudPtr cloud_filtered (new Cloud), cloud_filtered2 (new Cloud), cloud_sphere (new Cloud);
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>), cloud_normals2 (new pcl::PointCloud<pcl::Normal>);
@@ -548,7 +547,7 @@ void SpherePoseEstimation::process() {
   sphere = cMo ;//* vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishSphereMarker(sphere ,radious,radious,radious);
   object_cloud_ = cloud_sphere;
-
+  return true;
 }
 
 

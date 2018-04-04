@@ -29,11 +29,11 @@ int main(int argc, char **argv)
   PoseEstimation * pose_est;
 //  pose_est = new SpherePoseEstimation(point_cloud_ptr);
 //  pose_est = new CylinderPoseEstimation(point_cloud_ptr);
-  pose_est = new PCAPoseEstimation(point_cloud_ptr);
+  pose_est = new PCAPoseEstimation(point_cloud_ptr, 200); //200 thereshold gets also the stone.
   //pose_est = new BoxPoseEstimation(point_cloud_ptr);
 
   pose_est->setDebug(true);
-  pose_est->initialize();
+  //Only required for CYLINDER pose_est->initialize();
   //pose_est->setPlaneSegmentationParams(0.7);
   ROS_INFO_STREAM(pose_est->get_cMo());
   while(ros::ok()){
@@ -43,34 +43,18 @@ int main(int argc, char **argv)
     PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
     pose_est->setNewCloud(point_cloud_ptr);
-    pose_est->process();
+    bool success = pose_est->process();
     ROS_INFO_STREAM(pose_est->get_cMo());
 
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster0.pcd");
-    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
-
-    ros::Duration(1).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster1.pcd");
-    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
-
-    ros::Duration(1).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster2.pcd");
-    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
-
-    ros::Duration(1).sleep();
-    ((PCAPoseEstimation*)pose_est)->processNext();
-
-    PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
-    PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), "cluster3.pcd");
-    PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
-
+    int i = 0;
+    while(success) {
+      PCLTools<PointT>::moveToOrigin(pose_est->getObjectCloud());
+      std::stringstream cloudid;
+      cloudid << "cluster" << i++ << ".pcd";
+      PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), cloudid.str() );
+      PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud(), 500);
+      success = ((PCAPoseEstimation *) pose_est)->processNext();
+    }
   }
   return 0;
 }

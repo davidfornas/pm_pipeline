@@ -56,8 +56,8 @@ public:
     vispToTF.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMo", "cMo");
   }
 
-  virtual void initialize(){}
-  virtual void process(){}
+  virtual bool initialize(){ return false;}
+  virtual bool process(){ return false;}
 
   //Set pose estimation debug, manily visualization with PCL Viewer.
   void setDebug( bool debug ){
@@ -100,20 +100,22 @@ public:
 /** Pose Estimation using PCA */
 class PCAPoseEstimation : public PoseEstimation{
 
-  int cluster_index_;
+  int cluster_index_, cluster_thereshold_;
   CloudClustering<PointT> * cloud_clustering_;
 
 public:
 
-  PCAPoseEstimation(CloudPtr source) : PoseEstimation(source){ cluster_index_ = 0; }
+  PCAPoseEstimation(CloudPtr source, int cluster_thereshold = 400) : PoseEstimation(source){
+    cluster_thereshold_ = cluster_thereshold;
+  }
 
-  void initialize(){ process(); }
+  bool initialize(){ return process(); }
 
   // Use process multiple times with new clouds.
-  void process();
+  bool process();
 
   //Use process next to process other cluster without repeating clustering.
-  void processNext();
+  bool processNext();
 
 };
 
@@ -124,15 +126,15 @@ public:
 
   BoxPoseEstimation(CloudPtr source) : PoseEstimation(source){}
 
-  void initialize(){process();}
-  void process();
+  bool initialize(){ return process(); }
+  bool process();
 
 };
 
 /** Pose Estimation using SQ */
 class SQPoseEstimation : public PoseEstimation{
 
-  int cluster_index_;
+  int cluster_index_, cluster_thereshold_;
   CloudClustering<PointT> * cloud_clustering_;
 
   CloudPtr sq_cloud_;
@@ -141,15 +143,17 @@ class SQPoseEstimation : public PoseEstimation{
 
 public:
 
-  SQPoseEstimation(CloudPtr source) : PoseEstimation(source){}
+  SQPoseEstimation(CloudPtr source, int cluster_thereshold = 400) : PoseEstimation(source){
+    cluster_thereshold_ = cluster_thereshold;
+  }
 
-  void initialize(){ process(); }
+  bool initialize(){ return process(); }
 
   // Use process multiple times with new clouds.
-  void process();
+  bool process();
 
   //Use process next to process other cluster without repeating clustering.
-  void processNext();
+  bool processNext();
 
   /** Get the object cloud extracted */
   CloudPtr getSQCloud() {return sq_cloud_;}
@@ -179,10 +183,10 @@ public:
   }
 
   /** Where segmentation is done */
-  void initialize();
+  bool initialize();
 
   /** Online planning **/
-  void process();
+  bool process();
 
   /** Set cylinder segmentation parameters: distance to the inliers to the plane,
    * number of iterations and radious limit.
@@ -229,10 +233,10 @@ public:
   }
 
   /** Where segmentation is done */
-  void initialize();
+  bool initialize();
 
   /** Online planning **/
-  void process();
+  bool process();
 
   /** Set sphere segmentation parameters: distance to the inliers to the plane,
    * number of iterations and radious limit.
