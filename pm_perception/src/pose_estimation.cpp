@@ -282,14 +282,14 @@ bool SQPoseEstimation::processNext() {
   object_cloud_ = full_model;
 
   pcl::PolygonMesh mesh;
-  min_params.transform.setIdentity();
-  sampling.setParameters (min_params);
+  //min_params.transform.setIdentity();
+  //sampling.setParameters (min_params);
   sampling.generateMesh (mesh);
-
   pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/temp.obj", mesh);
 
   //"package://pm_perception/data/temp.obj"
-  UWSimMarkerPublisher::publishMeshMarker(cMo ,1, 1, 1, std::string("package://pm_perception/data/temp.obj"), cluster_index_ );
+  vpHomogeneousMatrix r(0,0,0,-1.57,0,0);
+  UWSimMarkerPublisher::publishMeshMarker(r ,1, 1, 1, std::string("package://pm_perception/data/temp.obj"), cluster_index_ );
   return true;
 }
 
