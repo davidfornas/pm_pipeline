@@ -97,8 +97,8 @@ void PCAPoseEstimation::process() {
 
   cloud_clustering_ = new CloudClustering<PointT>(cloud_);
   cloud_clustering_->applyEuclidianClustering();
-  //Set to process first cluster only.
-  cluster_index_ = 0;
+  //Set to -1 because processNext increases the count..
+  cluster_index_ = -1;
 
   if(debug_) {
     ROS_INFO_STREAM("Cluster list: ");
@@ -108,60 +108,9 @@ void PCAPoseEstimation::process() {
     cloud_clustering_->displayColoured();
     //cluster.save("euclidean");
     PCLView<PointT>::showCloud(cloud_);
-    PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
+    PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[0]);
   }
-
-  if (cloud_clustering_->cloud_clusters.size() == 0) return;
-
-  int max_index;
-  double max_dist;
-  PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
-                                 bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
-
-
-  // ESTIMATON OF THE SYMMETRY PLANE
-  CloudPtr full_model(new Cloud);
-  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
-
-  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
-  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
-  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
-
-  Eigen::Vector3f point_in_object(cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].x,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].y,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].z);
-
-  Eigen::Vector4f plane_centroid;
-  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
-  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
-
-  Eigen::Vector3f point_in_object_projected_into_plane;
-  pcl::geometry::project(point_in_object, plane_centroid_3f, ground_plane_normal, point_in_object_projected_into_plane);
-
-  Eigen::Vector3f object_to_plane(point_in_object-point_in_object_projected_into_plane);
-
-  plane_origin.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
-  plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
-  plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
-
-  MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
-  mc.apply(full_model);
-
-  ClusterMeasure<PointT> cm(full_model, debug_);
-  Eigen::Quaternionf q;
-  Eigen::Vector3f t;
-  Eigen::Matrix4f cMo_eigen;
-  float width, height, depth;
-  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
-  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
-  UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
-
-  if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  }
-  ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
-  object_cloud_ = full_model;
+  processNext();
 }
 
 // @TODO Refactor...
@@ -236,100 +185,10 @@ void SQPoseEstimation::process() {
   cloud_clustering_ = new CloudClustering<PointT>(cloud_);
   cloud_clustering_->applyEuclidianClustering();
   //Set to process first cluster only.
-  cluster_index_ = 0;
+  cluster_index_ = -1;
 
   if (cloud_clustering_->cloud_clusters.size() == 0) return;
-
-  int max_index;
-  double max_dist;
-  PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
-                                 bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
-
-
-  // ESTIMATON OF THE SYMMETRY PLANE
-  CloudPtr full_model(new Cloud);
-  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
-
-  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
-  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
-  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
-
-  Eigen::Vector3f point_in_object(cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].x,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].y,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].z);
-
-  Eigen::Vector4f plane_centroid;
-  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
-  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
-
-  Eigen::Vector3f point_in_object_projected_into_plane;
-  pcl::geometry::project(point_in_object, plane_centroid_3f, ground_plane_normal, point_in_object_projected_into_plane);
-
-  Eigen::Vector3f object_to_plane(point_in_object-point_in_object_projected_into_plane);
-
-  plane_origin.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
-  plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
-  plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
-
-  MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
-  mc.apply(full_model);
-  //PCLView<PointT>::showCloudDuring(full_model, 500);
-  PCLTools<PointT>::cloudToPCD(full_model, "temp.pcd");
-  PCLTools<PointT>::cloudFromPCD(full_model, "temp.pcd");
-
-  ROS_INFO("START SQ");
-  // Call to SQ Computing
-  sq::SuperquadricFittingCeres<PointT, double> sq_fit;
-  sq_fit.setInputCloud (full_model);
-
-  double min_fit = std::numeric_limits<double>::max ();
-  sq::SuperquadricParameters<double> min_params;
-  for (int i = 0; i < 3; ++i)
-  {
-    sq::SuperquadricParameters<double> params;
-    sq_fit.setPreAlign (true, i);
-    double fit = sq_fit.fit (params);
-    printf ("pre_align axis %d, fit %f\n", i, fit);
-
-    if (fit < min_fit)
-    {
-      min_fit = fit;
-      min_params = params;
-    }
-  }
-  ROS_INFO("Command for sampler:\n-e1 %f -e2 %f -a %f -b %f -c %f -transform %f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-            min_params.e1, min_params.e2, min_params.a, min_params.b, min_params.c,
-            min_params.transform (0, 0), min_params.transform (0, 1), min_params.transform (0, 2), min_params.transform (0, 3),
-            min_params.transform (1, 0), min_params.transform (1, 1), min_params.transform (1, 2), min_params.transform (1, 3),
-            min_params.transform (2, 0), min_params.transform (2, 1), min_params.transform (2, 2), min_params.transform (2, 3),
-            min_params.transform (3, 0), min_params.transform (3, 1), min_params.transform (3, 2), min_params.transform (3, 3));
-
-  ROS_INFO("END SQ");
-  cMo = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
-
-  /// Prepare the sampling instance
-  sq::SuperquadricSampling<PointT, double> sampling;
-  sampling.setParameters (min_params);
-  sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
-  sampling.generatePointCloud (*sq_cloud_);
-  for (int j = 0; j < sq_cloud_->points.size(); ++j) {
-    sq_cloud_->points[j].r = 128;
-    sq_cloud_->points[j].g = 128;
-    sq_cloud_->points[j].b = 128;
-  }
-
-  if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  }
-  object_cloud_ = full_model;
-  *object_cloud_ += *sq_cloud_;
-
-  pcl::PolygonMesh mesh;
-  sampling.generateMesh (mesh);
-
-  pcl::io::saveOBJFile ("res.obj", mesh);
-  pcl::io::saveVTKFile ("res.vtk", mesh);
+  processNext();
 
 }
 
@@ -373,11 +232,7 @@ void SQPoseEstimation::processNext() {
 
   MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
   mc.apply(full_model);
-  //PCLView<PointT>::showCloudDuring(full_model, 500);
-  PCLTools<PointT>::cloudToPCD(full_model, "temp.pcd");
-  PCLTools<PointT>::cloudFromPCD(full_model, "temp.pcd");
 
-  ROS_INFO("START SQ");
   // Call to SQ Computing
   sq::SuperquadricFittingCeres<PointT, double> sq_fit;
   sq_fit.setInputCloud (full_model);
@@ -404,10 +259,9 @@ void SQPoseEstimation::processNext() {
            min_params.transform (2, 0), min_params.transform (2, 1), min_params.transform (2, 2), min_params.transform (2, 3),
            min_params.transform (3, 0), min_params.transform (3, 1), min_params.transform (3, 2), min_params.transform (3, 3));
 
-  ROS_INFO("END SQ");
   cMo = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
 
-  /// Prepare the sampling instance
+  /// Sampling
   sq::SuperquadricSampling<PointT, double> sampling;
   sampling.setParameters (min_params);
   sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
@@ -426,11 +280,14 @@ void SQPoseEstimation::processNext() {
   *object_cloud_ += *sq_cloud_;
 
   pcl::PolygonMesh mesh;
+  min_params.transform.setIdentity();
+  sampling.setParameters (min_params);
   sampling.generateMesh (mesh);
 
-  pcl::io::saveOBJFile ("res.obj", mesh);
-  pcl::io::saveVTKFile ("res.vtk", mesh);
+  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/temp.obj", mesh);
 
+  //"package://pm_perception/data/temp.obj"
+  UWSimMarkerPublisher::publishMeshMarker(cMo ,1, 1, 1, std::string("package://pm_perception/data/temp.obj"), cluster_index_ );
 }
 
 

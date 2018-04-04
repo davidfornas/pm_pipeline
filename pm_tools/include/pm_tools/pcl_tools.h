@@ -296,6 +296,7 @@ public:
       viewer->spinOnce(100);
       boost::this_thread::sleep(boost::posix_time::microseconds(100000));
     }
+    viewer->close();
   }
 
 
