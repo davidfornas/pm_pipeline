@@ -8,6 +8,7 @@
 #include <pm_perception/cluster_measure.h>
 #include <pm_perception/symmetry.h>
 
+#include <pm_superquadrics/fit_superquadric_lm.h>
 #include <pm_superquadrics/fit_superquadric_ceres.h>
 #include <pm_superquadrics/sample_superquadric.h>
 
@@ -185,11 +186,23 @@ bool SQPoseEstimation::process() {
   bg_remove->initialize(cloud_, cloud_normals);
 
   cloud_clustering_ = new CloudClustering<PointT>(cloud_);
-  cloud_clustering_->applyEuclidianClustering();
+  if(use_region_growing_)
+    cloud_clustering_->applyRegionGrowingClustering(region_growing_norm_th_, region_growing_curv_th_, cluster_thereshold_);
+  else
+    cloud_clustering_->applyEuclidianClustering(euclidian_tolerance_, cluster_thereshold_ );
   //Set to process first cluster only.
   cluster_index_ = -1;
 
   if (cloud_clustering_->cloud_clusters.size() == 0) return false;
+
+  if(debug_) {
+    ROS_INFO_STREAM("Cluster list: ");
+    for (int i = 0; i < cloud_clustering_->cloud_clusters.size(); ++i) {
+      ROS_INFO_STREAM("Cluster " << i << "size: " << cloud_clustering_->cloud_clusters[i]->points.size());
+    }
+    cloud_clustering_->displayColoured();
+  }
+
   return processNext();
 
 }
@@ -236,24 +249,45 @@ bool SQPoseEstimation::processNext() {
   mc.apply(full_model);
 
   // Call to SQ Computing
-  sq::SuperquadricFittingCeres<PointT, double> sq_fit;
-  sq_fit.setInputCloud (full_model);
-
   double min_fit = std::numeric_limits<double>::max ();
   sq::SuperquadricParameters<double> min_params;
-  for (int i = 0; i < 3; ++i)
-  {
-    sq::SuperquadricParameters<double> params;
-    sq_fit.setPreAlign (true, i);
-    double fit = sq_fit.fit (params);
-    printf ("pre_align axis %d, fit %f\n", i, fit);
 
-    if (fit < min_fit)
+  if(use_ceres_){
+    sq::SuperquadricFittingCeres<PointT, double> sq_fit;
+    sq_fit.setInputCloud (full_model);
+
+    for (int i = 0; i < 3; ++i)
     {
-      min_fit = fit;
-      min_params = params;
+      sq::SuperquadricParameters<double> params;
+      sq_fit.setPreAlign (true, i);
+      double fit = sq_fit.fit (params);
+      ROS_INFO("pre_align axis %d, fit %f\n", i, fit);
+
+      if (fit < min_fit)
+      {
+        min_fit = fit;
+        min_params = params;
+      }
+    }
+  }else{
+    sq::SuperquadricFittingLM<PointT, double> sq_fit;
+    sq_fit.setInputCloud (full_model);
+
+    for (int i = 0; i < 3; ++i)
+    {
+      sq::SuperquadricParameters<double> params;
+      sq_fit.setPreAlign (true, i);
+      double fit = sq_fit.fit (params);
+      ROS_INFO("pre_align axis %d, fit %f\n", i, fit);
+
+      if (fit < min_fit)
+      {
+        min_fit = fit;
+        min_params = params;
+      }
     }
   }
+
   ROS_INFO("Command for sampler:\n-e1 %f -e2 %f -a %f -b %f -c %f -transform %f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
            min_params.e1, min_params.e2, min_params.a, min_params.b, min_params.c,
            min_params.transform (0, 0), min_params.transform (0, 1), min_params.transform (0, 2), min_params.transform (0, 3),

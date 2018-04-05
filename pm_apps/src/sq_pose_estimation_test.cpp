@@ -27,7 +27,9 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
   SQPoseEstimation * pose_est;
-  pose_est = new SQPoseEstimation(point_cloud_ptr);
+  pose_est = new SQPoseEstimation(point_cloud_ptr, 400, 0.01);
+  //pose_est->setRegionGrowingClustering(8.0, 8.0);
+  //pose_est->setLMFitting();
 
   pose_est->setDebug(true);
   while(ros::ok()){
@@ -40,16 +42,14 @@ int main(int argc, char **argv)
 
     pose_est->setNewCloud(point_cloud_ptr);
     bool success = pose_est->process();
-    ROS_INFO_STREAM(pose_est->get_cMo());
 
     while(success){
+      ROS_INFO_STREAM(pose_est->get_cMo());
       *original_cloud += *((SQPoseEstimation*)pose_est)->getSQCloud();
       *pose_est->getObjectCloud() += *((SQPoseEstimation*)pose_est)->getSQCloud();
       PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
-      //PCLView<PointT>::showCloudDuring(((SQPoseEstimation*)pose_est)->getSQCloud());
       success = ((SQPoseEstimation*)pose_est)->processNext();
     }
-
     PCLView<PointT>::showCloudDuring(original_cloud);
     PCLTools<PointT>::cloudToPCD(original_cloud, "result.pcd");
   }

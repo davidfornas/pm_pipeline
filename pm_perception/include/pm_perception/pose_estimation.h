@@ -138,13 +138,21 @@ class SQPoseEstimation : public PoseEstimation{
   CloudClustering<PointT> * cloud_clustering_;
 
   CloudPtr sq_cloud_;
+
   double sq_params_[5];
-  Eigen::Matrix4f sq_transform_;
+  Eigen::Matrix4d sq_transform_;
+
+  bool use_ceres_, use_region_growing_;
+  double region_growing_norm_th_, region_growing_curv_th_;
+  double euclidian_tolerance_;
 
 public:
 
-  SQPoseEstimation(CloudPtr source, int cluster_thereshold = 400) : PoseEstimation(source){
-    cluster_thereshold_ = cluster_thereshold;
+  SQPoseEstimation(CloudPtr source, int cluster_thereshold = 400, double euclidian_tolerance = 0.02 ) : PoseEstimation(source),
+                                                                                                        cluster_thereshold_(cluster_thereshold),
+                                                                                                        euclidian_tolerance_(euclidian_tolerance){
+    use_ceres_ = true;
+    use_region_growing_ = false;
   }
 
   bool initialize(){ return process(); }
@@ -157,6 +165,16 @@ public:
 
   /** Get the object cloud extracted */
   CloudPtr getSQCloud() {return sq_cloud_;}
+
+  /** Set Fitting using LM instead of Ceres */
+  void setLMFitting(){ use_ceres_ = false; }
+
+  /** Set region growing and params */
+  void setRegionGrowingClustering( double region_growing_norm_th, double region_growing_curv_th ){
+    use_region_growing_ = true;
+    region_growing_norm_th_ = region_growing_norm_th;
+    region_growing_curv_th_ = region_growing_curv_th;
+  }
 
 };
 
