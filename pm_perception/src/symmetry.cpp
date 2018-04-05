@@ -7,7 +7,9 @@
 #include <pm_perception/symmetry.h>
 
 void MirrorCloud::apply( CloudPtr & mirrored ) {
+  mirrored = cloud_;
   ClusterMeasure<PointT> cm(cloud_);
+  double distance = 0.;
   for (int i = 0; i < cloud_->points.size(); ++i) {
 
     Eigen::Vector3f pt;
@@ -28,8 +30,17 @@ void MirrorCloud::apply( CloudPtr & mirrored ) {
     mirror_->push_back(mirrored);
     mirrored_->push_back(mirrored);
     projection_->push_back(projected);
+
+    Eigen::Vector3f diff ;
+    diff.x() = mirrored.x -projected.x;
+    diff.y() = mirrored.y -projected.y;
+    diff.z() = mirrored.z -projected.z;
+    distance += diff.squaredNorm ();
   }
-  mirrored = mirrored_;
+  distance /= cloud_->points.size();
+  ROS_INFO_STREAM("Squared distance mean to plane for mirrored points: "<<distance);
+  if(distance > 0.001)
+    mirrored = mirrored_;
 
 }
 
