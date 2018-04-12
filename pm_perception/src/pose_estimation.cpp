@@ -11,6 +11,7 @@
 #include <pm_superquadrics/fit_superquadric_lm.h>
 #include <pm_superquadrics/fit_superquadric_ceres.h>
 #include <pm_superquadrics/sample_superquadric.h>
+#include <pm_superquadrics/sample_superquadric_uniform.h>
 
 #include <pcl/io/obj_io.h>
 #include <pcl/io/vtk_io.h>
@@ -297,9 +298,13 @@ bool SQPoseEstimation::processNext() {
 
   cMo = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
 
-  /// Sampling
-  sq::SuperquadricSampling<PointT, double> sampling;
+  // Sampling: Uniform does not have Mesh export
+  //sq::SuperquadricSampling<PointT, double> sampling;
+  sq::SuperquadricSamplingUniform<PointT, double> sampling;
   sampling.setParameters (min_params);
+  //Only for Uniform
+  sampling.setSpatialSampling(0.005);
+
   sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
   sampling.generatePointCloud (*sq_cloud_);
 
@@ -318,6 +323,8 @@ bool SQPoseEstimation::processNext() {
   pcl::PolygonMesh mesh;
   //min_params.transform.setIdentity();
   //sampling.setParameters (min_params);
+
+  //This does not work with UniformSampling though
   sampling.generateMesh (mesh);
   pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/temp.obj", mesh);
 
