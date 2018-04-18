@@ -40,11 +40,29 @@ int main(int argc, char** argv)
   plane_normal.y() = 0.0;
   plane_normal.z() = 1.0;
 
-  MirrorCloud mc(cloud, plane_origin, plane_normal);
+
+  PlaneMirrorCloud mc(cloud, plane_origin, plane_normal);
   mc.apply(mirrored);
   mc.display();
   mc.displayMirrored();
   PCLTools<PointT>::cloudToPCD(mirrored, source + std::string("_mirrored.pcd"));
+
+  Eigen::Vector3f line_origin, line_dir;
+  line_origin.x() = 0.0;
+  line_origin.y() = 0.2;
+  line_origin.z() = 0.1;
+
+  //Must be unit vector
+  line_dir.x() = 1.0;
+  line_dir.y() = 0.0;
+  line_dir.z() = 0.0;
+
+
+  LineMirrorCloud lmc(cloud, line_origin, line_dir);
+  lmc.apply(mirrored);
+  lmc.display();
+  lmc.displayMirrored();
+  PCLTools<PointT>::cloudToPCD(mirrored, source + std::string("line_mirrored.pcd"));
 
   return (0);
 }

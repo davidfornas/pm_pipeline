@@ -20,17 +20,18 @@ typedef Cloud::Ptr CloudPtr;
 
 class MirrorCloud
 {
+
+protected:
+
   // Input and output
   CloudPtr cloud_, mirrored_;
   //For visualization
   CloudPtr mirror_, projection_;
 
-  Eigen::Vector3f plane_origin_, plane_normal_;
 
 public:
 
-  MirrorCloud(CloudPtr in_cloud, Eigen::Vector3f plane_origin, Eigen::Vector3f plane_normal) :
-          cloud_(in_cloud), plane_origin_(plane_origin), plane_normal_(plane_normal)
+  MirrorCloud(CloudPtr in_cloud) : cloud_(in_cloud)
   {
     mirrored_ = boost::shared_ptr<Cloud>(new Cloud());
     mirror_ = boost::shared_ptr<Cloud>(new Cloud());
@@ -50,6 +51,41 @@ public:
 
 };
 
+
+class PlaneMirrorCloud : public MirrorCloud
+{
+  Eigen::Vector3f plane_origin_, plane_normal_;
+
+public:
+
+  PlaneMirrorCloud(CloudPtr in_cloud, Eigen::Vector3f plane_origin, Eigen::Vector3f plane_normal) :
+          MirrorCloud(in_cloud), plane_origin_(plane_origin), plane_normal_(plane_normal)
+  {
+  }
+
+  /** Get the mirrored cloud  */
+  void apply( CloudPtr & mirrored );
+
+};
+
+class LineMirrorCloud : public MirrorCloud
+{
+  Eigen::Vector3f line_origin_, line_direction_;
+
+public:
+
+  LineMirrorCloud(CloudPtr in_cloud, Eigen::Vector3f line_origin, Eigen::Vector3f line_direction) :
+          MirrorCloud(in_cloud), line_origin_(line_origin), line_direction_(line_direction)
+  {
+  }
+
+  /** Get the mirrored cloud  */
+  void apply( CloudPtr & mirrored );
+
+};
+
+
+
 class SymmetryPlaneEstimation
 {
   CloudPtr cloud_;
@@ -57,11 +93,11 @@ class SymmetryPlaneEstimation
 public:
 
   SymmetryPlaneEstimation(CloudPtr cloud) : cloud_(cloud){
-
   }
 
-
 };
+
+
 
 
 

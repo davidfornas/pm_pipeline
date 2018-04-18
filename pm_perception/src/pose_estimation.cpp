@@ -71,7 +71,7 @@ bool BoxPoseEstimation::process() {
   plane_origin.y() = boxtop_centroid_projected_into_plane[1]+ 0.5 * box_to_plane[1];
   plane_origin.z() = boxtop_centroid_projected_into_plane[2]+ 0.5 * box_to_plane[2];
 
-  MirrorCloud mc(cluster.cloud_clusters[0], plane_origin, ground_plane_normal);
+  PlaneMirrorCloud mc(cluster.cloud_clusters[0], plane_origin, ground_plane_normal);
   mc.apply(full_model);
 
   ClusterMeasure<PointT> cm(full_model, true);
@@ -158,7 +158,7 @@ bool PCAPoseEstimation::processNext() {
   plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
   plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
 
-  MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
+  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
   mc.apply(full_model);
 
   ClusterMeasure<PointT> cm(full_model, debug_);
@@ -246,7 +246,7 @@ bool SQPoseEstimation::processNext() {
   plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
   plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
 
-  MirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
+  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
   mc.apply(full_model);
 
   // Call to SQ Computing

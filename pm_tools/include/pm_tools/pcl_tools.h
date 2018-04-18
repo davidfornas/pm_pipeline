@@ -244,6 +244,33 @@ public:
     }
   }
 
+  static PointT projectPoint(PointT P, PointT origin, PointT direction_unit_vector){
+    PointT A, AP, AB, projection;
+    A = origin;
+    AB = direction_unit_vector;
+    AP.x = P.x - A.x;
+    AP.y = P.y - A.y;
+    AP.z = P.z - A.z;
+    // dot(AB,AP)
+    double dotProduct = AP.x * AB.x + AP.y * AB.y + AP.z * AB.z;
+    projection.x = A.x + AB.x * dotProduct;
+    projection.y = A.y + AB.y * dotProduct;
+    projection.z = A.z + AB.z * dotProduct;
+
+    return projection;
+  }
+
+  static Eigen::Vector3f projectPoint(Eigen::Vector3f P, Eigen::Vector3f origin, Eigen::Vector3f direction_unit_vector){
+    Eigen::Vector3f A, AP, AB, projection;
+    A = origin;
+    AB = direction_unit_vector;
+    AP = P - A;
+    // dot(AB,AP)
+    double dotProduct = AP.dot(AB);
+    projection = A + AB * dotProduct;
+    return projection;
+  }
+
   /** Show segmented cloud and plane by coefficients and inliers */
   static void showSegmentationCloudsAndModels(CloudPtr c1, CloudPtr c2, pcl::ModelCoefficients::Ptr plane_coeffs,
                                               pcl::ModelCoefficients::Ptr cylinder_coeffs)
