@@ -66,15 +66,19 @@ public:
   /** Get the mirrored cloud  */
   void apply( CloudPtr & mirrored );
 
+private:
+
+  double score();
+
 };
 
-class LineMirrorCloud : public MirrorCloud
+class AxisMirrorCloud : public MirrorCloud
 {
   Eigen::Vector3f line_origin_, line_direction_;
 
 public:
 
-  LineMirrorCloud(CloudPtr in_cloud, Eigen::Vector3f line_origin, Eigen::Vector3f line_direction) :
+  AxisMirrorCloud(CloudPtr in_cloud, Eigen::Vector3f line_origin, Eigen::Vector3f line_direction) :
           MirrorCloud(in_cloud), line_origin_(line_origin), line_direction_(line_direction)
   {
   }
@@ -84,16 +88,50 @@ public:
 
 };
 
-
-
-class SymmetryPlaneEstimation
+class SymmetryEstimation
 {
-  CloudPtr cloud_;
+protected:
+
+  CloudPtr cloud_, plane_cloud_;
+  pcl::ModelCoefficients plane_coeffs_;
+
+public:
+  SymmetryEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
+          : cloud_(cloud), plane_cloud_(plane_cloud), plane_coeffs_(plane_coeffs){
+  }
+
+};
+
+class SymmetryPlaneEstimation : public SymmetryEstimation
+{
+
+public:
+  SymmetryPlaneEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
+          : SymmetryEstimation(cloud, plane_cloud, plane_coeffs){
+  }
+
+  //Obtain the plane in the middle of the furhtest point and the background
+  void applyFurthest(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out);
+
+  //Obtain the plane in the middle of the centroid and the background
+  void applyCentroid(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out);
+
+private:
+
+  void apply(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out, Eigen::Vector3f reference_point);
+
+};
+
+class SymmetryAxisEstimation : public SymmetryEstimation
+{
 
 public:
 
-  SymmetryPlaneEstimation(CloudPtr cloud) : cloud_(cloud){
+  SymmetryAxisEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
+          : SymmetryEstimation(cloud, plane_cloud, plane_coeffs){
   }
+
+  void apply(Eigen::Vector3f & axis_origin_out, Eigen::Vector3f & axis_dir_out);
 
 };
 

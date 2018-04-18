@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 //  pose_est = new SpherePoseEstimation(point_cloud_ptr);
 //  pose_est = new CylinderPoseEstimation(point_cloud_ptr);
   pose_est = new PCAPoseEstimation(point_cloud_ptr, 200); //200 thereshold gets also the stone.
-  //pose_est = new BoxPoseEstimation(point_cloud_ptr);
+//  pose_est = new BoxPoseEstimation(point_cloud_ptr);
 
   pose_est->setDebug(true);
   //Only required for CYLINDER pose_est->initialize();

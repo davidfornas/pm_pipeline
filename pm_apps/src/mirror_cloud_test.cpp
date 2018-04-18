@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   line_dir.z() = 0.0;
 
 
-  LineMirrorCloud lmc(cloud, line_origin, line_dir);
+  AxisMirrorCloud lmc(cloud, line_origin, line_dir);
   lmc.apply(mirrored);
   lmc.display();
   lmc.displayMirrored();

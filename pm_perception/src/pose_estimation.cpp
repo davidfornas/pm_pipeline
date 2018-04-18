@@ -43,35 +43,12 @@ bool BoxPoseEstimation::process() {
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 
   // ESTIMATON OF THE SYMMETRY PLANE
+  Eigen::Vector3f plane_origin, plane_normal;
+  SymmetryPlaneEstimation spe(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  spe.applyCentroid(plane_origin, plane_normal);
+
   CloudPtr full_model(new Cloud);
-  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
-
-  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
-  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
-  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
-
-  box_plane_normal.x() = coefficients_plane->values[0];
-  box_plane_normal.y() = coefficients_plane->values[1];
-  box_plane_normal.z() = coefficients_plane->values[2];
-
-  Eigen::Vector4f boxtop_centroid;
-  pcl::compute3DCentroid<PointT>(*cluster.cloud_clusters[0], boxtop_centroid);
-  Eigen::Vector3f boxtop_centroid_3f(boxtop_centroid.x(), boxtop_centroid.y(), boxtop_centroid.z());
-
-  Eigen::Vector4f plane_centroid;
-  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
-  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
-
-  Eigen::Vector3f boxtop_centroid_projected_into_plane;
-  pcl::geometry::project(boxtop_centroid_3f, plane_centroid_3f, ground_plane_normal, boxtop_centroid_projected_into_plane);
-
-  Eigen::Vector3f box_to_plane(boxtop_centroid_3f-boxtop_centroid_projected_into_plane);
-
-  plane_origin.x() = boxtop_centroid_projected_into_plane[0]+ 0.5 * box_to_plane[0];
-  plane_origin.y() = boxtop_centroid_projected_into_plane[1]+ 0.5 * box_to_plane[1];
-  plane_origin.z() = boxtop_centroid_projected_into_plane[2]+ 0.5 * box_to_plane[2];
-
-  PlaneMirrorCloud mc(cluster.cloud_clusters[0], plane_origin, ground_plane_normal);
+  PlaneMirrorCloud mc(cluster.cloud_clusters[0], plane_origin, plane_normal);
   mc.apply(full_model);
 
   ClusterMeasure<PointT> cm(full_model, true);
@@ -128,38 +105,21 @@ bool PCAPoseEstimation::processNext() {
       PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
   }
 
-  int max_index;
-  double max_dist;
-  PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
-                                 bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
+  Eigen::Vector3f plane_origin, plane_normal;
+  SymmetryPlaneEstimation spe(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  spe.applyFurthest(plane_origin, plane_normal);
 
-  // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
-  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
-
-  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
-  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
-  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
-
-  Eigen::Vector3f point_in_object(cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].x,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].y,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].z);
-
-  Eigen::Vector4f plane_centroid;
-  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
-  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
-
-  Eigen::Vector3f point_in_object_projected_into_plane;
-  pcl::geometry::project(point_in_object, plane_centroid_3f, ground_plane_normal, point_in_object_projected_into_plane);
-
-  Eigen::Vector3f object_to_plane(point_in_object-point_in_object_projected_into_plane);
-
-  plane_origin.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
-  plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
-  plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
-
-  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
+  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, plane_normal);
   mc.apply(full_model);
+
+  /*Eigen::Vector3f axis_origin, axis_dir;
+  SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  sae.apply(axis_origin, axis_dir);
+
+  CloudPtr full_model(new Cloud);
+  AxisMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], axis_origin, axis_dir);
+  mc.apply(full_model);*/
 
   ClusterMeasure<PointT> cm(full_model, debug_);
   Eigen::Quaternionf q;
@@ -223,30 +183,11 @@ bool SQPoseEstimation::processNext() {
 
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
-  Eigen::Vector3f plane_origin, ground_plane_normal, box_plane_normal;
+  Eigen::Vector3f plane_origin, plane_normal;
+  SymmetryPlaneEstimation spe(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  spe.applyFurthest(plane_origin, plane_normal);
 
-  ground_plane_normal.x() = bg_remove->coefficients_plane->values[0];
-  ground_plane_normal.y() = bg_remove->coefficients_plane->values[1];
-  ground_plane_normal.z() = bg_remove->coefficients_plane->values[2];
-
-  Eigen::Vector3f point_in_object(cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].x,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].y,
-                                  cloud_clustering_->cloud_clusters[cluster_index_]->points[max_index].z);
-
-  Eigen::Vector4f plane_centroid;
-  pcl::compute3DCentroid<PointT>(*bg_remove->cloud_plane, plane_centroid);
-  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
-
-  Eigen::Vector3f point_in_object_projected_into_plane;
-  pcl::geometry::project(point_in_object, plane_centroid_3f, ground_plane_normal, point_in_object_projected_into_plane);
-
-  Eigen::Vector3f object_to_plane(point_in_object-point_in_object_projected_into_plane);
-
-  plane_origin.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
-  plane_origin.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
-  plane_origin.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
-
-  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, ground_plane_normal);
+  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, plane_normal);
   mc.apply(full_model);
 
   // Call to SQ Computing

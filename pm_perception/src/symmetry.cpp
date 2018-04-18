@@ -34,9 +34,21 @@ void MirrorCloud::displayMirrored() {
 }
 
 void PlaneMirrorCloud::apply( CloudPtr & mirrored ) {
+
+  //Cluster with Z=0 for Score computing
+  CloudPtr cluster_mask( new Cloud);
+  pcl::copyPointCloud(*cloud_, *cluster_mask);
+  for(int i=0; i < cluster_mask->points.size(); i++) cluster_mask->points[i].z = 0;
+  pcl::KdTreeFLANN<PointT> kdtree;
+  kdtree.setInputCloud(cluster_mask);
+
   mirrored = cloud_;
   ClusterMeasure<PointT> cm(cloud_);
-  double distance = 0.;
+
+  //Lower is better
+  double differential_score = 0.;
+  double score = 0.;
+
   for (int i = 0; i < cloud_->points.size(); ++i) {
 
     Eigen::Vector3f pt;
@@ -53,27 +65,48 @@ void PlaneMirrorCloud::apply( CloudPtr & mirrored ) {
     mirrored.y = -cloud_->points[i].y + 2 * pt.y();
     mirrored.z = -cloud_->points[i].z + 2 * pt.z();
 
-
     mirror_->push_back(mirrored);
     mirrored_->push_back(mirrored);
     projection_->push_back(projected);
 
-    Eigen::Vector3f diff ;
-    diff.x() = mirrored.x -projected.x;
-    diff.y() = mirrored.y -projected.y;
-    diff.z() = mirrored.z -projected.z;
-    distance += diff.squaredNorm ();
+    // SCORE COMPUTING
+    int K = 1;
+    std::vector<int> pointIdxNKNSearch(K);
+    std::vector<float> pointNKNSquaredDistance(K);
+
+    PointT mirrored_z0;
+    mirrored_z0 = mirrored;
+    mirrored_z0.z = 0;
+    kdtree.nearestKSearch(mirrored_z0, K, pointIdxNKNSearch, pointNKNSquaredDistance);
+    PointT closest_point = cloud_->points[pointIdxNKNSearch[0]];
+
+    //Si no tiene un punto muy cercano, está fuera de la oclusión del objeto por lo que
+    // no deberia añadirse, deberia verse ya.
+    if(sqrt(pointNKNSquaredDistance[0])>0.01){
+      score += sqrt(pointNKNSquaredDistance[0]);
+      differential_score += sqrt(pointNKNSquaredDistance[0]);
+    }else if(mirrored.z < closest_point.z){//Si está más cerca que su punto correspondiente deberia verse de antes
+      score += closest_point.z - mirrored.z;
+      differential_score += closest_point.z - mirrored.z;
+    }else{//Así sólo añado los puntos que están estrictamente detrás
+      score -= mirrored.z - closest_point.z;
+    }
+
   }
-  distance /= cloud_->points.size();
-  ROS_INFO_STREAM("Squared distance mean to plane for mirrored points: "<<distance);
-  if(distance > 0.001)
-    mirrored = mirrored_;
+  score /= cloud_->points.size();
+  ROS_INFO_STREAM("Score for mirrored points: "<< score << ". Score2: " << differential_score);
+  //if(score > 0.001)
+  mirrored = mirrored_;
+
+}
+
+double PlaneMirrorCloud::score(){
 
 }
 
 
 
-void LineMirrorCloud::apply( CloudPtr & mirrored ) {
+void AxisMirrorCloud::apply( CloudPtr & mirrored ) {
   mirrored = cloud_;
   ClusterMeasure<PointT> cm(cloud_);
   double distance = 0.;
@@ -107,9 +140,69 @@ void LineMirrorCloud::apply( CloudPtr & mirrored ) {
     distance += diff.squaredNorm ();
   }
   distance /= cloud_->points.size();
-  ROS_INFO_STREAM("Squared distance mean to plane for mirrored points: "<<distance);
+  ROS_INFO_STREAM("Squared distance mean to axis for mirrored points: "<<distance);
   if(distance > 0.001)
     mirrored = mirrored_;
+
+}
+
+void SymmetryPlaneEstimation::applyFurthest(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out){
+
+  int max_index;
+  double max_dist;
+
+  //Obtain point with most distance to plane
+  PCLTools<PointT>::findFurthest(cloud_, plane_coeffs_.values[0], plane_coeffs_.values[1],
+                                 plane_coeffs_.values[2], plane_coeffs_.values[3], max_index, max_dist);
+
+  Eigen::Vector3f furthest_point_in_object(cloud_->points[max_index].x, cloud_->points[max_index].y, cloud_->points[max_index].z);
+  apply(plane_origin_out, plane_normal_out, furthest_point_in_object);
+}
+
+void SymmetryPlaneEstimation::applyCentroid(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out){
+
+  Eigen::Vector4f centroid;
+  pcl::compute3DCentroid<PointT>(*cloud_, centroid);
+  Eigen::Vector3f centroid_3f(centroid.x(), centroid.y(), centroid.z());
+
+  apply(plane_origin_out, plane_normal_out, centroid_3f);
+}
+
+void SymmetryPlaneEstimation::apply(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out, Eigen::Vector3f reference_point){
+  //Same plane normal as background
+  plane_normal_out.x() = plane_coeffs_.values[0];
+  plane_normal_out.y() = plane_coeffs_.values[1];
+  plane_normal_out.z() = plane_coeffs_.values[2];
+
+
+  Eigen::Vector4f plane_centroid;
+  pcl::compute3DCentroid<PointT>(*plane_cloud_, plane_centroid);
+  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
+
+  Eigen::Vector3f point_in_object_projected_into_plane;
+  pcl::geometry::project(reference_point, plane_centroid_3f, plane_normal_out, point_in_object_projected_into_plane);
+
+  Eigen::Vector3f object_to_plane(reference_point-point_in_object_projected_into_plane);
+
+  plane_origin_out.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
+  plane_origin_out.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
+  plane_origin_out.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
+}
+
+void SymmetryAxisEstimation::apply(Eigen::Vector3f & axis_origin_out, Eigen::Vector3f & axis_dir_out){
+
+  ClusterMeasure<PointT> cm(cloud_, false);
+  Eigen::Matrix4f cMo;
+  cMo = cm.getOABBox();
+
+  axis_origin_out.x() = cMo(0,3);
+  axis_origin_out.y() = cMo(1,3);
+  axis_origin_out.z() = cMo(2,3);
+
+  // X axis, 0
+  axis_dir_out.x() = cMo(0,2);
+  axis_dir_out.y() = cMo(1,2);
+  axis_dir_out.z() = cMo(2,2);
 
 }
 
