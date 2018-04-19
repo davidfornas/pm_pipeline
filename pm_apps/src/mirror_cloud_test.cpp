@@ -34,7 +34,7 @@ int main(int argc, char** argv)
   Eigen::Vector3f plane_origin, plane_normal;
   plane_origin.x() = 0.0;
   plane_origin.y() = 0.0;
-  plane_origin.z() = 0.7;
+  plane_origin.z() = 0.0;
 
   plane_normal.x() = 0.0;
   plane_normal.y() = 0.0;
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
   ROS_INFO("Testing Axis Symmetry Estimation");
   Eigen::Vector3f line_origin, line_dir;
   line_origin.x() = 0.0;
-  line_origin.y() = 0.2;
-  line_origin.z() = 0.1;
+  line_origin.y() = 0.0;
+  line_origin.z() = 0.0;
   //Must be unit vector
   line_dir.x() = 1.0;
   line_dir.y() = 0.0;

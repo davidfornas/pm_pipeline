@@ -62,6 +62,7 @@ void ClusterMeasure<PointT>::displayCluster()
 {
   pcl::visualization::PCLVisualizer viewer("Cluster measure viewer");
   viewer.addPointCloud(cloud_);
+  viewer.setBackgroundColor(0.8,0.8,0.8);
   viewer.spin();
 }
 
@@ -79,6 +80,7 @@ Eigen::Vector4f ClusterMeasure<PointT>::getCentroid()
     p.y = centroid[1];
     p.z = centroid[2];
     viewer.addSphere(p, 0.01, 255, 0, 0, "centroid");
+    viewer.setBackgroundColor(0.8,0.8,0.8);
     viewer.spin();
   }
 
@@ -114,6 +116,7 @@ Eigen::Matrix4f ClusterMeasure<PointT>::getAxis()
     pcl::visualization::PCLVisualizer viewer("Cluster axis viewer");
     viewer.addPointCloud(cloud_);
     viewer.addCoordinateSystem(0.15, Eigen::Affine3f(t));
+    viewer.setBackgroundColor(0.8,0.8,0.8);
     viewer.spin();
   }
 
@@ -170,6 +173,7 @@ Eigen::Matrix4f ClusterMeasure<PointT>::getOABBox(Eigen::Quaternionf & qfinal, E
     pcl::visualization::PCLVisualizer viewer;
     viewer.addPointCloud(cloud_);
     viewer.addCube(tfinal, qfinal, width, height, depth);
+    viewer.setBackgroundColor(0.8,0.8,0.8);
     viewer.spin();
   }
 

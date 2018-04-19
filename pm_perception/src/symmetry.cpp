@@ -11,26 +11,25 @@ void SymmetryEstimation::display() {
   pcl::visualization::PCLVisualizer *p;
   p = new pcl::visualization::PCLVisualizer("Mirror colored");
 
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> tgt_h(cloud_, 0, 255, 0);
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h(mirror_, 255, 0, 0);
-  pcl::visualization::PointCloudColorHandlerCustom<PointT> pjt_h(projection_, 0, 0, 255);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> tgt_h(cloud_, 0, 230, 0);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h(mirror_, 230, 0, 0);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> pjt_h(projection_, 0, 0, 230);
+  p->setBackgroundColor(0.8,0.8,0.8);
   p->addPointCloud(cloud_, tgt_h, "c1");
   p->addPointCloud(mirror_, src_h, "c2");
   p->addPointCloud(projection_, pjt_h, "c3");
   p->addCoordinateSystem(0.1, 0, 0, 0);
   p->spin();
-
 }
 
 void SymmetryEstimation::displayMirrored() {
 
   pcl::visualization::PCLVisualizer *p;
   p = new pcl::visualization::PCLVisualizer("Result");
-
+  p->setBackgroundColor(0.8,0.8,0.8);
   p->addPointCloud(mirrored_);
   p->addCoordinateSystem(0.1, 0, 0, 0);
   p->spin();
-
 }
 
 double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
@@ -166,7 +165,6 @@ double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
     mirrored.y = -cloud_->points[i].y + 2 * pt.y();
     mirrored.z = -cloud_->points[i].z + 2 * pt.z();
 
-
     mirror_->push_back(mirrored);
     mirrored_->push_back(mirrored);
     projection_->push_back(projected);
@@ -179,10 +177,7 @@ double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
   }
   distance /= cloud_->points.size();
   ROS_INFO_STREAM("Squared distance mean to axis for mirrored points: "<<distance);
-  if(distance > 0.001)
-    mirrored = mirrored_;
   return distance;
-
 }
 
 void AxisSymmetryEstimation::estimateAxis(){

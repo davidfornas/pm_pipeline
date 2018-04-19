@@ -90,6 +90,7 @@ void CloudClustering<PointT>::display()
 		std::stringstream ss;
 		ss << "id" << i ;
 		viewer.addPointCloud(cloud_clusters[i], ss.str());
+        viewer.setBackgroundColor(0.8,0.8,0.8);
 	}
 	while (!viewer.wasStopped() )
 		viewer.spinOnce();
@@ -100,6 +101,7 @@ void CloudClustering<PointT>::displayColoured()
 {
 	pcl::visualization::PCLVisualizer viewer("Cluster viewer coloured");
 	if (!cloud_clusters.empty ()) viewer.addPointCloud(colored_cloud, "id");
+    viewer.setBackgroundColor(0.8,0.8,0.8);
 	while (!viewer.wasStopped() )
 		viewer.spinOnce();
 }
