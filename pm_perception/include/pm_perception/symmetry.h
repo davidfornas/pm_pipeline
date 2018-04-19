@@ -18,20 +18,23 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 
-class MirrorCloud
+class SymmetryEstimation
 {
 
 protected:
 
-  // Input and output
-  CloudPtr cloud_, mirrored_;
-  //For visualization
-  CloudPtr mirror_, projection_;
+  // Input, plane and output clouds. Plane Coeffs
+  CloudPtr cloud_, plane_cloud_, mirrored_;
+  pcl::ModelCoefficients plane_coeffs_;
+  bool use_background_plane;
 
+  // For visualization
+  CloudPtr mirror_, projection_;
 
 public:
 
-  MirrorCloud(CloudPtr in_cloud) : cloud_(in_cloud)
+  SymmetryEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
+          : cloud_(cloud), plane_cloud_(plane_cloud), plane_coeffs_(plane_coeffs), use_background_plane(true)
   {
     mirrored_ = boost::shared_ptr<Cloud>(new Cloud());
     mirror_ = boost::shared_ptr<Cloud>(new Cloud());
@@ -40,8 +43,18 @@ public:
     pcl::copyPointCloud(*cloud_, *mirrored_);
   }
 
-  /** Get the mirrored cloud  */
-  void apply( CloudPtr & mirrored );
+  SymmetryEstimation(CloudPtr cloud)
+          : cloud_(cloud), use_background_plane(false)
+  {
+    mirrored_ = boost::shared_ptr<Cloud>(new Cloud());
+    mirror_ = boost::shared_ptr<Cloud>(new Cloud());
+    projection_ = boost::shared_ptr<Cloud>(new Cloud());
+
+    pcl::copyPointCloud(*cloud_, *mirrored_);
+  }
+
+  /** Get the mirrored cloud and score  */
+  double apply( CloudPtr & mirrored );
 
   /** Display the result color coded and centered */
   void display();
@@ -52,88 +65,64 @@ public:
 };
 
 
-class PlaneMirrorCloud : public MirrorCloud
+class PlaneSymmetryEstimation : public SymmetryEstimation
 {
-  Eigen::Vector3f plane_origin_, plane_normal_;
+  Eigen::Vector3f plane_origin_, plane_normal_, reference_point_;
 
 public:
 
-  PlaneMirrorCloud(CloudPtr in_cloud, Eigen::Vector3f plane_origin, Eigen::Vector3f plane_normal) :
-          MirrorCloud(in_cloud), plane_origin_(plane_origin), plane_normal_(plane_normal)
-  {
+  PlaneSymmetryEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs) :
+          SymmetryEstimation(cloud, plane_cloud, plane_coeffs) {}
+
+  PlaneSymmetryEstimation(CloudPtr cloud) : SymmetryEstimation(cloud) {}
+
+  /** Get the mirrored cloud and score */
+  double apply( CloudPtr & mirrored );
+
+  //Obtain the plane in the middle of the furhtest point and the background
+  void applyFurthest();
+
+  //Obtain the plane in the middle of the centroid and the background
+  void applyCentroid();
+
+  void estimatePlane();
+
+  void setPlane(Eigen::Vector3f plane_origin, Eigen::Vector3f plane_normal){
+    plane_origin_ = plane_origin;
+    plane_normal_ = plane_normal;
   }
-
-  /** Get the mirrored cloud  */
-  void apply( CloudPtr & mirrored );
-
-private:
-
-  double score();
 
 };
 
-class AxisMirrorCloud : public MirrorCloud
+class AxisSymmetryEstimation : public SymmetryEstimation
 {
   Eigen::Vector3f line_origin_, line_direction_;
 
 public:
 
-  AxisMirrorCloud(CloudPtr in_cloud, Eigen::Vector3f line_origin, Eigen::Vector3f line_direction) :
-          MirrorCloud(in_cloud), line_origin_(line_origin), line_direction_(line_direction)
-  {
-  }
+  AxisSymmetryEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs) :
+  SymmetryEstimation(cloud, plane_cloud, plane_coeffs) {}
+
+  AxisSymmetryEstimation(CloudPtr cloud) : SymmetryEstimation(cloud) {}
 
   /** Get the mirrored cloud  */
-  void apply( CloudPtr & mirrored );
+  double apply( CloudPtr & mirrored );
 
-};
-
-class SymmetryEstimation
-{
-protected:
-
-  CloudPtr cloud_, plane_cloud_;
-  pcl::ModelCoefficients plane_coeffs_;
-
-public:
-  SymmetryEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
-          : cloud_(cloud), plane_cloud_(plane_cloud), plane_coeffs_(plane_coeffs){
+  void setAxis(Eigen::Vector3f line_origin, Eigen::Vector3f line_direction){
+    line_origin_ = line_origin;
+    line_direction_ = line_direction;
   }
-
-};
-
-class SymmetryPlaneEstimation : public SymmetryEstimation
-{
-
-public:
-  SymmetryPlaneEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
-          : SymmetryEstimation(cloud, plane_cloud, plane_coeffs){
-  }
-
-  //Obtain the plane in the middle of the furhtest point and the background
-  void applyFurthest(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out);
-
-  //Obtain the plane in the middle of the centroid and the background
-  void applyCentroid(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out);
 
 private:
 
-  void apply(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out, Eigen::Vector3f reference_point);
+  void estimateAxis();
 
 };
 
-class SymmetryAxisEstimation : public SymmetryEstimation
-{
 
-public:
 
-  SymmetryAxisEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
-          : SymmetryEstimation(cloud, plane_cloud, plane_coeffs){
-  }
 
-  void apply(Eigen::Vector3f & axis_origin_out, Eigen::Vector3f & axis_dir_out);
 
-};
 
 
 

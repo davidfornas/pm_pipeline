@@ -29,7 +29,7 @@ int main(int argc, char **argv)
   SQPoseEstimation * pose_est;
   pose_est = new SQPoseEstimation(point_cloud_ptr, 400, 0.01);
   pose_est->setRegionGrowingClustering(8.0, 8.0);
-  //pose_est->setLMFitting();
+  pose_est->setLMFitting();
 
   pose_est->setDebug(true);
   while(ros::ok()){

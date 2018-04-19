@@ -6,7 +6,7 @@
  */
 #include <pm_perception/symmetry.h>
 
-void MirrorCloud::display() {
+void SymmetryEstimation::display() {
 
   pcl::visualization::PCLVisualizer *p;
   p = new pcl::visualization::PCLVisualizer("Mirror colored");
@@ -22,7 +22,7 @@ void MirrorCloud::display() {
 
 }
 
-void MirrorCloud::displayMirrored() {
+void SymmetryEstimation::displayMirrored() {
 
   pcl::visualization::PCLVisualizer *p;
   p = new pcl::visualization::PCLVisualizer("Result");
@@ -33,7 +33,7 @@ void MirrorCloud::displayMirrored() {
 
 }
 
-void PlaneMirrorCloud::apply( CloudPtr & mirrored ) {
+double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
 
   //Cluster with Z=0 for Score computing
   CloudPtr cluster_mask( new Cloud);
@@ -97,16 +97,56 @@ void PlaneMirrorCloud::apply( CloudPtr & mirrored ) {
   ROS_INFO_STREAM("Score for mirrored points: "<< score << ". Score2: " << differential_score);
   //if(score > 0.001)
   mirrored = mirrored_;
+  return score;
 
 }
 
-double PlaneMirrorCloud::score(){
+void PlaneSymmetryEstimation::applyFurthest(){
 
+  //Obtain point with most distance to plane
+  int max_index;
+  double max_dist;
+  PCLTools<PointT>::findFurthest(cloud_, plane_coeffs_.values[0], plane_coeffs_.values[1],
+                                 plane_coeffs_.values[2], plane_coeffs_.values[3], max_index, max_dist);
+
+//  Eigen::Vector3f furthest_point_in_object(cloud_->points[max_index].x, cloud_->points[max_index].y, cloud_->points[max_index].z);
+  reference_point_ = Eigen::Vector3f(cloud_->points[max_index].x, cloud_->points[max_index].y, cloud_->points[max_index].z);
+  estimatePlane();
 }
 
+void PlaneSymmetryEstimation::applyCentroid(){
 
+  Eigen::Vector4f centroid;
+  pcl::compute3DCentroid<PointT>(*cloud_, centroid);
+//  Eigen::Vector3f centroid_3f(centroid.x(), centroid.y(), centroid.z());
+  reference_point_ = Eigen::Vector3f(centroid.x(), centroid.y(), centroid.z());
+  estimatePlane();
+}
 
-void AxisMirrorCloud::apply( CloudPtr & mirrored ) {
+void PlaneSymmetryEstimation::estimatePlane(){
+  //Same plane normal as background
+  plane_normal_.x() = plane_coeffs_.values[0];
+  plane_normal_.y() = plane_coeffs_.values[1];
+  plane_normal_.z() = plane_coeffs_.values[2];
+
+  Eigen::Vector4f plane_centroid;
+  pcl::compute3DCentroid<PointT>(*plane_cloud_, plane_centroid);
+  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
+
+  Eigen::Vector3f point_in_object_projected_into_plane;
+  pcl::geometry::project(reference_point_, plane_centroid_3f, plane_normal_, point_in_object_projected_into_plane);
+
+  Eigen::Vector3f object_to_plane(reference_point_-point_in_object_projected_into_plane);
+
+  plane_origin_.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
+  plane_origin_.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
+  plane_origin_.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
+}
+
+double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
+
+  estimateAxis();
+
   mirrored = cloud_;
   ClusterMeasure<PointT> cm(cloud_);
   double distance = 0.;
@@ -114,8 +154,6 @@ void AxisMirrorCloud::apply( CloudPtr & mirrored ) {
 
     Eigen::Vector3f pt;
     Eigen::Vector3f origin_point(cloud_->points[i].x, cloud_->points[i].y, cloud_->points[i].z);
-
-//    pcl::geometry::project(origin_point, plane_origin_, plane_normal_, pt);
 
     pt = PCLTools<PointT>::projectPoint(origin_point, line_origin_, line_direction_);
 
@@ -143,66 +181,24 @@ void AxisMirrorCloud::apply( CloudPtr & mirrored ) {
   ROS_INFO_STREAM("Squared distance mean to axis for mirrored points: "<<distance);
   if(distance > 0.001)
     mirrored = mirrored_;
+  return distance;
 
 }
 
-void SymmetryPlaneEstimation::applyFurthest(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out){
-
-  int max_index;
-  double max_dist;
-
-  //Obtain point with most distance to plane
-  PCLTools<PointT>::findFurthest(cloud_, plane_coeffs_.values[0], plane_coeffs_.values[1],
-                                 plane_coeffs_.values[2], plane_coeffs_.values[3], max_index, max_dist);
-
-  Eigen::Vector3f furthest_point_in_object(cloud_->points[max_index].x, cloud_->points[max_index].y, cloud_->points[max_index].z);
-  apply(plane_origin_out, plane_normal_out, furthest_point_in_object);
-}
-
-void SymmetryPlaneEstimation::applyCentroid(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out){
-
-  Eigen::Vector4f centroid;
-  pcl::compute3DCentroid<PointT>(*cloud_, centroid);
-  Eigen::Vector3f centroid_3f(centroid.x(), centroid.y(), centroid.z());
-
-  apply(plane_origin_out, plane_normal_out, centroid_3f);
-}
-
-void SymmetryPlaneEstimation::apply(Eigen::Vector3f & plane_origin_out, Eigen::Vector3f & plane_normal_out, Eigen::Vector3f reference_point){
-  //Same plane normal as background
-  plane_normal_out.x() = plane_coeffs_.values[0];
-  plane_normal_out.y() = plane_coeffs_.values[1];
-  plane_normal_out.z() = plane_coeffs_.values[2];
-
-
-  Eigen::Vector4f plane_centroid;
-  pcl::compute3DCentroid<PointT>(*plane_cloud_, plane_centroid);
-  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
-
-  Eigen::Vector3f point_in_object_projected_into_plane;
-  pcl::geometry::project(reference_point, plane_centroid_3f, plane_normal_out, point_in_object_projected_into_plane);
-
-  Eigen::Vector3f object_to_plane(reference_point-point_in_object_projected_into_plane);
-
-  plane_origin_out.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
-  plane_origin_out.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
-  plane_origin_out.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
-}
-
-void SymmetryAxisEstimation::apply(Eigen::Vector3f & axis_origin_out, Eigen::Vector3f & axis_dir_out){
+void AxisSymmetryEstimation::estimateAxis(){
 
   ClusterMeasure<PointT> cm(cloud_, false);
   Eigen::Matrix4f cMo;
   cMo = cm.getOABBox();
 
-  axis_origin_out.x() = cMo(0,3);
-  axis_origin_out.y() = cMo(1,3);
-  axis_origin_out.z() = cMo(2,3);
+  line_origin_.x() = cMo(0,3);
+  line_origin_.y() = cMo(1,3);
+  line_origin_.z() = cMo(2,3);
 
   // X axis, 0
-  axis_dir_out.x() = cMo(0,2);
-  axis_dir_out.y() = cMo(1,2);
-  axis_dir_out.z() = cMo(2,2);
+  line_direction_.x() = cMo(0,2);
+  line_direction_.y() = cMo(1,2);
+  line_direction_.z() = cMo(2,2);
 
 }
 

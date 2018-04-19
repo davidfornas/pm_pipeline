@@ -43,13 +43,10 @@ bool BoxPoseEstimation::process() {
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 
   // ESTIMATON OF THE SYMMETRY PLANE
-  Eigen::Vector3f plane_origin, plane_normal;
-  SymmetryPlaneEstimation spe(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  spe.applyCentroid(plane_origin, plane_normal);
-
   CloudPtr full_model(new Cloud);
-  PlaneMirrorCloud mc(cluster.cloud_clusters[0], plane_origin, plane_normal);
-  mc.apply(full_model);
+  PlaneSymmetryEstimation pse(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  pse.applyCentroid();
+  pse.apply(full_model);
 
   ClusterMeasure<PointT> cm(full_model, true);
 
@@ -105,13 +102,11 @@ bool PCAPoseEstimation::processNext() {
       PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
   }
 
-  Eigen::Vector3f plane_origin, plane_normal;
-  SymmetryPlaneEstimation spe(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  spe.applyFurthest(plane_origin, plane_normal);
-
+  // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
-  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, plane_normal);
-  mc.apply(full_model);
+  PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  pse.applyCentroid();
+  pse.apply(full_model);
 
   /*Eigen::Vector3f axis_origin, axis_dir;
   SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
@@ -183,12 +178,9 @@ bool SQPoseEstimation::processNext() {
 
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
-  Eigen::Vector3f plane_origin, plane_normal;
-  SymmetryPlaneEstimation spe(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  spe.applyFurthest(plane_origin, plane_normal);
-
-  PlaneMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], plane_origin, plane_normal);
-  mc.apply(full_model);
+  PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  pse.applyCentroid();
+  pse.apply(full_model);
 
   // Call to SQ Computing
   double min_fit = std::numeric_limits<double>::max ();
