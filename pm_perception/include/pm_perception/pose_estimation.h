@@ -176,6 +176,8 @@ public:
     region_growing_curv_th_ = region_growing_curv_th;
   }
 
+  void display();
+
 };
 
 /** Pose Estimation using RANSAC Cylinder extraction */

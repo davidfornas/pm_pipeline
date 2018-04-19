@@ -79,6 +79,8 @@ public:
   /** Get the mirrored cloud and score */
   double apply( CloudPtr & mirrored );
 
+  
+
   //Obtain the plane in the middle of the furhtest point and the background
   void applyFurthest();
 

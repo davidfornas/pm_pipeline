@@ -29,7 +29,7 @@ int main(int argc, char **argv)
   SQPoseEstimation * pose_est;
   pose_est = new SQPoseEstimation(point_cloud_ptr, 400, 0.01);
   pose_est->setRegionGrowingClustering(8.0, 8.0);
-  pose_est->setLMFitting();
+  //pose_est->setLMFitting();
 
   pose_est->setDebug(true);
   while(ros::ok()){
@@ -46,8 +46,8 @@ int main(int argc, char **argv)
     while(success){
       ROS_INFO_STREAM(pose_est->get_cMo());
       *original_cloud += *((SQPoseEstimation*)pose_est)->getSQCloud();
-      *pose_est->getObjectCloud() += *((SQPoseEstimation*)pose_est)->getSQCloud();
-      PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
+      //*pose_est->getObjectCloud() += *((SQPoseEstimation*)pose_est)->getSQCloud();
+      //PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
       success = ((SQPoseEstimation*)pose_est)->processNext();
     }
     PCLView<PointT>::showCloudDuring(original_cloud);

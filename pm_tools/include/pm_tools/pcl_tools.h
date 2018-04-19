@@ -318,6 +318,7 @@ public:
 
     viewer->addPointCloud<PointT>(source, "Plane cloud");
     viewer->initCameraParameters();
+    viewer->setBackgroundColor(0.8,0.8,0.8);
     while (!viewer->wasStopped())
     {
       viewer->spinOnce(100);
@@ -335,6 +336,7 @@ public:
     int elapsed = 0;
     viewer->addPointCloud<PointT>(source, "Plane cloud");
     viewer->initCameraParameters();
+    viewer->setBackgroundColor(0.8,0.8,0.8);
     while (!viewer->wasStopped() && elapsed < ms )
     {
       elapsed += 20;

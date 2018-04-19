@@ -236,7 +236,7 @@ bool SQPoseEstimation::processNext() {
   sq::SuperquadricSamplingUniform<PointT, double> sampling;
   sampling.setParameters (min_params);
   //Only for Uniform
-  sampling.setSpatialSampling(0.005);
+  sampling.setSpatialSampling(0.01);
 
   sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
   sampling.generatePointCloud (*sq_cloud_);
@@ -252,6 +252,7 @@ bool SQPoseEstimation::processNext() {
     vispToTF.publish();
   }
   object_cloud_ = full_model;
+  display();
 
   pcl::PolygonMesh mesh;
   //min_params.transform.setIdentity();
@@ -267,6 +268,17 @@ bool SQPoseEstimation::processNext() {
   return true;
 }
 
+void SQPoseEstimation::display(){
+  pcl::visualization::PCLVisualizer *p;
+  p = new pcl::visualization::PCLVisualizer("SQ Fitting");
+
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> ob_h(object_cloud_, 0, 0, 120);
+  pcl::visualization::PointCloudColorHandlerCustom<PointT> sq_h(sq_cloud_, 160, 0, 0);
+  p->setBackgroundColor(0.8,0.8,0.8);
+  p->addPointCloud(object_cloud_, ob_h, "c1");
+  p->addPointCloud(sq_cloud_, sq_h, "c2");
+  p->spin();
+}
 
 bool CylinderPoseEstimation::initialize() {
 
