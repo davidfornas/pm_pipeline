@@ -51,7 +51,6 @@ double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
   ClusterMeasure<PointT> cm(cloud_);
 
   //Lower is better
-  double differential_score = 0.;
   double score = 0.;
 
   for (int i = 0; i < cloud_->points.size(); ++i) {
@@ -88,46 +87,50 @@ double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
     //Si no tiene un punto muy cercano, está fuera de la oclusión del objeto por lo que
     // no deberia añadirse, deberia verse ya.
     if(sqrt(pointNKNSquaredDistance[0])>0.01){
-      score += sqrt(pointNKNSquaredDistance[0]);
-      differential_score += sqrt(pointNKNSquaredDistance[0]);
+      score += 3 * sqrt(pointNKNSquaredDistance[0]);
     }else if(mirrored.z < closest_point.z){//Si está más cerca que su punto correspondiente deberia verse de antes
-      score += closest_point.z - mirrored.z;
-      differential_score += closest_point.z - mirrored.z;
+      score += 2.5 * closest_point.z - mirrored.z;
     }else{//Así sólo añado los puntos que están estrictamente detrás
-      score -= mirrored.z - closest_point.z;
+      score += mirrored.z - closest_point.z;
     }
 
   }
   score /= cloud_->points.size();
-  ROS_INFO_STREAM("Score for mirrored points: "<< score << ". Score2: " << differential_score);
+
   //if(score > 0.001)
   mirrored = mirrored_;
   return score;
 
 }
 
-double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored ) {
+double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half_height ) {
 
   double best_score = 100;
   CloudPtr best_cloud(new Cloud);
 
   // Compute the furthest point
   applyFurthest();
+  for ( double d = 0; d < 1; d += 0.1 ) {
+    for (double y = -0.55; y <= 0.55; y += 0.04) {
+      for (double z = -0.55; z <= 0.55; z += 0.04) {
+        CloudPtr aux_cloud(new Cloud);
 
+        //Copute the new plane at r*(further_point-bkgrond_point)
+        if(fixed_half_height)
+          estimatePlane(0.5, 0, y, z);
+        else
+          estimatePlane(d, 0, y, z);
 
-  for ( double r = 0.1; r < 1; r += 0.2 ) {
-
-    CloudPtr aux_cloud(new Cloud);
-
-    //Copute the new plane at r*(further_point-bkgrond_point)
-    estimatePlane( r );
-    double score = apply(aux_cloud);
-    if(score < best_score){
-      best_score = score;
-      pcl::copyPointCloud( *aux_cloud, *best_cloud );
+        double score = apply(aux_cloud);
+        if (score < best_score) {
+          best_score = score;
+          pcl::copyPointCloud(*aux_cloud, *best_cloud);
+        }
+        //display();
+      }
     }
-    display();
   }
+  ROS_INFO_STREAM("Best (min) symmetry score: " << best_score );
   pcl::copyPointCloud( *best_cloud, *mirrored );
 
 }
@@ -154,13 +157,12 @@ void PlaneSymmetryEstimation::applyCentroid(){
   estimatePlane();
 }
 
-void PlaneSymmetryEstimation::estimatePlane( double distance_ratio ){
+void PlaneSymmetryEstimation::estimatePlane( double distance_ratio, double x, double y, double z ){
   //Same plane normal as background
   plane_normal_.x() = plane_coeffs_.values[0];
   plane_normal_.y() = plane_coeffs_.values[1];
   plane_normal_.z() = plane_coeffs_.values[2];
-  VispTools::rotateVector(plane_normal_, distance_ratio, 0, 0);
-  distance_ratio=0.5;
+  VispTools::rotateVector(plane_normal_, x, y, z);
 
   Eigen::Vector4f plane_centroid;
   pcl::compute3DCentroid<PointT>(*plane_cloud_, plane_centroid);

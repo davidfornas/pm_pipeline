@@ -80,7 +80,7 @@ public:
   double apply( CloudPtr & mirrored );
 
   /** Get the mirrored cloud and score */
-  double searchBest( CloudPtr & mirrored );
+  double searchBest( CloudPtr & mirrored, bool fixed_half_height = false );
 
   //Obtain the plane in the middle of the furhtest point and the background
   void applyFurthest();
@@ -93,7 +93,7 @@ public:
   //void applyParameters( double distance_ratio, double x_angle, double y_angle );
 
   //Distance ratio is the distance between the furthest points and the background plane expressed in ratio. Normally 0.5.
-  void estimatePlane( double distance_ratio = 0.5 );
+  void estimatePlane( double distance_ratio = 0.5, double x = 0.0, double y = 0.0, double z = 0.0  );
 
   void setPlane(Eigen::Vector3f plane_origin, Eigen::Vector3f plane_normal){
     plane_origin_ = plane_origin;
