@@ -351,6 +351,7 @@ public:
 
 class EigenTools
 {
+public:
 
   static Eigen::Quaterniond
   euler2Quaternion( const double roll,

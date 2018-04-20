@@ -79,7 +79,8 @@ public:
   /** Get the mirrored cloud and score */
   double apply( CloudPtr & mirrored );
 
-  
+  /** Get the mirrored cloud and score */
+  double searchBest( CloudPtr & mirrored );
 
   //Obtain the plane in the middle of the furhtest point and the background
   void applyFurthest();
@@ -87,7 +88,12 @@ public:
   //Obtain the plane in the middle of the centroid and the background
   void applyCentroid();
 
-  void estimatePlane();
+  //Obtain the plane at d distance from the furthest in direction to the floor
+  // with an angle rotation in x and y
+  //void applyParameters( double distance_ratio, double x_angle, double y_angle );
+
+  //Distance ratio is the distance between the furthest points and the background plane expressed in ratio. Normally 0.5.
+  void estimatePlane( double distance_ratio = 0.5 );
 
   void setPlane(Eigen::Vector3f plane_origin, Eigen::Vector3f plane_normal){
     plane_origin_ = plane_origin;

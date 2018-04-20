@@ -159,3 +159,27 @@ vpHomogeneousMatrix VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(Eigen::M
   return out;
 }
 
+
+Eigen::Vector3f VispTools::rotateVector( Eigen::Vector3f & vector, double x, double y, double z ){
+
+  Eigen::Vector3f perp(vector.z(), vector.z(), -vector.y() - vector.x()), result, random(1, 1, 1);
+  //Cross product with random to get any perpendicular. I am only usinhg vector so its ok.
+  random.normalize();
+  perp = vector.cross(random);
+
+  perp.normalize();
+  result = vector.cross(perp);
+  vpHomogeneousMatrix cMo(0, 0, 0, 0, 0, 0);
+
+  cMo[0][0]=vector.x(); cMo[0][1]=perp.x(); cMo[0][2]=result.x();
+  cMo[1][0]=vector.y(); cMo[1][1]=perp.y(); cMo[1][2]=result.y();
+  cMo[2][0]=vector.z(); cMo[2][1]=perp.z(); cMo[2][2]=result.z();
+
+  cMo = cMo * vpHomogeneousMatrix(0, 0, 0, x, y, z);
+
+  vector.x() = cMo[0][0];
+  vector.y() = cMo[1][0];
+  vector.z() = cMo[2][0];
+
+}
+

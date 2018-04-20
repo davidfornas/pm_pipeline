@@ -5,6 +5,8 @@
  *      Author: dfornas
  */
 #include <pm_perception/symmetry.h>
+#include <visp/vpHomogeneousMatrix.h>
+#include <pm_tools/visp_tools.h>
 
 void SymmetryEstimation::display() {
 
@@ -41,7 +43,11 @@ double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
   pcl::KdTreeFLANN<PointT> kdtree;
   kdtree.setInputCloud(cluster_mask);
 
-  mirrored = cloud_;
+  mirrored_ = boost::shared_ptr<Cloud>(new Cloud());
+  mirror_ = boost::shared_ptr<Cloud>(new Cloud());
+  projection_ = boost::shared_ptr<Cloud>(new Cloud());
+  pcl::copyPointCloud(*cloud_, *mirrored_);
+
   ClusterMeasure<PointT> cm(cloud_);
 
   //Lower is better
@@ -100,6 +106,32 @@ double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
 
 }
 
+double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored ) {
+
+  double best_score = 100;
+  CloudPtr best_cloud(new Cloud);
+
+  // Compute the furthest point
+  applyFurthest();
+
+
+  for ( double r = 0.1; r < 1; r += 0.2 ) {
+
+    CloudPtr aux_cloud(new Cloud);
+
+    //Copute the new plane at r*(further_point-bkgrond_point)
+    estimatePlane( r );
+    double score = apply(aux_cloud);
+    if(score < best_score){
+      best_score = score;
+      pcl::copyPointCloud( *aux_cloud, *best_cloud );
+    }
+    display();
+  }
+  pcl::copyPointCloud( *best_cloud, *mirrored );
+
+}
+
 void PlaneSymmetryEstimation::applyFurthest(){
 
   //Obtain point with most distance to plane
@@ -122,11 +154,13 @@ void PlaneSymmetryEstimation::applyCentroid(){
   estimatePlane();
 }
 
-void PlaneSymmetryEstimation::estimatePlane(){
+void PlaneSymmetryEstimation::estimatePlane( double distance_ratio ){
   //Same plane normal as background
   plane_normal_.x() = plane_coeffs_.values[0];
   plane_normal_.y() = plane_coeffs_.values[1];
   plane_normal_.z() = plane_coeffs_.values[2];
+  VispTools::rotateVector(plane_normal_, distance_ratio, 0, 0);
+  distance_ratio=0.5;
 
   Eigen::Vector4f plane_centroid;
   pcl::compute3DCentroid<PointT>(*plane_cloud_, plane_centroid);
@@ -137,9 +171,9 @@ void PlaneSymmetryEstimation::estimatePlane(){
 
   Eigen::Vector3f object_to_plane(reference_point_-point_in_object_projected_into_plane);
 
-  plane_origin_.x() = point_in_object_projected_into_plane[0]+ 0.5 * object_to_plane[0];
-  plane_origin_.y() = point_in_object_projected_into_plane[1]+ 0.5 * object_to_plane[1];
-  plane_origin_.z() = point_in_object_projected_into_plane[2]+ 0.5 * object_to_plane[2];
+  plane_origin_.x() = point_in_object_projected_into_plane[0]+ distance_ratio * object_to_plane[0];
+  plane_origin_.y() = point_in_object_projected_into_plane[1]+ distance_ratio * object_to_plane[1];
+  plane_origin_.z() = point_in_object_projected_into_plane[2]+ distance_ratio * object_to_plane[2];
 }
 
 double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {

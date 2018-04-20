@@ -105,8 +105,9 @@ bool PCAPoseEstimation::processNext() {
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
   PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  pse.applyCentroid();
-  pse.apply(full_model);
+  //pse.applyCentroid();
+  //pse.apply(full_model);
+  pse.searchBest(full_model);
 
   /*Eigen::Vector3f axis_origin, axis_dir;
   SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);

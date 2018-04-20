@@ -27,7 +27,9 @@ int main(int argc, char** argv)
 	  PCLTools<PointT>::cloudFromPCD(cloud, source + std::string(".pcd"));
   }else{
     // Debug in CLion without params.
-    PCLTools<PointT>::cloudFromPCD(cloud, "/home/dfornas/ros_ws/prueba_mirror.pcd");
+    //PCLTools<PointT>::cloudFromPCD(cloud, "/home/dfornas/ros_ws/prueba_mirror.pcd");
+    PCLTools<PointT>::cloudFromPCD(cloud, "/home/dfornas/Code/sq/FedeRegions/cluster3.pcd");
+
   }
 
   ROS_INFO("Testing Plane Symmetry Estimation");
