@@ -127,6 +127,9 @@ public:
 
   AxisSymmetryEstimation(CloudPtr cloud) : SymmetryEstimation(cloud) {}
 
+  /** Get the mirrored cloud and score */
+  double searchBest( CloudPtr & mirrored, bool fixed_half_height = false );
+
   /** Get the mirrored cloud  */
   double apply( CloudPtr & mirrored );
 
@@ -137,7 +140,8 @@ public:
 
 private:
 
-  void estimateAxis();
+  //Distance ratio is the distance between the centroid and the background plane expressed in ratio. Normally 0.5.
+  void estimateAxis( double distance_ratio = 0.0, double x = 0.0, double y = 0.0, double z = 0.0 );
 
 };
 

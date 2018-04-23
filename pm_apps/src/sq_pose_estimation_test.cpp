@@ -18,7 +18,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "sq_pose_estimation_test");
   ros::NodeHandle nh;
 
-  pcl::PointCloud<PointT>::Ptr point_cloud_ptr(new pcl::PointCloud<PointT>), original_cloud(new pcl::PointCloud<PointT>);
+  pcl::PointCloud<PointT>::Ptr point_cloud_ptr(new pcl::PointCloud<PointT>), original_cloud(new pcl::PointCloud<PointT>), sq_cloud(new pcl::PointCloud<PointT>);
   std::string filename("/stereo/points2");
 
   PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   //pose_est->setRegionGrowingClustering(8.0, 8.0);
   //pose_est->setLMFitting();
   //pose_est->setSymmetrySearchParams(0.0);
-  //pose_est->setSymmetrySearchParams(0.40, 0.05, 0.2);
+  pose_est->setSymmetrySearchParams(0.40, 0.05, 0.2);
 
   pose_est->setDebug(true);
   while(ros::ok()){
@@ -47,13 +47,21 @@ int main(int argc, char **argv)
 
     while(success){
       ROS_INFO_STREAM(pose_est->get_cMo());
-      *original_cloud += *((SQPoseEstimation*)pose_est)->getSQCloud();
+      *sq_cloud += *((SQPoseEstimation*)pose_est)->getSQCloud();
       //*pose_est->getObjectCloud() += *((SQPoseEstimation*)pose_est)->getSQCloud();
       //PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud());
       success = ((SQPoseEstimation*)pose_est)->processNext();
     }
-    PCLView<PointT>::showCloudDuring(original_cloud);
-    PCLTools<PointT>::cloudToPCD(original_cloud, "sq_result.pcd");
+
+    pcl::visualization::PCLVisualizer *p;
+    p = new pcl::visualization::PCLVisualizer("SQ colored");
+    pcl::visualization::PointCloudColorHandlerCustom<PointT> tgt_h(original_cloud, 0, 230, 0);
+    pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h(sq_cloud, 0, 0, 230);
+    p->setBackgroundColor(0.8,0.8,0.8);
+    p->addPointCloud(original_cloud, tgt_h, "c1");
+    p->addPointCloud(sq_cloud, src_h, "c2");
+    p->spin();
+    PCLTools<PointT>::cloudToPCD(sq_cloud, "sq_result.pcd");
   }
   return 0;
 }

@@ -132,7 +132,7 @@ double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half
     }
     ROS_INFO_STREAM("Search at " << (d+distance_ratio_step_) * 100<< "percent.");
   }
-  ROS_INFO_STREAM("Best (min) symmetry score: " << best_score );
+  ROS_INFO_STREAM("Best (min) plane symmetry score: " << best_score );
   pcl::copyPointCloud( *best_cloud, *mirrored );
 
 }
@@ -180,9 +180,46 @@ void PlaneSymmetryEstimation::estimatePlane( double distance_ratio, double x, do
   plane_origin_.z() = point_in_object_projected_into_plane[2]+ distance_ratio * object_to_plane[2];
 }
 
+double AxisSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half_height ) {
+
+  ROS_INFO_STREAM("Starting symmetry axis search.");
+  double best_score = 100;
+  CloudPtr best_cloud(new Cloud);
+
+  for ( double d = 0; d < 1; d += distance_ratio_step_ ) {
+    for (double y = -angle_limit_; y <= angle_limit_; y += angle_step_) {
+      for (double z = -angle_limit_; z <= angle_limit_; z += angle_step_) {
+        CloudPtr aux_cloud(new Cloud);
+
+        //Copute the new plane at r*(centroid-bkgrond_point)
+        if(fixed_half_height)
+          estimateAxis(0.5, 0, y, z);
+        else
+          estimateAxis(d, 0, y, z);
+
+        double score = apply(aux_cloud);
+        if (score < best_score) {
+          best_score = score;
+          pcl::copyPointCloud(*aux_cloud, *best_cloud);
+        }
+        display();
+      }
+    }
+    ROS_INFO_STREAM("Search at " << (d+distance_ratio_step_) * 100<< "percent.");
+  }
+  ROS_INFO_STREAM("Best (min) axis symmetry score: " << best_score );
+  pcl::copyPointCloud( *best_cloud, *mirrored );
+
+}
+
 double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
 
   estimateAxis();
+
+  mirrored_ = boost::shared_ptr<Cloud>(new Cloud());
+  mirror_ = boost::shared_ptr<Cloud>(new Cloud());
+  projection_ = boost::shared_ptr<Cloud>(new Cloud());
+  pcl::copyPointCloud(*cloud_, *mirrored_);
 
   mirrored = cloud_;
   ClusterMeasure<PointT> cm(cloud_);
@@ -214,11 +251,14 @@ double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
     distance += diff.squaredNorm ();
   }
   distance /= cloud_->points.size();
+
+  mirrored = mirrored_;
+
   ROS_INFO_STREAM("Squared distance mean to axis for mirrored points: "<<distance);
   return distance;
 }
 
-void AxisSymmetryEstimation::estimateAxis(){
+void AxisSymmetryEstimation::estimateAxis( double distance_ratio, double x, double y, double z ){
 
   ClusterMeasure<PointT> cm(cloud_, false);
   Eigen::Matrix4f cMo;
@@ -232,6 +272,26 @@ void AxisSymmetryEstimation::estimateAxis(){
   line_direction_.x() = cMo(0,2);
   line_direction_.y() = cMo(1,2);
   line_direction_.z() = cMo(2,2);
+  /**VispTools::rotateVector(line_direction_, x, y, z);
+
+  //Get new Line Origin
+  Eigen::Vector3f plane_normal;
+  plane_normal.x() = plane_coeffs_.values[0];
+  plane_normal.y() = plane_coeffs_.values[1];
+  plane_normal.z() = plane_coeffs_.values[2];
+
+  Eigen::Vector4f plane_centroid;
+  pcl::compute3DCentroid<PointT>(*plane_cloud_, plane_centroid);
+  Eigen::Vector3f plane_centroid_3f(plane_centroid.x(), plane_centroid.y(), plane_centroid.z());
+
+  Eigen::Vector3f point_in_object_projected_into_plane;
+  pcl::geometry::project(line_origin_, plane_centroid_3f, plane_normal, point_in_object_projected_into_plane);
+
+  Eigen::Vector3f object_to_plane(line_origin_-point_in_object_projected_into_plane);
+
+  line_origin_.x() = point_in_object_projected_into_plane[0] + distance_ratio * object_to_plane[0];
+  line_origin_.y() = point_in_object_projected_into_plane[1] + distance_ratio * object_to_plane[1];
+  line_origin_.z() = point_in_object_projected_into_plane[2] + distance_ratio * object_to_plane[2];**/
 
 }
 

@@ -35,8 +35,9 @@ int main(int argc, char **argv)
   pose_est->setDebug(true);
 
   // Enable search and Search only for distance.
-  pose_est->setSymmetrySearchParams(0.0);
+  //pose_est->setSymmetrySearchParams(0.0);
   //pose_est->setSymmetrySearchParams(0.40, 0.05, 0.2);
+  pose_est->setAxisSymmetryMode();
 
   //Only required for CYLINDER pose_est->initialize();
   //pose_est->setPlaneSegmentationParams(0.7);

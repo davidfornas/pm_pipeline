@@ -117,13 +117,9 @@ bool PCAPoseEstimation::processNext() {
     }
 
   }else{
-    /*Eigen::Vector3f axis_origin, axis_dir;
-    SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-    sae.apply(axis_origin, axis_dir);
-
-    CloudPtr full_model(new Cloud);
-    AxisMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], axis_origin, axis_dir);
-    mc.apply(full_model);*/
+    Eigen::Vector3f axis_origin, axis_dir;
+    AxisSymmetryEstimation ase(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+    ase.apply(full_model);
   }
 
 
@@ -197,13 +193,9 @@ bool SQPoseEstimation::processNext() {
     }
 
   }else{
-    /*Eigen::Vector3f axis_origin, axis_dir;
-    SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-    sae.apply(axis_origin, axis_dir);
-
-    CloudPtr full_model(new Cloud);
-    AxisMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], axis_origin, axis_dir);
-    mc.apply(full_model);*/
+    Eigen::Vector3f axis_origin, axis_dir;
+    AxisSymmetryEstimation ase(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+    ase.apply(full_model);
   }
 
   // Call to SQ Computing
