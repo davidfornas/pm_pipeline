@@ -110,7 +110,7 @@ double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half
   CloudPtr best_cloud(new Cloud);
 
   // Compute the furthest point
-  applyFurthest();
+  estimateFurthest();
   for ( double d = 0; d < 1; d += distance_ratio_step_ ) {
     for (double y = -angle_limit_; y <= angle_limit_; y += angle_step_) {
       for (double z = -angle_limit_; z <= angle_limit_; z += angle_step_) {
@@ -134,10 +134,11 @@ double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half
   }
   ROS_INFO_STREAM("Best (min) plane symmetry score: " << best_score );
   pcl::copyPointCloud( *best_cloud, *mirrored );
+  return best_score;
 
 }
 
-void PlaneSymmetryEstimation::applyFurthest(){
+void PlaneSymmetryEstimation::estimateFurthest(){
 
   //Obtain point with most distance to plane
   int max_index;
@@ -150,7 +151,7 @@ void PlaneSymmetryEstimation::applyFurthest(){
   estimatePlane();
 }
 
-void PlaneSymmetryEstimation::applyCentroid(){
+void PlaneSymmetryEstimation::estimateCentroid(){
 
   Eigen::Vector4f centroid;
   pcl::compute3DCentroid<PointT>(*cloud_, centroid);
@@ -202,7 +203,6 @@ double AxisSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half_
           best_score = score;
           pcl::copyPointCloud(*aux_cloud, *best_cloud);
         }
-        display();
       }
     }
     ROS_INFO_STREAM("Search at " << (d+distance_ratio_step_) * 100<< "percent.");
@@ -210,11 +210,17 @@ double AxisSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half_
   ROS_INFO_STREAM("Best (min) axis symmetry score: " << best_score );
   pcl::copyPointCloud( *best_cloud, *mirrored );
 
+  return best_score;
 }
 
 double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
 
-  estimateAxis();
+  //Cluster with Z=0 for Score computing
+  CloudPtr cluster_mask( new Cloud);
+  pcl::copyPointCloud(*cloud_, *cluster_mask);
+  for(int i=0; i < cluster_mask->points.size(); i++) cluster_mask->points[i].z = 0;
+  pcl::KdTreeFLANN<PointT> kdtree;
+  kdtree.setInputCloud(cluster_mask);
 
   mirrored_ = boost::shared_ptr<Cloud>(new Cloud());
   mirror_ = boost::shared_ptr<Cloud>(new Cloud());
@@ -223,7 +229,7 @@ double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
 
   mirrored = cloud_;
   ClusterMeasure<PointT> cm(cloud_);
-  double distance = 0.;
+  double score = 0.;
   for (int i = 0; i < cloud_->points.size(); ++i) {
 
     Eigen::Vector3f pt;
@@ -244,18 +250,33 @@ double AxisSymmetryEstimation::apply( CloudPtr & mirrored ) {
     mirrored_->push_back(mirrored);
     projection_->push_back(projected);
 
-    Eigen::Vector3f diff ;
-    diff.x() = mirrored.x -projected.x;
-    diff.y() = mirrored.y -projected.y;
-    diff.z() = mirrored.z -projected.z;
-    distance += diff.squaredNorm ();
+    // SCORE COMPUTING
+    int K = 1;
+    std::vector<int> pointIdxNKNSearch(K);
+    std::vector<float> pointNKNSquaredDistance(K);
+
+    PointT mirrored_z0;
+    mirrored_z0 = mirrored;
+    mirrored_z0.z = 0;
+    kdtree.nearestKSearch(mirrored_z0, K, pointIdxNKNSearch, pointNKNSquaredDistance);
+    PointT closest_point = cloud_->points[pointIdxNKNSearch[0]];
+
+    //Si no tiene un punto muy cercano, está fuera de la oclusión del objeto por lo que
+    // no deberia añadirse, deberia verse ya.
+    if(sqrt(pointNKNSquaredDistance[0])>0.01){
+      score += 3 * sqrt(pointNKNSquaredDistance[0]);
+    }else if(mirrored.z < closest_point.z){//Si está más cerca que su punto correspondiente deberia verse de antes
+      score += 2.5 * closest_point.z - mirrored.z;
+    }else{//Así sólo añado los puntos que están estrictamente detrás
+      score += mirrored.z - closest_point.z;
+    }
   }
-  distance /= cloud_->points.size();
+  score /= cloud_->points.size();
 
   mirrored = mirrored_;
 
-  ROS_INFO_STREAM("Squared distance mean to axis for mirrored points: "<<distance);
-  return distance;
+  ROS_DEBUG_STREAM("Squared distance mean to axis for mirrored points: " << score);
+  return score;
 }
 
 void AxisSymmetryEstimation::estimateAxis( double distance_ratio, double x, double y, double z ){
@@ -272,7 +293,7 @@ void AxisSymmetryEstimation::estimateAxis( double distance_ratio, double x, doub
   line_direction_.x() = cMo(0,2);
   line_direction_.y() = cMo(1,2);
   line_direction_.z() = cMo(2,2);
-  /**VispTools::rotateVector(line_direction_, x, y, z);
+  VispTools::rotateVector(line_direction_, x, y, z);
 
   //Get new Line Origin
   Eigen::Vector3f plane_normal;
@@ -291,7 +312,7 @@ void AxisSymmetryEstimation::estimateAxis( double distance_ratio, double x, doub
 
   line_origin_.x() = point_in_object_projected_into_plane[0] + distance_ratio * object_to_plane[0];
   line_origin_.y() = point_in_object_projected_into_plane[1] + distance_ratio * object_to_plane[1];
-  line_origin_.z() = point_in_object_projected_into_plane[2] + distance_ratio * object_to_plane[2];**/
+  line_origin_.z() = point_in_object_projected_into_plane[2] + distance_ratio * object_to_plane[2];
 
 }
 

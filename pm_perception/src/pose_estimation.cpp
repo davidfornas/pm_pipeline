@@ -45,8 +45,7 @@ bool BoxPoseEstimation::process() {
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
   PlaneSymmetryEstimation pse(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  pse.applyCentroid();
-  pse.apply(full_model);
+  pse.applyCentroid(full_model);
 
   ClusterMeasure<PointT> cm(full_model, true);
 
@@ -84,8 +83,8 @@ bool PCAPoseEstimation::process() {
     }
     cloud_clustering_->displayColoured();
     //cluster.save("euclidean");
-    PCLView<PointT>::showCloud(cloud_);
-    PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[0]);
+    //PCLView<PointT>::showCloud(cloud_);
+    //PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[0]);
   }
   return processNext();
 }
@@ -98,10 +97,6 @@ bool PCAPoseEstimation::processNext() {
   // @TODO Find best value. 400 for now. Stone is 300.
   if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
-  if(debug_) {
-      PCLView<PointT>::showCloud(cloud_clustering_->cloud_clusters[cluster_index_]);
-  }
-
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
   if(planar_symmetry_) {
@@ -110,18 +105,20 @@ bool PCAPoseEstimation::processNext() {
                                 *bg_remove->coefficients_plane);
     if (symmetry_search_) {
       pse.setSearchParams(angle_limit_, angle_step_, distance_ratio_step_);
-      pse.searchBest(full_model);
+      pse.searchBest(full_model, fixed_half_height_);
     } else {
-      pse.applyCentroid();
-      pse.apply(full_model);
+      pse.applyCentroid(full_model);
     }
 
   }else{
-    Eigen::Vector3f axis_origin, axis_dir;
     AxisSymmetryEstimation ase(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-    ase.apply(full_model);
+    if (symmetry_search_) {
+      ase.setSearchParams(angle_limit_, angle_step_, distance_ratio_step_);
+      ase.searchBest(full_model, fixed_half_height_);
+    } else {
+      ase.estimateAndApply(full_model);
+    }
   }
-
 
   ClusterMeasure<PointT> cm(full_model, debug_);
   Eigen::Quaternionf q;
@@ -186,16 +183,19 @@ bool SQPoseEstimation::processNext() {
                                 *bg_remove->coefficients_plane);
     if (symmetry_search_) {
       pse.setSearchParams(angle_limit_, angle_step_, distance_ratio_step_);
-      pse.searchBest(full_model);
+      pse.searchBest(full_model, fixed_half_height_);
     } else {
-      pse.applyCentroid();
-      pse.apply(full_model);
+      pse.applyCentroid(full_model);
     }
 
   }else{
-    Eigen::Vector3f axis_origin, axis_dir;
     AxisSymmetryEstimation ase(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-    ase.apply(full_model);
+    if (symmetry_search_) {
+      ase.setSearchParams(angle_limit_, angle_step_, distance_ratio_step_);
+      ase.searchBest(full_model, fixed_half_height_);
+    } else {
+      ase.estimateAndApply(full_model);
+    }
   }
 
   // Call to SQ Computing

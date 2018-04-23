@@ -39,7 +39,7 @@ protected:
   std::string camera_frame_name, topic_name;
   FrameToTF vispToTF;
   bool debug_;
-  bool symmetry_search_, planar_symmetry_;
+  bool symmetry_search_, planar_symmetry_, fixed_half_height_;
   double angle_limit_, angle_step_, distance_ratio_step_;
 
 public:
@@ -98,15 +98,18 @@ public:
   CloudPtr getObjectCloud() {return object_cloud_;}
 
   /** Set to use symmetry search method. angle limit=0 means only distance search */
-  void setSymmetrySearchParams(double angle_limit = 0.55, double angle_step = 0.04, double distance_ratio_step = 0.1){
+  void setSymmetrySearchParams(double angle_limit = 0.55, double angle_step = 0.04, double distance_ratio_step = 0.1, bool fixed_half_height = false){
     angle_limit_ = angle_limit;
     angle_step_ = angle_step;
     distance_ratio_step_ = distance_ratio_step;
     symmetry_search_ = true;
+    fixed_half_height_ = fixed_half_height;
   }
 
-  void setAxisSymmetryMode(){planar_symmetry_ = false;}
-  void setPlanarSymmetryMode(){planar_symmetry_ = true;}
+  void setAxisSymmetryMode(){
+    planar_symmetry_ = false;
+    if(!symmetry_search_) setSymmetrySearchParams();
+  }
 
 
 };
