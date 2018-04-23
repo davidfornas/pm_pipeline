@@ -33,6 +33,11 @@ int main(int argc, char **argv)
 //  pose_est = new BoxPoseEstimation(point_cloud_ptr);
 
   pose_est->setDebug(true);
+
+  // Enable search and Search only for distance.
+  pose_est->setSymmetrySearchParams(0.0);
+  //pose_est->setSymmetrySearchParams(0.40, 0.05, 0.2);
+
   //Only required for CYLINDER pose_est->initialize();
   //pose_est->setPlaneSegmentationParams(0.7);
   ROS_INFO_STREAM(pose_est->get_cMo());
@@ -52,7 +57,7 @@ int main(int argc, char **argv)
       std::stringstream cloudid;
       cloudid << "cluster" << i++ << ".pcd";
       PCLTools<PointT>::cloudToPCD(pose_est->getObjectCloud(), cloudid.str() );
-      PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud(), 500);
+      //PCLView<PointT>::showCloudDuring(pose_est->getObjectCloud(), 500);
       success = ((PCAPoseEstimation *) pose_est)->processNext();
     }
   }

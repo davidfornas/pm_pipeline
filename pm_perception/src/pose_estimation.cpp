@@ -104,18 +104,28 @@ bool PCAPoseEstimation::processNext() {
 
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
-  PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  //pse.applyCentroid();
-  //pse.apply(full_model);
-  pse.searchBest(full_model);
+  if(planar_symmetry_) {
 
-  /*Eigen::Vector3f axis_origin, axis_dir;
-  SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  sae.apply(axis_origin, axis_dir);
+    PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane,
+                                *bg_remove->coefficients_plane);
+    if (symmetry_search_) {
+      pse.setSearchParams(angle_limit_, angle_step_, distance_ratio_step_);
+      pse.searchBest(full_model);
+    } else {
+      pse.applyCentroid();
+      pse.apply(full_model);
+    }
 
-  CloudPtr full_model(new Cloud);
-  AxisMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], axis_origin, axis_dir);
-  mc.apply(full_model);*/
+  }else{
+    /*Eigen::Vector3f axis_origin, axis_dir;
+    SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+    sae.apply(axis_origin, axis_dir);
+
+    CloudPtr full_model(new Cloud);
+    AxisMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], axis_origin, axis_dir);
+    mc.apply(full_model);*/
+  }
+
 
   ClusterMeasure<PointT> cm(full_model, debug_);
   Eigen::Quaternionf q;
@@ -172,16 +182,29 @@ bool SQPoseEstimation::processNext() {
   // @TODO Find best value. 400 for now. Stone is 300.
   if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
-  int max_index;
-  double max_dist;
-  PCLTools<PointT>::findFurthest(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->coefficients_plane->values[0], bg_remove->coefficients_plane->values[1],
-                                 bg_remove->coefficients_plane->values[2], bg_remove->coefficients_plane->values[3], max_index, max_dist);
-
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
-  PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  pse.applyCentroid();
-  pse.apply(full_model);
+  if(planar_symmetry_) {
+
+    PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane,
+                                *bg_remove->coefficients_plane);
+    if (symmetry_search_) {
+      pse.setSearchParams(angle_limit_, angle_step_, distance_ratio_step_);
+      pse.searchBest(full_model);
+    } else {
+      pse.applyCentroid();
+      pse.apply(full_model);
+    }
+
+  }else{
+    /*Eigen::Vector3f axis_origin, axis_dir;
+    SymmetryAxisEstimation sae(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+    sae.apply(axis_origin, axis_dir);
+
+    CloudPtr full_model(new Cloud);
+    AxisMirrorCloud mc(cloud_clustering_->cloud_clusters[cluster_index_], axis_origin, axis_dir);
+    mc.apply(full_model);*/
+  }
 
   // Call to SQ Computing
   double min_fit = std::numeric_limits<double>::max ();

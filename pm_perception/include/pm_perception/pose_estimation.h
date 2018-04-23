@@ -39,6 +39,8 @@ protected:
   std::string camera_frame_name, topic_name;
   FrameToTF vispToTF;
   bool debug_;
+  bool symmetry_search_, planar_symmetry_;
+  double angle_limit_, angle_step_, distance_ratio_step_;
 
 public:
 
@@ -54,6 +56,8 @@ public:
     debug_ = false;
     // @TODO Actual camera frame...
     vispToTF.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMo", "cMo");
+    symmetry_search_ = false;
+    planar_symmetry_ = true;
   }
 
   virtual bool initialize(){ return false;}
@@ -90,9 +94,19 @@ public:
   /** Get the object frame with respect to the camera frame */
   vpHomogeneousMatrix get_cMo() {return cMo;}
 
-
   /** Get the object cloud extracted */
   CloudPtr getObjectCloud() {return object_cloud_;}
+
+  /** Set to use symmetry search method. angle limit=0 means only distance search */
+  void setSymmetrySearchParams(double angle_limit = 0.55, double angle_step = 0.04, double distance_ratio_step = 0.1){
+    angle_limit_ = angle_limit;
+    angle_step_ = angle_step;
+    distance_ratio_step_ = distance_ratio_step;
+    symmetry_search_ = true;
+  }
+
+  void setAxisSymmetryMode(){planar_symmetry_ = false;}
+  void setPlanarSymmetryMode(){planar_symmetry_ = true;}
 
 
 };

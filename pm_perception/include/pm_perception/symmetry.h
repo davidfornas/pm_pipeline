@@ -31,6 +31,12 @@ protected:
   // For visualization
   CloudPtr mirror_, projection_;
 
+  bool debug;
+
+  //Search parameters
+  double angle_limit_, angle_step_, distance_ratio_step_;
+
+
 public:
 
   SymmetryEstimation(CloudPtr cloud, CloudPtr plane_cloud, pcl::ModelCoefficients plane_coeffs)
@@ -41,6 +47,7 @@ public:
     projection_ = boost::shared_ptr<Cloud>(new Cloud());
 
     pcl::copyPointCloud(*cloud_, *mirrored_);
+    setSearchParams();
   }
 
   SymmetryEstimation(CloudPtr cloud)
@@ -51,6 +58,7 @@ public:
     projection_ = boost::shared_ptr<Cloud>(new Cloud());
 
     pcl::copyPointCloud(*cloud_, *mirrored_);
+    setSearchParams();
   }
 
   /** Get the mirrored cloud and score  */
@@ -61,6 +69,12 @@ public:
 
   /** Display the result*/
   void displayMirrored();
+
+  void setSearchParams(double angle_limit = 0.55, double angle_step = 0.04, double distance_ratio_step = 0.1){
+    angle_limit_ = angle_limit;
+    angle_step_ = angle_step;
+    distance_ratio_step_ = distance_ratio_step;
+  }
 
 };
 

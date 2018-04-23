@@ -105,14 +105,15 @@ double PlaneSymmetryEstimation::apply( CloudPtr & mirrored ) {
 
 double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half_height ) {
 
+  ROS_INFO_STREAM("Starting symmetry plane search.");
   double best_score = 100;
   CloudPtr best_cloud(new Cloud);
 
   // Compute the furthest point
   applyFurthest();
-  for ( double d = 0; d < 1; d += 0.1 ) {
-    for (double y = -0.55; y <= 0.55; y += 0.04) {
-      for (double z = -0.55; z <= 0.55; z += 0.04) {
+  for ( double d = 0; d < 1; d += distance_ratio_step_ ) {
+    for (double y = -angle_limit_; y <= angle_limit_; y += angle_step_) {
+      for (double z = -angle_limit_; z <= angle_limit_; z += angle_step_) {
         CloudPtr aux_cloud(new Cloud);
 
         //Copute the new plane at r*(further_point-bkgrond_point)
@@ -129,6 +130,7 @@ double PlaneSymmetryEstimation::searchBest( CloudPtr & mirrored, bool fixed_half
         //display();
       }
     }
+    ROS_INFO_STREAM("Search at " << (d+distance_ratio_step_) * 100<< "percent.");
   }
   ROS_INFO_STREAM("Best (min) symmetry score: " << best_score );
   pcl::copyPointCloud( *best_cloud, *mirrored );
