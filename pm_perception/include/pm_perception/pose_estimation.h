@@ -111,6 +111,8 @@ public:
     if(!symmetry_search_) setSymmetrySearchParams();
   }
 
+  /** For RANSAC based approaches, do symmetry estimation and estimate SQ shape **/
+  void estimateSQ( CloudPtr & sq_cloud  );
 
 };
 

@@ -20,6 +20,49 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 
+// Compute Symmetry naive && Compute SQ Shape
+void PoseEstimation::estimateSQ( CloudPtr & sq_cloud  ){
+  //Keep only object cylinder
+  CloudClustering<PointT> cluster(object_cloud_);
+  cluster.applyEuclidianClustering();
+
+  // ESTIMATON OF THE SYMMETRY PLANE
+  CloudPtr full_model(new Cloud);
+  PlaneSymmetryEstimation pse(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  pse.applyFurthest(full_model);
+  PCLView<PointT>::showCloud(full_model);
+
+  // Call to SQ Computing
+  double min_fit = std::numeric_limits<double>::max ();
+  sq::SuperquadricParameters<double> min_params;
+  sq::SuperquadricFittingCeres<PointT, double> sq_fit;
+  sq_fit.setInputCloud (full_model);
+
+  for (int i = 0; i < 3; ++i)
+  {
+    sq::SuperquadricParameters<double> params;
+    sq_fit.setPreAlign (true, i);
+    double fit = sq_fit.fit (params);
+    ROS_DEBUG("pre_align axis %d, fit %f\n", i, fit);
+    if (fit < min_fit)
+    {
+      min_fit = fit;
+      min_params = params;
+    }
+  }
+  sq::SuperquadricSamplingUniform<PointT, double> sampling;
+  sampling.setParameters (min_params);
+  sampling.setSpatialSampling(0.01);
+  sq_cloud = boost::shared_ptr<Cloud>(new Cloud());
+  sampling.generatePointCloud (*sq_cloud);
+
+  for (int j = 0; j < sq_cloud->points.size(); ++j) {
+    sq_cloud->points[j].r = 128;
+    sq_cloud->points[j].g = 0;
+    sq_cloud->points[j].b = 0;
+  }
+}
+
 bool BoxPoseEstimation::process() {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
@@ -248,11 +291,11 @@ bool SQPoseEstimation::processNext() {
   cMo = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
 
   // Sampling: Uniform does not have Mesh export
-  //sq::SuperquadricSampling<PointT, double> sampling;
-  sq::SuperquadricSamplingUniform<PointT, double> sampling;
+  sq::SuperquadricSampling<PointT, double> sampling;
+  //sq::SuperquadricSamplingUniform<PointT, double> sampling;
   sampling.setParameters (min_params);
   //Only for Uniform
-  sampling.setSpatialSampling(0.01);
+  //sampling.setSpatialSampling(0.01);
 
   sq_cloud_ = boost::shared_ptr<Cloud>(new Cloud());
   sampling.generatePointCloud (*sq_cloud_);
@@ -270,17 +313,20 @@ bool SQPoseEstimation::processNext() {
   object_cloud_ = full_model;
   display();
 
+  //Generate Object Mesh for UWSim
   pcl::PolygonMesh mesh;
-  //min_params.transform.setIdentity();
-  //sampling.setParameters (min_params);
-
-  //This does not work with UniformSampling though
   sampling.generateMesh (mesh);
-  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/temp.obj", mesh);
+  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/sq.obj", mesh);
 
-  //"package://pm_perception/data/temp.obj"
+  //Generate centered ObjectMesh for UWSim
+  min_params.transform.setIdentity();
+  sampling.setParameters (min_params);
+  sampling.generateMesh (mesh);
+  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/sq_centered.obj", mesh);
+
+  //"package://pm_perception/data/sq.obj"
   vpHomogeneousMatrix r(0,0,0,-1.57,0,0);
-  UWSimMarkerPublisher::publishMeshMarker(r ,1, 1, 1, std::string("package://pm_perception/data/temp.obj"), cluster_index_ );
+  UWSimMarkerPublisher::publishMeshMarker(r ,1, 1, 1, std::string("package://pm_perception/data/sq.obj"), cluster_index_ );
   return true;
 }
 
@@ -557,6 +603,5 @@ bool SpherePoseEstimation::process() {
   object_cloud_ = cloud_sphere;
   return true;
 }
-
 
 
