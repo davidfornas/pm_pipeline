@@ -5,15 +5,14 @@
  *      Author: dfornas
  */
 #include <pm_manipulation/ranking_grasp_planner.h>
+#include <std_msgs/Float32MultiArray.h>
 
-
-//Placeholder from pcl_manipulation code
 void RankingGraspPlanner::generateGraspList()
 {
   pose_estimation->initialize();
   cMo = pose_estimation->get_cMo();
   getbMc();
-
+  ROS_INFO("Generating Hypothesis...");
   for (double d = -0.2; d <= 0.2; d += 0.04)
   {
     for (double a = 40; a <= 140; a += 8)
@@ -30,12 +29,12 @@ void RankingGraspPlanner::generateGraspList()
         vpHomogeneousMatrix oMg = grMgt0 * gMgrZ * gMgrX * gMgrY * grMgt;
         vpHomogeneousMatrix cMg = cMo * oMg;
         cMg=cMg * vpHomogeneousMatrix(0,0,0,0,1.57,0) * vpHomogeneousMatrix(0,0,0,0,0,3.14);
-        grasp_list.push_back(cMg);
         GraspHypothesis g = generateGraspHypothesis( cMg );
         grasps.push_back(g);
-      }
+        }
     }
   }
+  ROS_INFO("Hypothesis generated.");
   //std::sort(grasps.begin(), grasps.end(), sortByScore);
 }
 
@@ -54,18 +53,19 @@ GraspHypothesis RankingGraspPlanner::generateGraspHypothesis( vpHomogeneousMatri
   final_joints2[3] = 1.57;
   final_joints2[4] = 0;
   bMg_fk = robot.directKinematics(final_joints2);
-  g.cMg_ik=bMc.inverse()*bMg_fk;
+  g.cMg_ik = bMc.inverse()*bMg_fk;
   //Compute score
-  g.distance_ik_score=(g.cMg.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm();
-  g.angle_ik_score=abs(angle(g.cMg.getCol(2), g.cMg_ik.getCol(2)));
-  g.angle_axis_score=abs(abs(angle(cMo.getCol(1), g.cMg_ik.getCol(2)))-1);//Angle between cylinder axis and grasp axis.1 rad is preferred
-  g.distance_score=abs((cMo.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm()-0.35);//35cm is preferred
-  g.overall_score=g.distance_ik_score*100+g.angle_ik_score*10+g.angle_axis_score+g.distance_score*2;//Should be argued. Now is only a matter of priority.
+  g.distance_ik_score = (g.cMg.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm();
+  g.angle_ik_score = abs(angle(g.cMg.getCol(2), g.cMg_ik.getCol(2)));
+  g.angle_axis_score = abs(abs(angle(cMo.getCol(1), g.cMg_ik.getCol(2)))-1);//Angle between cylinder axis and grasp axis.1 rad is preferred
+  g.distance_score = abs((cMo.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm()-0.35);//35cm is preferred
+  g.overall_score = g.distance_ik_score * 100 + g.angle_ik_score *10+g.angle_axis_score+g.distance_score*2;//Should be argued. Now is only a matter of priority.
   return g;
 }
 
 void RankingGraspPlanner::getbMc(){
   //Get bMc from TF...
+  ROS_INFO("Waiting for base to camera (arm5/kinematic_base to stereo)");
   tf::StampedTransform bMc_tf;
   tf::TransformListener listener;
   bool tf_detected = false;
@@ -79,7 +79,6 @@ void RankingGraspPlanner::getbMc(){
     ros::spinOnce();
   }while(!tf_detected && ros::ok());
   bMc=tfToVisp(bMc_tf);
-  tf_detected=true;
 };
 
 vpHomogeneousMatrix RankingGraspPlanner::tfToVisp(tf::StampedTransform matrix_tf){
@@ -103,3 +102,55 @@ void RankingGraspPlanner::filterGraspList(){
 //  }
 }
 
+
+void SQRankingGraspPlanner::generateGraspList() {
+  ROS_INFO("Now doing pose estimation, then grasp planning");
+  std_msgs::Float32MultiArray params;
+  params.data.clear();
+  //Data is an array with num_grasps, anglerange, deltaspace...
+  params.data.push_back(num_grasps);
+  params.data.push_back(anglerange);
+  params.data.push_back(deltaspace);
+  // ... Rolls arange
+  params.data.push_back(roll_arange_init);
+  params.data.push_back(roll_arange_end);
+  params.data.push_back(roll_arange_step);
+  // ... Standoffs (variable size)
+  params.data.push_back(standoffs[0]);
+  params.data.push_back(standoffs[1]);
+  params.data.push_back(standoffs[2]);
+  params.data.push_back(standoffs[3]);
+  ros::Duration(0.5).sleep();
+  params_pub.publish(params);
+  ros::spinOnce();
+
+  grasps_read = 0;
+  while(grasps_read < num_grasps){
+    ros::spinOnce();
+  }
+  ROS_DEBUG("Grasps read");
+}
+
+void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
+  grasps_read++;
+
+  ORGraspHypothesis g;
+  g.preshapes[0] = msg->data[0];
+  g.preshapes[1] = msg->data[1];
+
+  g.cMg[0][0] = msg->data[2];  g.cMg[0][1] = msg->data[3];  g.cMg[0][2] = msg->data[4];  g.cMg[0][3] = msg->data[5];
+  g.cMg[1][0] = msg->data[6];  g.cMg[1][1] = msg->data[7];  g.cMg[1][2] = msg->data[8];  g.cMg[1][3] = msg->data[9];
+  g.cMg[2][0] = msg->data[10]; g.cMg[2][1] = msg->data[11]; g.cMg[2][2] = msg->data[12]; g.cMg[2][3] = msg->data[13];
+  g.cMg[3][0] = msg->data[14]; g.cMg[3][1] = msg->data[15]; g.cMg[3][2] = msg->data[16]; g.cMg[3][3] = msg->data[17];
+
+  ROS_INFO_STREAM("MATRIX" << g.cMg);
+
+  g.measures[0] = msg->data[18];
+  g.measures[1] = msg->data[19];
+  g.measures[2] = msg->data[20];
+  g.measures[3] = msg->data[21];
+  g.measures[4] = msg->data[22];
+  g.measures[5] = msg->data[23];
+
+  or_grasp_list.push_back(g);
+}

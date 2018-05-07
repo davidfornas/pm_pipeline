@@ -24,15 +24,15 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
+  /*CylinderRankingGraspPlanner crgp(point_cloud_ptr, nh);
+  crgp.generateGraspList();
+  crgp.getBestGrasp();
+  crgp.publishGraspList();*/
 
-  RankingGraspPlanner rgp(point_cloud_ptr, nh);
-  ROS_INFO("XXX");
-  rgp.generateGraspList();
-  ROS_INFO("Voy a mostrar la lista:");
-  rgp.getBestGrasp();
-  rgp.publishGraspList();
-  ros::spinOnce();
+  SQRankingGraspPlanner srgp(point_cloud_ptr, nh);
+  srgp.generateGraspList();
+  //srgp.getBestGrasp();
+  //srgp.publishGraspList();
 
-  return 0;
 }
 
