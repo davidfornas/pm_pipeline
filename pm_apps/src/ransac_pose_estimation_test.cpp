@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     p = new pcl::visualization::PCLVisualizer("Cylinde + SQ colored");
     //pcl::visualization::PointCloudColorHandlerCustom<PointT> tgt_h(point_cloud_ptr, 0, 230, 0);
     pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h(aux_cloud, 0, 0, 230);
-    pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h2(symmetry_cloud, 0, 230, 0);
+    pcl::visualization::PointCloudColorHandlerCustom<PointT> src_h2(symmetry_cloud, 250, 0, 0);
     p->setBackgroundColor(0.8, 0.8, 0.8);
     p->addPointCloud(original_cloud, "c1");
     p->addPointCloud(aux_cloud, src_h, "c2");
