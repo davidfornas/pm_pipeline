@@ -103,8 +103,14 @@ void RankingGraspPlanner::filterGraspList(){
 }
 
 
-void SQRankingGraspPlanner::generateGraspList() {
-  ROS_INFO("Now doing pose estimation, then grasp planning");
+bool SQRankingGraspPlanner::generateGraspList() {
+
+  ROS_INFO("SQ Pose estimation...");
+  bool success = pose_estimation->process();
+  if(!success) return false;
+  cMo = pose_estimation->get_cMo();
+
+  ROS_INFO("Grasp planning...");
   std_msgs::Float32MultiArray params;
   params.data.clear();
   //Data is an array with num_grasps, anglerange, deltaspace...
@@ -128,22 +134,29 @@ void SQRankingGraspPlanner::generateGraspList() {
   while(grasps_read < num_grasps){
     ros::spinOnce();
   }
-  ROS_DEBUG("Grasps read");
+  ROS_DEBUG_STREAM(num_grasps << "Grasps read");
+  return true;
 }
 
 void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
   grasps_read++;
 
-  ORGraspHypothesis g;
+  vpHomogeneousMatrix oMg;
+  oMg[0][0] = msg->data[2];  oMg[0][1] = msg->data[3];  oMg[0][2] = msg->data[4];  oMg[0][3] = msg->data[5];
+  oMg[1][0] = msg->data[6];  oMg[1][1] = msg->data[7];  oMg[1][2] = msg->data[8];  oMg[1][3] = msg->data[9];
+  oMg[2][0] = msg->data[10]; oMg[2][1] = msg->data[11]; oMg[2][2] = msg->data[12]; oMg[2][3] = msg->data[13];
+  oMg[3][0] = msg->data[14]; oMg[3][1] = msg->data[15]; oMg[3][2] = msg->data[16]; oMg[3][3] = msg->data[17];
+  vpHomogeneousMatrix cMg;
+  cMg = cMo * oMg;
+
+  GraspHypothesis g0;
+  g0 = generateGraspHypothesis( cMg );
+
+  ORGraspHypothesis g(g0);
   g.preshapes[0] = msg->data[0];
   g.preshapes[1] = msg->data[1];
 
-  g.cMg[0][0] = msg->data[2];  g.cMg[0][1] = msg->data[3];  g.cMg[0][2] = msg->data[4];  g.cMg[0][3] = msg->data[5];
-  g.cMg[1][0] = msg->data[6];  g.cMg[1][1] = msg->data[7];  g.cMg[1][2] = msg->data[8];  g.cMg[1][3] = msg->data[9];
-  g.cMg[2][0] = msg->data[10]; g.cMg[2][1] = msg->data[11]; g.cMg[2][2] = msg->data[12]; g.cMg[2][3] = msg->data[13];
-  g.cMg[3][0] = msg->data[14]; g.cMg[3][1] = msg->data[15]; g.cMg[3][2] = msg->data[16]; g.cMg[3][3] = msg->data[17];
-
-  ROS_INFO_STREAM("MATRIX" << g.cMg);
+  g.oMg = oMg;
 
   g.measures[0] = msg->data[18];
   g.measures[1] = msg->data[19];

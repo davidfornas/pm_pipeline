@@ -280,6 +280,7 @@ bool SQPoseEstimation::processNext() {
       }
     }
   }
+  sq_params_ = min_params;
 
   ROS_INFO("Command for sampler:\n-e1 %f -e2 %f -a %f -b %f -c %f -transform %f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
            min_params.e1, min_params.e2, min_params.a, min_params.b, min_params.c,
@@ -289,6 +290,9 @@ bool SQPoseEstimation::processNext() {
            min_params.transform (3, 0), min_params.transform (3, 1), min_params.transform (3, 2), min_params.transform (3, 3));
 
   cMo = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
+
+  if(min_params.e1 == 0 && min_params.e2 == 0 && min_params.a == 1 && min_params.b == 1 && min_params.c ==1)
+    return false;
 
   // Sampling: Uniform does not have Mesh export
   sq::SuperquadricSampling<PointT, double> sampling;
@@ -306,6 +310,7 @@ bool SQPoseEstimation::processNext() {
     sq_cloud_->points[j].b = 0;
   }
 
+
   if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
@@ -314,15 +319,15 @@ bool SQPoseEstimation::processNext() {
   display();
 
   //Generate Object Mesh for UWSim
-  pcl::PolygonMesh mesh;
-  sampling.generateMesh (mesh);
-  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/sq.obj", mesh);
+  sampling.generateMesh (sq_mesh_);
+  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/sq.obj", sq_mesh_);
 
   //Generate centered ObjectMesh for UWSim
   min_params.transform.setIdentity();
   sampling.setParameters (min_params);
-  sampling.generateMesh (mesh);
-  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/sq_centered.obj", mesh);
+  sampling.generateMesh (sq_mesh_);
+  pcl::io::saveOBJFile ("/home/dfornas/ros_ws/src/pm_pipeline/pm_perception/data/sq_centered.obj", sq_mesh_);
+  pcl::io::saveOBJFile ("/home/dfornas/Code/openrave_scripts/objects/sq_centered.obj", sq_mesh_);
 
   //"package://pm_perception/data/sq.obj"
   vpHomogeneousMatrix r(0,0,0,-1.57,0,0);

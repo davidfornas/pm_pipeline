@@ -29,10 +29,21 @@ int main(int argc, char **argv)
   crgp.getBestGrasp();
   crgp.publishGraspList();*/
 
-  SQRankingGraspPlanner srgp(point_cloud_ptr, nh);
-  srgp.generateGraspList();
-  //srgp.getBestGrasp();
-  //srgp.publishGraspList();
+  SQRankingGraspPlanner srgp(point_cloud_ptr, nh, false);
+  bool success = srgp.generateGraspList();
+
+  while(ros::ok() && !success){
+    PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
+    PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
+    PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr, 0, 3.5);
+    PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
+    srgp.setNewCloud(point_cloud_ptr);
+    success = srgp.generateGraspList();
+  }
+
+  srgp.getBestGrasp();
+  ROS_INFO_STREAM("Publish grasp list..");
+  srgp.publishGraspList();
 
 }
 

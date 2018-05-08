@@ -158,12 +158,12 @@ class SQPoseEstimation : public PoseEstimation{
 
   CloudPtr sq_cloud_;
 
-  double sq_params_[5];
-  Eigen::Matrix4d sq_transform_;
-
   bool use_ceres_, use_region_growing_;
   double region_growing_norm_th_, region_growing_curv_th_;
   double euclidian_tolerance_;
+
+  sq::SuperquadricParameters<double> sq_params_;
+  pcl::PolygonMesh sq_mesh_;
 
 public:
 
