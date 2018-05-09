@@ -32,15 +32,18 @@ Method method;
 
 void stringCallback(const std_msgs::String &msg ){
   // DF initFromPose initFromRansac
-  if( msg.data == "initFromPose" || msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA" || msg.data == "initFromSphere"){
+  if( msg.data == "initFromPose" || msg.data == "initFromRansac" || msg.data == "initFromBox"
+      || msg.data == "initFromPCA" || msg.data == "initFromSphere" || msg.data == "initFromSQ"){
     compute_initial_cMg = true;
     //@TODO RENAME do_ransac
-    if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA" || msg.data == "initFromSphere"){
+    if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"
+        || msg.data == "initFromSphere" || msg.data == "initFromSQ"){
       do_ransac = true;
       if(msg.data == "initFromRansac") method = RANSACCylinder;
       if(msg.data == "initFromSphere") method = RANSACSphere;
       if(msg.data == "initFromBox") method = BoxPlane;
       if(msg.data == "initFromPCA") method = PCA;
+      if(msg.data == "initFromSQ") method = SQ;
     }
   }else if( msg.data == "guided" || msg.data == "interactive"){
     marker_status = (msg.data == "guided" ?  false : true );
@@ -138,12 +141,13 @@ int main(int argc, char **argv)
     PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
     end = clock();
+    pcl::copyPointCloud(*cloud, *aux_cloud);
     ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
     ROS_INFO_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
 
     sensor_msgs::PointCloud2 message;
     pcl::PCLPointCloud2 pcl_pc;
-    pcl::toPCLPointCloud2(*cloud, pcl_pc);
+    pcl::toPCLPointCloud2(*aux_cloud, pcl_pc);
     pcl_conversions::fromPCL(pcl_pc, message);
     message.header.frame_id = "camera"; //New
     cloud_pub.publish(message);
@@ -153,11 +157,11 @@ int main(int argc, char **argv)
   //Init planner
   SliderGraspPlanner * planner;
   if( do_ransac ){
-    ROS_INFO_STREAM("Specification using RANSAC.");
+    ROS_INFO_STREAM("Specification using pose estimation");
     planner = new SliderGraspPlanner(cloud, nh, object_pose_topic, method); //, VispTools::vispHomogFromTfTransform( wMc ));
     planner->pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
   }else{
-    ROS_INFO_STREAM("Specification using a input object Pose.");
+    ROS_INFO_STREAM("Specification using a input object Pose from topic.");
     planner = new SliderGraspPlanner(object_pose_topic);
   }
   begin = clock();
@@ -201,6 +205,7 @@ int main(int argc, char **argv)
       PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
       end = clock();
+      pcl::copyPointCloud(*cloud, *aux_cloud);
       ROS_INFO_STREAM("Online downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
 
@@ -208,11 +213,11 @@ int main(int argc, char **argv)
       begin = clock();
       planner->redoRansac();
       end = clock();
-      ROS_INFO_STREAM("Finished. RANSAC processing time: " << double(end - begin) / CLOCKS_PER_SEC);
+      ROS_INFO_STREAM("Finished. Pose estimation processing time: " << double(end - begin) / CLOCKS_PER_SEC);
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;
-      pcl::toPCLPointCloud2(*cloud, pcl_pc);
+      pcl::toPCLPointCloud2(*aux_cloud, pcl_pc);
       pcl_conversions::fromPCL(pcl_pc, message);
       message.header.frame_id = "camera"; //New
       cloud_pub.publish(message);
@@ -229,7 +234,7 @@ int main(int argc, char **argv)
       reset_marker = false;
       follower.resetMarker();
     }
-    if(do_ransac)
+    if(do_ransac && method == RANSACCylinder )
       planner->publishObjectPose();
 
     //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.

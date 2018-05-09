@@ -28,7 +28,7 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
 
-enum Method { RANSACCylinder, RANSACSphere, PCA, BoxPlane, Topic };
+enum Method { RANSACCylinder, RANSACSphere, PCA, BoxPlane, Topic, SQ };
 
 /** Grasp planning from object pose */
 class SliderGraspPlanner {
@@ -84,16 +84,19 @@ public:
 
     switch(method) {
       case RANSACCylinder:
-        pose_estimation = boost::shared_ptr<CylinderPoseEstimation>(new CylinderPoseEstimation(cloud));
+        pose_estimation = boost::shared_ptr<CylinderPoseEstimation>(new CylinderPoseEstimation( cloud ));
         break;
       case RANSACSphere:
-        pose_estimation = boost::shared_ptr<SpherePoseEstimation>(new SpherePoseEstimation(cloud));
+        pose_estimation = boost::shared_ptr<SpherePoseEstimation>(new SpherePoseEstimation( cloud ));
         break;
       case PCA:
-        pose_estimation = boost::shared_ptr<PCAPoseEstimation>(new PCAPoseEstimation(cloud));
+        pose_estimation = boost::shared_ptr<PCAPoseEstimation>(new PCAPoseEstimation( cloud ));
         break;
       case BoxPlane:
-        pose_estimation = boost::shared_ptr<BoxPoseEstimation>(new BoxPoseEstimation(cloud));
+        pose_estimation = boost::shared_ptr<BoxPoseEstimation>(new BoxPoseEstimation( cloud ));
+        break;
+      case SQ:
+        pose_estimation = boost::shared_ptr<SQPoseEstimation>(new SQPoseEstimation( cloud, 400, 0.01 ));
         break;
     }
     method_ = method;
