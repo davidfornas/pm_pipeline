@@ -100,10 +100,10 @@ bool BoxPoseEstimation::process() {
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
   UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
 
-  if(debug_) {
+  //if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
-  }
+  //}
   object_cloud_ = full_model;
   return true;
 }
@@ -169,13 +169,13 @@ bool PCAPoseEstimation::processNext() {
   Eigen::Matrix4f cMo_eigen;
   float width, height, depth;
   cMo_eigen = cm.getOABBox( q, t, width, height, depth );
-  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 3.1416, 0);
   UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
 
-  if(debug_) {
+  //if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
-  }
+  //}
   ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
   object_cloud_ = full_model;
   return true;
@@ -317,15 +317,15 @@ bool SQPoseEstimation::processNext() {
   Eigen::Quaternionf q; Eigen::Vector3f t;
   Eigen::Matrix4f cMo_eigen; float width, height, depth;
   cMo_eigen = cm.getOABBox( q, t, width, height, depth );
-  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);// TO SET: * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, -1.57, 0, 0);
   cMo[0][3] = transform [0][3];
   cMo[1][3] = transform [1][3];
   cMo[2][3] = transform [2][3];
 
-  if(debug_) {
+  //if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
-  }
+  //}
   object_cloud_ = full_model;
   display();
 
@@ -422,10 +422,10 @@ bool CylinderPoseEstimation::initialize() {
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
-  if(debug_) {
+  //if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
-  }
+  //}
   object_cloud_ = cloud_cylinder;
   return true;
 
@@ -495,10 +495,10 @@ bool CylinderPoseEstimation::process() {
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  if(debug_) {
+  //if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
-  }
+  //}
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious,radious,height);
@@ -615,10 +615,10 @@ bool SpherePoseEstimation::process() {
   cMo[2][0]=result.z(); cMo[2][1]=ground_plane_normal.z(); cMo[2][2]=ground_plane_vector.z();cMo[2][3]=sphere_centre.z();
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
-  if(debug_) {
+  //if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
-  }
+  //}
   vpHomogeneousMatrix sphere;
   sphere = cMo ;//* vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishSphereMarker(sphere ,radious,radious,radious);
