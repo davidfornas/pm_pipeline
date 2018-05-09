@@ -68,7 +68,7 @@ public:
   void display();
 
   /** Display result  */
-  void displayColoured();
+  void displayColoured( int ms = 500 );
 
 };
 
@@ -97,13 +97,18 @@ void CloudClustering<PointT>::display()
 }
 
 template<typename PointT>
-void CloudClustering<PointT>::displayColoured()
+void CloudClustering<PointT>::displayColoured( int ms )
 {
 	pcl::visualization::PCLVisualizer viewer("Cluster viewer coloured");
 	if (!cloud_clusters.empty ()) viewer.addPointCloud(colored_cloud, "id");
     viewer.setBackgroundColor(0.8,0.8,0.8);
-	while (!viewer.wasStopped() )
-		viewer.spinOnce();
+  int elapsed = 0;
+  while (!viewer.wasStopped() && elapsed < ms )
+  {
+    elapsed += 20;
+    viewer.spinOnce(20);
+    boost::this_thread::sleep(boost::posix_time::microseconds(20000));
+  }
 }
 
 template<typename PointT>

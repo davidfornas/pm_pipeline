@@ -195,7 +195,7 @@ public:
     region_growing_curv_th_ = region_growing_curv_th;
   }
 
-  void display();
+  void display( int ms = 500 );
 
 };
 

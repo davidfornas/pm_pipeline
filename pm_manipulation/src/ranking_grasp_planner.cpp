@@ -7,7 +7,7 @@
 #include <pm_manipulation/ranking_grasp_planner.h>
 #include <std_msgs/Float32MultiArray.h>
 
-void RankingGraspPlanner::generateGraspList()
+bool RankingGraspPlanner::generateGraspList()
 {
   pose_estimation->initialize();
   cMo = pose_estimation->get_cMo();
@@ -36,6 +36,7 @@ void RankingGraspPlanner::generateGraspList()
   }
   ROS_INFO("Hypothesis generated.");
   //std::sort(grasps.begin(), grasps.end(), sortByScore);
+  return true;
 }
 
 //Generate Hypotheiss list @TODO Fix and Improve
@@ -102,7 +103,6 @@ void RankingGraspPlanner::filterGraspList(){
 //  }
 }
 
-
 bool SQRankingGraspPlanner::generateGraspList() {
 
   ROS_INFO("SQ Pose estimation...");
@@ -139,24 +139,23 @@ bool SQRankingGraspPlanner::generateGraspList() {
 }
 
 void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
+
   grasps_read++;
+  ORGraspHypothesis g;
+  g.cMo = cMo;
 
-  vpHomogeneousMatrix oMg;
-  oMg[0][0] = msg->data[2];  oMg[0][1] = msg->data[3];  oMg[0][2] = msg->data[4];  oMg[0][3] = msg->data[5];
-  oMg[1][0] = msg->data[6];  oMg[1][1] = msg->data[7];  oMg[1][2] = msg->data[8];  oMg[1][3] = msg->data[9];
-  oMg[2][0] = msg->data[10]; oMg[2][1] = msg->data[11]; oMg[2][2] = msg->data[12]; oMg[2][3] = msg->data[13];
-  oMg[3][0] = msg->data[14]; oMg[3][1] = msg->data[15]; oMg[3][2] = msg->data[16]; oMg[3][3] = msg->data[17];
-  vpHomogeneousMatrix cMg;
-  cMg = cMo * oMg;
+  g.oMg[0][0] = msg->data[2];  g.oMg[0][1] = msg->data[3];  g.oMg[0][2] = msg->data[4];  g.oMg[0][3] = msg->data[5];
+  g.oMg[1][0] = msg->data[6];  g.oMg[1][1] = msg->data[7];  g.oMg[1][2] = msg->data[8];  g.oMg[1][3] = msg->data[9];
+  g.oMg[2][0] = msg->data[10]; g.oMg[2][1] = msg->data[11]; g.oMg[2][2] = msg->data[12]; g.oMg[2][3] = msg->data[13];
+  g.oMg[3][0] = msg->data[14]; g.oMg[3][1] = msg->data[15]; g.oMg[3][2] = msg->data[16]; g.oMg[3][3] = msg->data[17];
 
-  GraspHypothesis g0;
-  g0 = generateGraspHypothesis( cMg );
+  g.cMg = g.cMo * g.oMg;
 
-  ORGraspHypothesis g(g0);
+  //GraspHypothesis g0;
+  //g0 = generateGraspHypothesis( cMg );
+
   g.preshapes[0] = msg->data[0];
   g.preshapes[1] = msg->data[1];
-
-  g.oMg = oMg;
 
   g.measures[0] = msg->data[18];
   g.measures[1] = msg->data[19];
@@ -165,5 +164,14 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
   g.measures[4] = msg->data[22];
   g.measures[5] = msg->data[23];
 
-  or_grasp_list.push_back(g);
+  grasps.push_back(g);
+  ROS_INFO_STREAM("Measure 0: " << grasps.back().measures[0]);
+  ROS_INFO_STREAM("cMg: " << grasps.back().cMg);
+  ROS_INFO_STREAM("oMg: " << grasps.back().oMg);
+  ROS_INFO_STREAM("own cMo: " << grasps.back().cMo);;
+  ROS_INFO_STREAM("cMo: " << cMo);
+
+  ROS_ERROR_STREAM("cMo is HOMO: " << grasps.back().cMg.isAnHomogeneousMatrix());
+  ROS_ERROR_STREAM("cMo is HOMO: " << grasps.back().cMo.isAnHomogeneousMatrix());
+  ROS_ERROR_STREAM("oMg is HOMO: " << grasps.back().oMg.isAnHomogeneousMatrix());
 }

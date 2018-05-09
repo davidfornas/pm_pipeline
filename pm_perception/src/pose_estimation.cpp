@@ -310,7 +310,6 @@ bool SQPoseEstimation::processNext() {
     sq_cloud_->points[j].b = 0;
   }
 
-
   if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
     vispToTF.publish();
@@ -335,7 +334,7 @@ bool SQPoseEstimation::processNext() {
   return true;
 }
 
-void SQPoseEstimation::display(){
+void SQPoseEstimation::display( int ms ){
   pcl::visualization::PCLVisualizer *p;
   p = new pcl::visualization::PCLVisualizer("SQ Fitting");
 
@@ -344,7 +343,13 @@ void SQPoseEstimation::display(){
   p->setBackgroundColor(0.8,0.8,0.8);
   p->addPointCloud(object_cloud_, ob_h, "c1");
   p->addPointCloud(sq_cloud_, sq_h, "c2");
-  p->spin();
+  int elapsed = 0;
+  while (!p->wasStopped() && elapsed < ms )
+  {
+    elapsed += 20;
+    p->spinOnce(20);
+    boost::this_thread::sleep(boost::posix_time::microseconds(20000));
+  }
 }
 
 bool CylinderPoseEstimation::initialize() {

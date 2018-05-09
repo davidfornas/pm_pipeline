@@ -44,7 +44,7 @@ class ORGraspHypothesis : public GraspHypothesis{
 
 public:
 
-  vpHomogeneousMatrix oMg;
+  vpHomogeneousMatrix oMg, cMo;
   double preshapes[2];
   double measures[6];
 
@@ -67,7 +67,12 @@ public:
 };
 
 // Sort function
-bool sortByScore(GraspHypothesis a, GraspHypothesis b){
+bool sortByScore( GraspHypothesis a, GraspHypothesis b ){
+  return a.overall_score < b.overall_score;
+}
+
+// Sort function
+bool sortByScoreOR( ORGraspHypothesis a, ORGraspHypothesis b){
   return a.overall_score < b.overall_score;
 }
 
@@ -106,6 +111,8 @@ public:
   RankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false) : nh_(nh), debug_(debug) {
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMg", "cMg");
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMg_ik", "cMg_ik");
+    vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/object", "cMo");
+    vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/object", "/grasp", "oMg");
   }
 
   /** Cloud set */
@@ -114,8 +121,10 @@ public:
   }
 
   /** Start pose estimation, generate a grasp list and rank it. */
-  void generateGraspList();
+  bool generateGraspList();
+
   GraspHypothesis generateGraspHypothesis( vpHomogeneousMatrix cMg );
+
   void filterGraspList();
 
   /** Get best rasp based on ranking. Bigger score is worse. */
@@ -128,6 +137,7 @@ public:
 
   /** @TODO Publish one object pose. Mainly to display in UWSim **/
   void publishObjectPose(){
+    vispToTF_.resetTransform( cMo, "cMo");
     //pos_pub_.publish( VispTools::geometryPoseFromVispHomog(cMo) );
     ros::spinOnce();
   }
@@ -192,13 +202,14 @@ class SQRankingGraspPlanner : public RankingGraspPlanner {
 public:
 
   //Grasp list from OR computing
-  std::list<ORGraspHypothesis> or_grasp_list;
+  std::list<ORGraspHypothesis> grasps;
+  boost::shared_ptr<SQPoseEstimation> pose_estimation;
 
   /** Constructor  * */
   SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false) : RankingGraspPlanner(cloud, nh, debug){
     // @TODO SWITCH METHOD.
     pose_estimation = boost::shared_ptr<SQPoseEstimation>( new SQPoseEstimation(cloud, 400, 0.01) );
-    //pose_est->setRegionGrowingClustering(8.0, 8.0);
+    pose_estimation->setRegionGrowingClustering(8.0, 8.0);
     //pose_est->setLMFitting();
     //pose_est->setSymmetrySearchParams(0.0);
     //pose_est->setSymmetrySearchParams(0.40, 0.05, 0.2);
@@ -206,7 +217,7 @@ public:
     pose_estimation->setDebug(debug_);
     params_pub = nh.advertise<std_msgs::Float32MultiArray>("/generate_grasp_parameters", 10);
     grasps_sub = nh.subscribe("/grasp_result", 20, &SQRankingGraspPlanner::graspCallback, this);
-    setGraspsParams(10);
+    setGraspsParams(3);
   }
 
   bool generateGraspList();
@@ -225,6 +236,26 @@ public:
     standoffs.push_back(0.04);
     standoffs.push_back(0.08);
     standoffs.push_back(0.12);
+  }
+
+  /** Publish grasp list sequentially in TF. **/
+  void publishGraspList( double wait_time = 0.5){
+      for (std::list<ORGraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it) {
+        vispToTF_.resetTransform( (*it).cMg, "cMg");
+        vispToTF_.resetTransform( (*it).cMo, "cMo");
+        vispToTF_.resetTransform( (*it).oMg, "oMg");
+        vispToTF_.publish();
+        ros::spinOnce();
+        ros::Duration( wait_time ).sleep();
+      }
+  }
+
+  /** Get best rasp based on ranking. Bigger score is worse. */
+  vpHomogeneousMatrix getBestGrasp(){
+    grasps.sort(sortByScoreOR);
+    ROS_INFO_STREAM("Best grasp: " << grasps.front().overall_score);
+    ROS_INFO_STREAM("List size: " << grasps.size() << "Worst grasp: " << grasps.back().overall_score);
+    return grasps.front().cMg;
   }
 
   ~SQRankingGraspPlanner() {}
