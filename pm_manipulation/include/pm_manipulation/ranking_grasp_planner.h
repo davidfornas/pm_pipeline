@@ -210,7 +210,7 @@ public:
     // @TODO SWITCH METHOD.
     pose_estimation = boost::shared_ptr<SQPoseEstimation>( new SQPoseEstimation(cloud, 400, 0.01) );
     pose_estimation->setRegionGrowingClustering(8.0, 8.0);
-    //pose_est->setLMFitting();
+    //pose_estimation->setLMFitting();
     //pose_est->setSymmetrySearchParams(0.0);
     //pose_est->setSymmetrySearchParams(0.40, 0.05, 0.2);
     //pose_est->setAxisSymmetryMode();

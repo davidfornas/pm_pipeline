@@ -142,6 +142,7 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
 
   grasps_read++;
   ORGraspHypothesis g;
+  //GENERATE IK AND SCORES LIKE IN g0 = generateGraspHypothesis( cMg );
   g.cMo = cMo;
 
   g.oMg[0][0] = msg->data[2];  g.oMg[0][1] = msg->data[3];  g.oMg[0][2] = msg->data[4];  g.oMg[0][3] = msg->data[5];
@@ -150,9 +151,6 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
   g.oMg[3][0] = msg->data[14]; g.oMg[3][1] = msg->data[15]; g.oMg[3][2] = msg->data[16]; g.oMg[3][3] = msg->data[17];
 
   g.cMg = g.cMo * g.oMg;
-
-  //GraspHypothesis g0;
-  //g0 = generateGraspHypothesis( cMg );
 
   g.preshapes[0] = msg->data[0];
   g.preshapes[1] = msg->data[1];
@@ -165,13 +163,4 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
   g.measures[5] = msg->data[23];
 
   grasps.push_back(g);
-  ROS_INFO_STREAM("Measure 0: " << grasps.back().measures[0]);
-  ROS_INFO_STREAM("cMg: " << grasps.back().cMg);
-  ROS_INFO_STREAM("oMg: " << grasps.back().oMg);
-  ROS_INFO_STREAM("own cMo: " << grasps.back().cMo);;
-  ROS_INFO_STREAM("cMo: " << cMo);
-
-  ROS_ERROR_STREAM("cMo is HOMO: " << grasps.back().cMg.isAnHomogeneousMatrix());
-  ROS_ERROR_STREAM("cMo is HOMO: " << grasps.back().cMo.isAnHomogeneousMatrix());
-  ROS_ERROR_STREAM("oMg is HOMO: " << grasps.back().oMg.isAnHomogeneousMatrix());
 }

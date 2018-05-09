@@ -30,7 +30,7 @@ int main(int argc, char **argv)
   crgp.publishGraspList();*/
 
   SQRankingGraspPlanner srgp(point_cloud_ptr, nh, true);
-  srgp.setGraspsParams(100);
+  srgp.setGraspsParams(1);
   bool success = srgp.generateGraspList();
 
   while(ros::ok() && !success){

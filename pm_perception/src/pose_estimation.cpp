@@ -312,11 +312,12 @@ bool SQPoseEstimation::processNext() {
     sq_cloud_->points[j].b = 0;
   }
 
+  //Fix rotation ISSUE where SQ rotation matrix sometimes is weird.
   ClusterMeasure<PointT> cm(sq_cloud_, false);
   Eigen::Quaternionf q; Eigen::Vector3f t;
   Eigen::Matrix4f cMo_eigen; float width, height, depth;
   cMo_eigen = cm.getOABBox( q, t, width, height, depth );
-  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);// * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);// TO SET: * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
   cMo[0][3] = transform [0][3];
   cMo[1][3] = transform [1][3];
   cMo[2][3] = transform [2][3];
