@@ -244,7 +244,7 @@ bool SQPoseEstimation::processNext() {
   // Call to SQ Computing
   double min_fit = std::numeric_limits<double>::max ();
   sq::SuperquadricParameters<double> min_params;
-
+  int i_aux;
   if(use_ceres_){
     sq::SuperquadricFittingCeres<PointT, double> sq_fit;
     sq_fit.setInputCloud (full_model);
@@ -260,6 +260,7 @@ bool SQPoseEstimation::processNext() {
       {
         min_fit = fit;
         min_params = params;
+        i_aux = i;
       }
     }
   }else{
@@ -277,6 +278,7 @@ bool SQPoseEstimation::processNext() {
       {
         min_fit = fit;
         min_params = params;
+        i_aux = i;
       }
     }
   }
@@ -289,7 +291,7 @@ bool SQPoseEstimation::processNext() {
            min_params.transform (2, 0), min_params.transform (2, 1), min_params.transform (2, 2), min_params.transform (2, 3),
            min_params.transform (3, 0), min_params.transform (3, 1), min_params.transform (3, 2), min_params.transform (3, 3));
 
-  cMo = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
+  vpHomogeneousMatrix transform = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
 
   if(min_params.e1 == 0 && min_params.e2 == 0 && min_params.a == 1 && min_params.b == 1 && min_params.c ==1)
     return false;
@@ -309,6 +311,15 @@ bool SQPoseEstimation::processNext() {
     sq_cloud_->points[j].g = 0;
     sq_cloud_->points[j].b = 0;
   }
+
+  ClusterMeasure<PointT> cm(sq_cloud_, false);
+  Eigen::Quaternionf q; Eigen::Vector3f t;
+  Eigen::Matrix4f cMo_eigen; float width, height, depth;
+  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
+  cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen);// * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+  cMo[0][3] = transform [0][3];
+  cMo[1][3] = transform [1][3];
+  cMo[2][3] = transform [2][3];
 
   if(debug_) {
     vispToTF.resetTransform(cMo, "cMo");
