@@ -30,7 +30,7 @@ int main(int argc, char **argv)
   crgp.publishGraspList();*/
 
   SQRankingGraspPlanner srgp(point_cloud_ptr, nh, true);
-  srgp.setGraspsParams(1);
+  srgp.setGraspsParams(80);
   bool success = srgp.generateGraspList();
 
   while(ros::ok() && !success){
@@ -42,11 +42,14 @@ int main(int argc, char **argv)
     success = srgp.generateGraspList();
   }
 
-  //srgp.getBestGrasp();
+  vpHomogeneousMatrix best;
+  best = srgp.getBestGrasp();
+  srgp.filterGraspList();
+  best = srgp.getBestGrasp();
 
   while(ros::ok()) {
     ROS_INFO_STREAM("Publish grasp list..");
-    srgp.publishGraspList(0.3);
+    srgp.publishGraspList( 1.5 );
   }
 
 }

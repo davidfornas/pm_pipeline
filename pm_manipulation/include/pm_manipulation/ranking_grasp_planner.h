@@ -206,7 +206,7 @@ public:
   boost::shared_ptr<SQPoseEstimation> pose_estimation;
 
   /** Constructor  * */
-  SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false) : RankingGraspPlanner(cloud, nh, debug){
+  SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false, int num_grasps = 5) : RankingGraspPlanner(cloud, nh, debug){
     // @TODO SWITCH METHOD.
     pose_estimation = boost::shared_ptr<SQPoseEstimation>( new SQPoseEstimation(cloud, 400, 0.01) );
     pose_estimation->setRegionGrowingClustering(8.0, 8.0);
@@ -217,12 +217,14 @@ public:
     pose_estimation->setDebug(debug_);
     params_pub = nh.advertise<std_msgs::Float32MultiArray>("/generate_grasp_parameters", 10);
     grasps_sub = nh.subscribe("/grasp_result", 20, &SQRankingGraspPlanner::graspCallback, this);
-    setGraspsParams(3);
+    setGraspsParams(num_grasps);
   }
 
   bool generateGraspList();
 
   void graspCallback(const std_msgs::Float32MultiArray::ConstPtr& msg);
+
+  void generateGraspScores( ORGraspHypothesis & grasp );
 
   void setGraspsParams( int n = 20, double arange = 0.4, double dspace = 0.04,
                         double roll1 = 0, double roll2 = 3.1416 * 2, double roll3 = 3.1416 / 2 ){
@@ -239,24 +241,12 @@ public:
   }
 
   /** Publish grasp list sequentially in TF. **/
-  void publishGraspList( double wait_time = 0.5){
-      for (std::list<ORGraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it) {
-        vispToTF_.resetTransform( (*it).cMg, "cMg");
-        vispToTF_.resetTransform( (*it).cMo, "cMo");
-        vispToTF_.resetTransform( (*it).oMg, "oMg");
-        vispToTF_.publish();
-        ros::spinOnce();
-        ros::Duration( wait_time ).sleep();
-      }
-  }
+  void publishGraspList( double wait_time = 0.5);
 
   /** Get best rasp based on ranking. Bigger score is worse. */
-  vpHomogeneousMatrix getBestGrasp(){
-    grasps.sort(sortByScoreOR);
-    ROS_INFO_STREAM("Best grasp: " << grasps.front().overall_score);
-    ROS_INFO_STREAM("List size: " << grasps.size() << "Worst grasp: " << grasps.back().overall_score);
-    return grasps.front().cMg;
-  }
+  vpHomogeneousMatrix getBestGrasp();
+
+  void filterGraspList();
 
   ~SQRankingGraspPlanner() {}
 

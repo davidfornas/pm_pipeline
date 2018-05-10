@@ -142,13 +142,13 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
 
   grasps_read++;
   ORGraspHypothesis g;
-  //GENERATE IK AND SCORES LIKE IN g0 = generateGraspHypothesis( cMg );
   g.cMo = cMo;
 
   g.oMg[0][0] = msg->data[2];  g.oMg[0][1] = msg->data[3];  g.oMg[0][2] = msg->data[4];  g.oMg[0][3] = msg->data[5];
   g.oMg[1][0] = msg->data[6];  g.oMg[1][1] = msg->data[7];  g.oMg[1][2] = msg->data[8];  g.oMg[1][3] = msg->data[9];
   g.oMg[2][0] = msg->data[10]; g.oMg[2][1] = msg->data[11]; g.oMg[2][2] = msg->data[12]; g.oMg[2][3] = msg->data[13];
   g.oMg[3][0] = msg->data[14]; g.oMg[3][1] = msg->data[15]; g.oMg[3][2] = msg->data[16]; g.oMg[3][3] = msg->data[17];
+  g.oMg = vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * g.oMg;
 
   g.cMg = g.cMo * g.oMg;
 
@@ -162,5 +162,75 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
   g.measures[4] = msg->data[22];
   g.measures[5] = msg->data[23];
 
+  generateGraspScores(g);
+
   grasps.push_back(g);
+}
+
+void SQRankingGraspPlanner::generateGraspScores( ORGraspHypothesis & grasp ) {
+
+  vpHomogeneousMatrix bMg = bMc * grasp.cMg;
+  vpColVector final_joints(5), final_joints2(5);
+  final_joints = robot.armIK(bMg);
+  vpHomogeneousMatrix bMg_fk;
+  final_joints2[0] = final_joints[0];
+  final_joints2[1] = final_joints[1];
+  final_joints2[2] = final_joints[2];
+  final_joints2[3] = 1.57;
+  final_joints2[4] = 0;
+  bMg_fk = robot.directKinematics(final_joints2);
+  grasp.cMg_ik = bMc.inverse() * bMg_fk;
+//Compute score
+  grasp.distance_ik_score = (grasp.cMg.getCol(3) - grasp.cMg_ik.getCol(3)).euclideanNorm();
+  grasp.angle_ik_score = abs(angle(grasp.cMg.getCol(2), grasp.cMg_ik.getCol(2)));
+  grasp.angle_axis_score = abs(abs(angle(grasp.cMo.getCol(1), grasp.cMg_ik.getCol(2))) - 1);//Angle between cylinder axis and grasp axis.1 rad is preferred
+  grasp.distance_score = abs((grasp.cMo.getCol(3) - grasp.cMg_ik.getCol(3)).euclideanNorm() - 0.35);//35cm is preferred
+  grasp.overall_score = grasp.distance_ik_score * 100 + grasp.angle_ik_score * 10 + grasp.angle_axis_score +
+                        grasp.distance_score * 2;//Should be argued. Now is only a matter of priority.
+}
+
+//As a kinematic filter will be applied, I prefered to do it externally to avoid adding more deps.
+void SQRankingGraspPlanner::filterGraspList(){
+  std::list<ORGraspHypothesis>::iterator it = grasps.begin();
+  while (it != grasps.end())
+  {
+    PointT center;
+    center.x = (*it).cMg[0][3];
+    center.y = (*it).cMg[1][3];
+    center.z = (*it).cMg[2][3];
+    if (pose_estimation->bg_remove->signedDistanceToPlane( center ) > -0.10)
+    {
+      it = grasps.erase(it);
+    }else{
+      it++;
+    }
+  }
+
+}
+
+/** Publish grasp list sequentially in TF. **/
+void SQRankingGraspPlanner::publishGraspList( double wait_time ){
+  for (std::list<ORGraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it) {
+    vispToTF_.resetTransform( (*it).cMg, "cMg");
+    vispToTF_.resetTransform( (*it).cMo, "cMo");
+    vispToTF_.resetTransform( (*it).oMg, "oMg");
+    vispToTF_.resetTransform( (*it).cMg_ik, "cMg_ik");
+    vispToTF_.publish();
+    ROS_INFO_STREAM("Score" << (*it).overall_score );
+    PointT center;
+    center.x = (*it).cMg[0][3];
+    center.y = (*it).cMg[1][3];
+    center.z = (*it).cMg[2][3];
+    ROS_INFO_STREAM("Distance" << pose_estimation->bg_remove->signedDistanceToPlane( center )) ;
+    ros::spinOnce();
+    ros::Duration( wait_time ).sleep();
+  }
+}
+
+/** Get best rasp based on ranking. Bigger score is worse. */
+vpHomogeneousMatrix SQRankingGraspPlanner::getBestGrasp(){
+  grasps.sort(sortByScoreOR);
+  ROS_INFO_STREAM("Best grasp: " << grasps.front().overall_score);
+  ROS_INFO_STREAM("List size: " << grasps.size() << "Worst grasp: " << grasps.back().overall_score);
+  return grasps.front().cMg;
 }
