@@ -40,7 +40,15 @@ void BackgroundRemoval::process(CloudPtr & output, pcl::PointCloud<pcl::Normal>:
 
 }
 
+/* Obtain signed distance to plane */
+double BackgroundRemoval::signedDistanceToPlane( PointT p ){
+  return PCLTools<PointT>::signedDistanceToPlane( p, coefficients_plane->values[0], coefficients_plane->values[1],
+                                                     coefficients_plane->values[2], coefficients_plane->values[3] );
+}
+
 void BackgroundRemoval::removeIteratively(CloudPtr & output){
+
+  ROS_ERROR("NOT IMPLEMENTED YET");
 
 /*    ITERATIVE PLANE EXTRACTION
 // Create the segmentation object for the planar model and set all the parameters

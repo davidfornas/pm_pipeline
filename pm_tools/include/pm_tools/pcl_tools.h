@@ -244,6 +244,10 @@ public:
     }
   }
 
+  static double signedDistanceToPlane( PointT p, double a, double b, double c, double d){
+    return (a * p.x + b * p.y + c * p.z + d);
+  }
+
   static PointT projectPoint(PointT P, PointT origin, PointT direction_unit_vector){
     PointT A, AP, AB, projection;
     A = origin;

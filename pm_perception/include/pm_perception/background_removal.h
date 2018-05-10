@@ -64,6 +64,9 @@ public:
   /* Remove bg plane iteratively */
   void removeIteratively(CloudPtr & output);
 
+  /* Obtain signed distance to plane */
+  double signedDistanceToPlane( PointT p );
+
   ~BackgroundRemoval(){}
 
   typedef boost::shared_ptr<BackgroundRemoval> Ptr;
