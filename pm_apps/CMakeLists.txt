@@ -24,6 +24,7 @@ add_executable(pca_pose_estimation_test src/pca_pose_estimation_test.cpp)
 add_executable(sq_pose_estimation_test src/sq_pose_estimation_test.cpp)
 add_executable(octomap_test src/octomap_test.cpp)
 add_executable(grasp_ranking_test src/grasp_ranking_test.cpp)
+add_executable(sq_grasp_ranking_test src/sq_grasp_ranking_test.cpp)
 
 
 target_link_libraries(border_following ${catkin_LIBRARIES} )
@@ -42,3 +43,4 @@ target_link_libraries(pca_pose_estimation_test ${catkin_LIBRARIES} )
 target_link_libraries(sq_pose_estimation_test ${catkin_LIBRARIES} )
 target_link_libraries(octomap_test ${catkin_LIBRARIES} )
 target_link_libraries(grasp_ranking_test ${catkin_LIBRARIES} )
+target_link_libraries(sq_grasp_ranking_test ${catkin_LIBRARIES} )

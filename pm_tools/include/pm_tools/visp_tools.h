@@ -33,6 +33,8 @@ public:
   static vpHomogeneousMatrix EigenMatrix4fToVpHomogeneousMatrix(Eigen::Matrix4f &in);
   static vpHomogeneousMatrix EigenMatrixDouble44ToVpHomogeneousMatrix(Eigen::Matrix<double,4,4> &in);
   static Eigen::Vector3f rotateVector( Eigen::Vector3f & vector, double x, double y, double z );
+  static double angle(vpColVector a, vpColVector b);
+
 };
 
 

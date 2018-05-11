@@ -20,8 +20,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 
-//@TODO Create a server for this planner
-#include <pm_manipulation/slider_grasp_planner.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -60,7 +58,7 @@ void stringCallback(const std_msgs::String &msg ){
 int main(int argc, char **argv)
 {
   // Set up ROS.
-  ros::init(argc, argv, "grasp_server_split");
+  ros::init(argc, argv, "slider_grasp_server_split");
   ros::NodeHandle nh;
 
   std::string input_topic("/input_cloud"), final_grasp_pose_topic("/desired_grasp_pose"), cloud_frame_id("sense3d"), object_pose_topic("/object");

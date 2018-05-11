@@ -1,5 +1,5 @@
 /** 
- * Test CylinderRankingGraspPlanner
+ * Test SQRankingGraspPlanner
  *
  *  Created on: 29/03/2018
  *      Author: dfornas
@@ -24,13 +24,26 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-  CylinderRankingGraspPlanner crgp(point_cloud_ptr, nh);
-  crgp.generateGraspList();
-  crgp.getBestGrasp();
+  SQRankingGraspPlanner srgp(point_cloud_ptr, nh, true);
+  srgp.setGraspsParams(300, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
+  bool success = srgp.generateGraspList();
+
+  while(ros::ok() && !success){
+    PCLTools<PointT>::cloudFromTopic(point_cloud_ptr, filename);
+    PCLTools<PointT>::removeNanPoints(point_cloud_ptr);
+    PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr, 0, 3.5);
+    PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
+    srgp.setNewCloud(point_cloud_ptr);
+    success = srgp.generateGraspList();
+  }
+
+  vpHomogeneousMatrix best;
+  srgp.filterGraspList();
+  best = srgp.getBestGrasp();
 
   while(ros::ok()) {
     ROS_INFO_STREAM("Publish grasp list..");
-    crgp.publishGraspList();
+    srgp.publishGraspList( 1.5 );
   }
 
 }

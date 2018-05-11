@@ -53,14 +53,14 @@ GraspHypothesis RankingGraspPlanner::generateGraspHypothesis( vpHomogeneousMatri
   final_joints2[2] = final_joints[2];
   final_joints2[3] = 1.57;
   final_joints2[4] = 0;
-  bMg_fk = robot.directKinematics(final_joints2);
-  g.cMg_ik = bMc.inverse()*bMg_fk;
+  bMg_fk = robot.directKinematics( final_joints2 );
+  g.cMg_ik = bMc.inverse() * bMg_fk;
   //Compute score
-  g.distance_ik_score = (g.cMg.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm();
-  g.angle_ik_score = abs(angle(g.cMg.getCol(2), g.cMg_ik.getCol(2)));
-  g.angle_axis_score = abs(abs(angle(cMo.getCol(1), g.cMg_ik.getCol(2)))-1);//Angle between cylinder axis and grasp axis.1 rad is preferred
-  g.distance_score = abs((cMo.getCol(3) - g.cMg_ik.getCol(3)).euclideanNorm()-0.35);//35cm is preferred
-  g.overall_score = g.distance_ik_score * 100 + g.angle_ik_score *10+g.angle_axis_score+g.distance_score*2;//Should be argued. Now is only a matter of priority.
+  g.distance_ik_score = ( g.cMg.getCol(3) - g.cMg_ik.getCol(3) ).euclideanNorm();
+  g.angle_ik_score = abs( VispTools::angle( g.cMg.getCol(2), g.cMg_ik.getCol(2) ) );
+  g.angle_axis_score = abs( abs( VispTools::angle( cMo.getCol(1), g.cMg_ik.getCol(2) ) ) -1 );//Angle between cylinder axis and grasp axis.1 rad is preferred
+  g.distance_score = abs( ( cMo.getCol(3) - g.cMg_ik.getCol(3) ).euclideanNorm() - 0.35 );//35cm is preferred
+  g.overall_score = g.distance_ik_score * 100 + g.angle_ik_score *10 + g.angle_axis_score + g.distance_score * 2;//Should be argued. Now is only a matter of priority.
   return g;
 }
 
@@ -181,16 +181,19 @@ void SQRankingGraspPlanner::generateGraspScores( ORGraspHypothesis & grasp ) {
   bMg_fk = robot.directKinematics(final_joints2);
   grasp.cMg_ik = bMc.inverse() * bMg_fk;
 //Compute score
-  grasp.distance_ik_score = (grasp.cMg.getCol(3) - grasp.cMg_ik.getCol(3)).euclideanNorm();
-  grasp.angle_ik_score = abs(angle(grasp.cMg.getCol(2), grasp.cMg_ik.getCol(2)));
-  grasp.angle_axis_score = abs(abs(angle(grasp.cMo.getCol(1), grasp.cMg_ik.getCol(2))) - 1);//Angle between cylinder axis and grasp axis.1 rad is preferred
-  grasp.distance_score = abs((grasp.cMo.getCol(3) - grasp.cMg_ik.getCol(3)).euclideanNorm() - 0.35);//35cm is preferred
+  grasp.distance_ik_score = ( grasp.cMg.getCol(3) - grasp.cMg_ik.getCol(3)).euclideanNorm();
+  grasp.angle_ik_score = abs( VispTools::angle(grasp.cMg.getCol(2), grasp.cMg_ik.getCol(2)));
+  grasp.angle_axis_score = abs(abs( VispTools::angle(grasp.cMo.getCol(1), grasp.cMg_ik.getCol(2))) - 1);//Angle between cylinder axis and grasp axis.1 rad is preferred
+  grasp.distance_score = abs(( grasp.cMo.getCol(3) - grasp.cMg_ik.getCol(3) ).euclideanNorm() - 0.35);//35cm is preferred
   grasp.overall_score = grasp.distance_ik_score * 100 + grasp.angle_ik_score * 10 + grasp.angle_axis_score +
                         grasp.distance_score * 2;//Should be argued. Now is only a matter of priority.
 }
 
-//As a kinematic filter will be applied, I prefered to do it externally to avoid adding more deps.
+//Filter grasp list using different constraints.
 void SQRankingGraspPlanner::filterGraspList(){
+
+  double min_dist_to_floor = 0.10;
+
   std::list<ORGraspHypothesis>::iterator it = grasps.begin();
   while (it != grasps.end())
   {
@@ -198,14 +201,15 @@ void SQRankingGraspPlanner::filterGraspList(){
     center.x = (*it).cMg[0][3];
     center.y = (*it).cMg[1][3];
     center.z = (*it).cMg[2][3];
-    if (pose_estimation->bg_remove->signedDistanceToPlane( center ) > -0.10)
+    if (pose_estimation->bg_remove->signedDistanceToPlane( center ) > -min_dist_to_floor)
     {
+      it = grasps.erase(it);
+    }else if ((*it).overall_score > 15.) {
       it = grasps.erase(it);
     }else{
       it++;
     }
   }
-
 }
 
 /** Publish grasp list sequentially in TF. **/

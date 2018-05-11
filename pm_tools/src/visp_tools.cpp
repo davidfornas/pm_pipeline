@@ -183,3 +183,8 @@ Eigen::Vector3f VispTools::rotateVector( Eigen::Vector3f & vector, double x, dou
 
 }
 
+// Angle between two vectors
+double VispTools::angle(vpColVector a, vpColVector b){
+  return acos(vpColVector::dotProd(a, b) / (a.euclideanNorm() * b.euclideanNorm()));
+}
+

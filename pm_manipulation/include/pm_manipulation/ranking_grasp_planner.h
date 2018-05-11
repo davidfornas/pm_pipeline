@@ -76,10 +76,7 @@ bool sortByScoreOR( ORGraspHypothesis a, ORGraspHypothesis b){
   return a.overall_score < b.overall_score;
 }
 
-// Angle between two vectors
-double angle(vpColVector a, vpColVector b){
-  return acos(vpColVector::dotProd(a, b) / (a.euclideanNorm() * b.euclideanNorm()));
-}
+
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -234,10 +231,13 @@ public:
     roll_arange_init = roll1;
     roll_arange_end = roll2;
     roll_arange_step = roll3;
+    standoffs.push_back(0.00);
     standoffs.push_back(0.02);
     standoffs.push_back(0.04);
-    standoffs.push_back(0.08);
+    standoffs.push_back(0.05);
+    standoffs.push_back(0.09);
     standoffs.push_back(0.12);
+    standoffs.push_back(0.14);
   }
 
   /** Publish grasp list sequentially in TF. **/
@@ -246,6 +246,7 @@ public:
   /** Get best rasp based on ranking. Bigger score is worse. */
   vpHomogeneousMatrix getBestGrasp();
 
+  /** Filter grasp list using different constraints. */
   void filterGraspList();
 
   ~SQRankingGraspPlanner() {}
