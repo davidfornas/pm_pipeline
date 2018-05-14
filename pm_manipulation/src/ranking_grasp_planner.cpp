@@ -7,8 +7,80 @@
 #include <pm_manipulation/ranking_grasp_planner.h>
 #include <std_msgs/Float32MultiArray.h>
 
-bool RankingGraspPlanner::generateGraspList()
-{
+/** Publish grasp list sequentially in TF. **/
+void RankingGraspPlanner::publishGraspList(){
+  while (ros::ok()){
+    for (std::list<GraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it){
+      ROS_INFO_STREAM("Displaying grasp in TF...");
+      vispToTF_.resetTransform( (*it).cMg, "cMg");
+      vispToTF_.resetTransform( (*it).cMg_ik, "cMg_ik");
+      vispToTF_.publish();
+      ros::spinOnce();
+      ros::Duration(0.3).sleep();
+    }
+  }
+}
+
+/** Publish grasp scores and metrics */
+void RankingGraspPlanner::publishGraspData( int grasp_id ){
+
+  std::list<GraspHypothesis>::iterator it = grasps.begin();
+
+  if (grasps.size() > grasp_id)
+    std::advance(it, grasp_id);
+  else
+    return;
+
+  std_msgs::Float32 msg;
+  msg.data = (*it).overall_score;
+  score_pub_.publish( msg );
+
+  std_msgs::String text;
+  std::ostringstream stringStream2;
+  stringStream2 << "Distance to desired cMg score: " << (*it).distance_ik_score << std::endl <<
+                "Angle to desired cMg score: " <<  (*it).angle_ik_score << std::endl <<
+                "Distance to the object centroid score: " <<  (*it).distance_score << std::endl <<
+                "Angle with the object axis score: " <<  (*it).angle_axis_score << std::endl;
+  text.data = stringStream2.str();
+  score_description_pub_.publish(text);
+
+  if( (*it).measures[0] != 0 && (*it).measures[1] != 0 && (*it).measures[2] != 0) {
+    std::ostringstream stringStream3;
+    stringStream3 << "M0" << (*it).measures[0] << "M1" << (*it).measures[1] << "M2" << (*it).measures[2]
+                  << "M3" << (*it).measures[3] << "M4" << (*it).measures[4] << "M5" << (*it).measures[5];
+    text.data = stringStream3.str();
+    metrics_pub_.publish(text);
+  }
+
+  vispToTF_.resetTransform( (*it).cMg, "cMg");
+  vispToTF_.resetTransform( (*it).cMg_ik, "cMg_ik");
+  vispToTF_.publish();
+  ros::spinOnce();
+
+}
+
+
+vpHomogeneousMatrix RankingGraspPlanner::getGrasp_cMg( int grasp_id ) {
+  std::list<GraspHypothesis>::iterator it = grasps.begin();
+  if (grasps.size() > grasp_id) {
+    std::advance(it, grasp_id);
+    return (*it).cMg;
+  }else {
+    return vpHomogeneousMatrix();
+  }
+}
+
+vpHomogeneousMatrix RankingGraspPlanner::getGrasp_cMg_ik( int grasp_id ) {
+  std::list<GraspHypothesis>::iterator it = grasps.begin();
+  if (grasps.size() > grasp_id) {
+    std::advance(it, grasp_id);
+    return (*it).cMg_ik;
+  }else {
+    return vpHomogeneousMatrix();
+  }
+}
+
+bool RankingGraspPlanner::generateGraspList(){
   pose_estimation->initialize();
   cMo = pose_estimation->get_cMo();
   getbMc();
@@ -34,8 +106,8 @@ bool RankingGraspPlanner::generateGraspList()
         }
     }
   }
-  ROS_INFO("Hypothesis generated.");
-  //std::sort(grasps.begin(), grasps.end(), sortByScore);
+  ROS_DEBUG("Hypothesis generated.");
+  grasps.sort(sortByScore);
   return true;
 }
 
@@ -134,7 +206,8 @@ bool SQRankingGraspPlanner::generateGraspList() {
   while(grasps_read < num_grasps){
     ros::spinOnce();
   }
-  ROS_DEBUG_STREAM(num_grasps << "Grasps read");
+  grasps.sort(sortByScore);
+  ROS_DEBUG_STREAM(num_grasps << "grasps read and sorted.");
   return true;
 }
 
@@ -154,7 +227,6 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
 
   g.preshapes[0] = msg->data[0];
   g.preshapes[1] = msg->data[1];
-
   g.measures[0] = msg->data[18];
   g.measures[1] = msg->data[19];
   g.measures[2] = msg->data[20];
@@ -163,7 +235,6 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
   g.measures[5] = msg->data[23];
 
   generateGraspScores(g);
-
   grasps.push_back(g);
 }
 
@@ -180,7 +251,7 @@ void SQRankingGraspPlanner::generateGraspScores( GraspHypothesis & grasp ) {
   final_joints2[4] = 0;
   bMg_fk = robot.directKinematics(final_joints2);
   grasp.cMg_ik = bMc.inverse() * bMg_fk;
-//Compute score
+  //Compute scores
   grasp.distance_ik_score = ( grasp.cMg.getCol(3) - grasp.cMg_ik.getCol(3)).euclideanNorm();
   grasp.angle_ik_score = abs( VispTools::angle(grasp.cMg.getCol(2), grasp.cMg_ik.getCol(2)));
   grasp.angle_axis_score = abs(abs( VispTools::angle(grasp.cMo.getCol(1), grasp.cMg_ik.getCol(2))) - 1);//Angle between cylinder axis and grasp axis.1 rad is preferred
@@ -214,7 +285,7 @@ void SQRankingGraspPlanner::filterGraspList(){
 
 /** Publish grasp list sequentially in TF. **/
 void SQRankingGraspPlanner::publishGraspList( double wait_time ){
-  if(grasps.size()){
+  if(grasps.size() == 0){
     ROS_INFO_STREAM("Empty grasp hyp. list");
     return;
   }

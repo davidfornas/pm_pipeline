@@ -24,7 +24,7 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-  SQRankingGraspPlanner srgp(point_cloud_ptr, nh, true);
+  SQRankingGraspPlanner srgp(point_cloud_ptr, nh, "/object_pose", true);
   srgp.setGraspsParams(10, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
   bool success = srgp.generateGraspList();
 

@@ -14,6 +14,7 @@
 
 #include <pm_tools/tf_tools.h>
 #include <pm_perception/pose_estimation.h>
+#include <std_msgs/Float32.h>
 
 #include <mar_robot_arm5e/ARM5Arm.h>
 
@@ -55,9 +56,11 @@ class RankingGraspPlanner {
 
 protected:
 
-  FrameToTF vispToTF_;
-  ros::Publisher grasp_pub_;
   ros::NodeHandle nh_;
+  ros::Publisher grasp_pub_, pos_pub_;
+  ros::Publisher score_pub_, score_description_pub_, metrics_pub_;
+
+  FrameToTF vispToTF_;
   bool debug_;
 
 public:
@@ -70,11 +73,15 @@ public:
   std::list<GraspHypothesis> grasps;
 
   /** Constructor **/
-  RankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false) : nh_(nh), debug_(debug) {
+  RankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false) : nh_(nh), debug_(debug) {
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMg", "cMg");
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMg_ik", "cMg_ik");
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/object", "cMo");
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/object", "/grasp", "oMg");
+    pos_pub_ = nh.advertise<geometry_msgs::Pose>( object_pose, 1);
+    score_pub_ = nh.advertise<std_msgs::Float32>( "/score", 1);
+    score_description_pub_ = nh.advertise<std_msgs::String>( "/score_description", 1);
+    metrics_pub_ = nh.advertise<std_msgs::String>( "/metrics", 1);
   }
 
   /** Cloud set */
@@ -91,7 +98,6 @@ public:
 
   /** Get best rasp based on ranking. Bigger score is worse. */
   vpHomogeneousMatrix getBestGrasp(){
-    grasps.sort(sortByScore);
     ROS_INFO_STREAM("Best grasp "  << 0 << grasps.front().overall_score);
     ROS_INFO_STREAM("Worst grasp " << grasps.size() << grasps.back().overall_score);
     return grasps.front().cMg;
@@ -100,7 +106,7 @@ public:
   /** @TODO Publish one object pose. Mainly to display in UWSim **/
   void publishObjectPose(){
     vispToTF_.resetTransform( cMo, "cMo");
-    //pos_pub_.publish( VispTools::geometryPoseFromVispHomog(cMo) );
+    pos_pub_.publish( VispTools::geometryPoseFromVispHomog(cMo) );
     ros::spinOnce();
   }
 
@@ -108,18 +114,14 @@ public:
   void publishBestGrasp(){}
 
   /** Publish grasp list sequentially in TF. **/
-  void publishGraspList(){
-    while (ros::ok()){
-      for (std::list<GraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it){
-        ROS_INFO_STREAM("Displaying grasp in TF...");
-        vispToTF_.resetTransform( (*it).cMg, "cMg");
-        vispToTF_.resetTransform( (*it).cMg_ik, "cMg_ik");
-        vispToTF_.publish();
-        ros::spinOnce();
-        ros::Duration(0.3).sleep();
-      }
-    }
-  }
+  void publishGraspList();
+
+  /** Publish grasp scores and metrics */
+  void publishGraspData( int grasp_id );
+
+  vpHomogeneousMatrix getGrasp_cMg( int grasp_id );
+
+  vpHomogeneousMatrix getGrasp_cMg_ik( int grasp_id );
 
   // Get camera to base transform from TF.
   void getbMc();
@@ -136,7 +138,7 @@ class CylinderRankingGraspPlanner : public RankingGraspPlanner {
 public:
 
   /**   * */
-  CylinderRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false) : RankingGraspPlanner(cloud, nh, debug){
+  CylinderRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false) : RankingGraspPlanner(cloud, nh, object_pose, debug){
     pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
     pose_estimation->setDebug(debug);
     setNewCloud(cloud);
@@ -166,7 +168,7 @@ public:
   boost::shared_ptr<SQPoseEstimation> pose_estimation;
 
   /** Constructor  * */
-  SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, bool debug = false, int num_grasps = 5) : RankingGraspPlanner(cloud, nh, debug){
+  SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false, int num_grasps = 5) : RankingGraspPlanner(cloud, nh, object_pose, debug){
     // @TODO SWITCH METHOD.
     pose_estimation = boost::shared_ptr<SQPoseEstimation>( new SQPoseEstimation(cloud, 400, 0.01) );
     pose_estimation->setRegionGrowingClustering(8.0, 8.0);

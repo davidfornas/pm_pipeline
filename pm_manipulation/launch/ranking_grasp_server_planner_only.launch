@@ -1,0 +1,8 @@
+<launch>
+  <param name="input_topic" value="/stereo/points2/" />
+  <param name="cloud_frame_id" value="stereo" />
+  <param name="grasp_pose_topic" value="/cMg" />
+  <param name="object_pose_topic" value="/object_pose" />
+
+  <node name="ranking_grasp_planner_server" pkg="pm_manipulation" type="ranking_grasp_planner_server" output="screen" respawn="false"/>
+</launch>

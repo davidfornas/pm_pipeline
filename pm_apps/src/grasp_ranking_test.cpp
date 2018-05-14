@@ -24,7 +24,7 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyZAxisPassthrough(point_cloud_ptr,0, 3.5);
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
-  CylinderRankingGraspPlanner crgp(point_cloud_ptr, nh);
+  CylinderRankingGraspPlanner crgp(point_cloud_ptr, nh, "/object_pose");
   crgp.generateGraspList();
   crgp.getBestGrasp();
 

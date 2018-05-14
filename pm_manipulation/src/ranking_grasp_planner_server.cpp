@@ -15,8 +15,8 @@
 #include <tf/transform_datatypes.h>
 
 #include <std_msgs/String.h>
-#include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
@@ -24,10 +24,9 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
-//bool marker_status, compute_initial_cMg, reset_marker, execute, do_ransac;
-
 // True: use RANSAC Cylinder, false: use PCA + OpernRave
 bool ransac_method, compute_cMg_list;
+int grasp_id;
 
 void stringCallback(const std_msgs::String &msg ){
   if( msg.data == "initFromRansac" || msg.data == "initFromSQ") {
@@ -37,6 +36,10 @@ void stringCallback(const std_msgs::String &msg ){
     else
       ransac_method = false;
   }//Option to execute...
+}
+
+void idCallback(const std_msgs::Int8 &msg ){
+  grasp_id = msg.data;
 }
 
 /** Plans a grasp on a point cloud and visualize the list of grasps using UWSim externally. Subscribes to GUI Commands...
@@ -55,9 +58,13 @@ int main(int argc, char **argv)
 
   compute_cMg_list = false;
   ransac_method = true;
+  grasp_id = 0;
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
+  ros::Subscriber grasp_id_sub = nh.subscribe("/grasp_id", 1, idCallback);
+
+
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
   ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
   ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
@@ -105,53 +112,56 @@ int main(int argc, char **argv)
   cloud_pub.publish(message);
   ros::spinOnce();
 
+  EefFollower grasp_follower("/gripper_pose", nh, 0, 0, 0);
+  grasp_follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
+  grasp_follower.setMarkerStatus(false);
+
+  EefFollower kinematics_follower("/gripper_pose_kinematics", nh, 0, 0, 0);
+  kinematics_follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
+  kinematics_follower.setMarkerStatus(false);
+
   //Init planners
-  CylinderRankingGraspPlanner ransac_planner(cloud, nh);
-  SQRankingGraspPlanner sq_planner(cloud, nh);
+  CylinderRankingGraspPlanner ransac_planner(cloud, nh, "/object_pose");
+  SQRankingGraspPlanner sq_planner(cloud, nh, "/object_pose");
+
+  ros::Rate r(10);
 
   if(ransac_method){
-    CylinderRankingGraspPlanner crgp(cloud, nh);
-    crgp.generateGraspList();
-    crgp.getBestGrasp();
+
+    ransac_planner.generateGraspList();
 
     while(ros::ok()) {
-      ROS_INFO_STREAM("Publish grasp list in TF..");
-      crgp.publishGraspList();
+      ROS_DEBUG_STREAM("Publishing grasp number " << grasp_id << ".");
+      ransac_planner.publishGraspData(grasp_id);
+      ransac_planner.publishObjectPose();
+      grasp_follower.loop( ransac_planner.getGrasp_cMg(grasp_id) );
+      kinematics_follower.loop( ransac_planner.getGrasp_cMg_ik(grasp_id) );
+      ros::spinOnce();
+      r.sleep();
     }
   }else{
-    SQRankingGraspPlanner srgp(cloud, nh, true);
-    srgp.setGraspsParams(300, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
-    bool success = srgp.generateGraspList();
+    sq_planner.setGraspsParams(3, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
+    bool success = sq_planner.generateGraspList();
 
     while(ros::ok() && !success){
       PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
       PCLTools<PointT>::removeNanPoints(cloud);
       PCLTools<PointT>::applyZAxisPassthrough(cloud, 0, 3.5);
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
-      srgp.setNewCloud(cloud);
-      success = srgp.generateGraspList();
+      sq_planner.setNewCloud(cloud);
+      success = sq_planner.generateGraspList();
     }
 
     vpHomogeneousMatrix best;
-    srgp.filterGraspList();
-    best = srgp.getBestGrasp();
+    best = sq_planner.getBestGrasp();
+    sq_planner.filterGraspList();
+    best = sq_planner.getBestGrasp();
 
     while(ros::ok()) {
       ROS_INFO_STREAM("Publish grasp list in TF..");
-      srgp.publishGraspList( 1.5 );
+      sq_planner.publishGraspList( 1.5 );
     }
   }
-/**
-  EefFollower follower("/gripper_pose", nh, angle, rad, along);
-  follower.setWorldToCamera( VispTools::vispHomogFromTfTransform( wMc ) );
-
-
-    cMg = planner->get_cMg();
-    follower.setMarkerStatus(marker_status);
-    follower.loop(cMg);
-    ros::spinOnce();
-    if(ransac_method)
-      planner->publishObjectPose();*/
 
   return 0;
 }
