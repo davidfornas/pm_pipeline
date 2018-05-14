@@ -25,7 +25,7 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
   SQRankingGraspPlanner srgp(point_cloud_ptr, nh, true);
-  srgp.setGraspsParams(300, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
+  srgp.setGraspsParams(10, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
   bool success = srgp.generateGraspList();
 
   while(ros::ok() && !success){
@@ -38,6 +38,7 @@ int main(int argc, char **argv)
   }
 
   vpHomogeneousMatrix best;
+  best = srgp.getBestGrasp();
   srgp.filterGraspList();
   best = srgp.getBestGrasp();
 

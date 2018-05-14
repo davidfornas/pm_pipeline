@@ -141,7 +141,7 @@ bool SQRankingGraspPlanner::generateGraspList() {
 void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 
   grasps_read++;
-  ORGraspHypothesis g;
+  GraspHypothesis g;
   g.cMo = cMo;
 
   g.oMg[0][0] = msg->data[2];  g.oMg[0][1] = msg->data[3];  g.oMg[0][2] = msg->data[4];  g.oMg[0][3] = msg->data[5];
@@ -167,7 +167,7 @@ void SQRankingGraspPlanner::graspCallback(const std_msgs::Float32MultiArray::Con
   grasps.push_back(g);
 }
 
-void SQRankingGraspPlanner::generateGraspScores( ORGraspHypothesis & grasp ) {
+void SQRankingGraspPlanner::generateGraspScores( GraspHypothesis & grasp ) {
 
   vpHomogeneousMatrix bMg = bMc * grasp.cMg;
   vpColVector final_joints(5), final_joints2(5);
@@ -194,7 +194,7 @@ void SQRankingGraspPlanner::filterGraspList(){
 
   double min_dist_to_floor = 0.10;
 
-  std::list<ORGraspHypothesis>::iterator it = grasps.begin();
+  std::list<GraspHypothesis>::iterator it = grasps.begin();
   while (it != grasps.end())
   {
     PointT center;
@@ -214,7 +214,11 @@ void SQRankingGraspPlanner::filterGraspList(){
 
 /** Publish grasp list sequentially in TF. **/
 void SQRankingGraspPlanner::publishGraspList( double wait_time ){
-  for (std::list<ORGraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it) {
+  if(grasps.size()){
+    ROS_INFO_STREAM("Empty grasp hyp. list");
+    return;
+  }
+  for (std::list<GraspHypothesis>::iterator it=grasps.begin(); it!=grasps.end(); ++it) {
     vispToTF_.resetTransform( (*it).cMg, "cMg");
     vispToTF_.resetTransform( (*it).cMo, "cMo");
     vispToTF_.resetTransform( (*it).oMg, "oMg");
@@ -233,8 +237,13 @@ void SQRankingGraspPlanner::publishGraspList( double wait_time ){
 
 /** Get best rasp based on ranking. Bigger score is worse. */
 vpHomogeneousMatrix SQRankingGraspPlanner::getBestGrasp(){
-  grasps.sort(sortByScoreOR);
-  ROS_INFO_STREAM("Best grasp: " << grasps.front().overall_score);
-  ROS_INFO_STREAM("List size: " << grasps.size() << "Worst grasp: " << grasps.back().overall_score);
-  return grasps.front().cMg;
+  if(grasps.size()>0) {
+    grasps.sort(sortByScore);
+    ROS_INFO_STREAM("Best grasp: " << grasps.front().overall_score);
+    ROS_INFO_STREAM("List size: " << grasps.size() << "Worst grasp: " << grasps.back().overall_score);
+    return grasps.front().cMg;
+  }else{
+    ROS_ERROR("Empty Grasp Hyp. List");
+    return vpHomogeneousMatrix();
+  }
 }

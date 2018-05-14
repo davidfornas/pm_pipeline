@@ -32,6 +32,5 @@ int main(int argc, char **argv)
     ROS_INFO_STREAM("Publish grasp list..");
     crgp.publishGraspList();
   }
-
 }
 

@@ -22,7 +22,9 @@ class GraspHypothesis{
 
 public:
 
-  vpHomogeneousMatrix cMg, cMg_ik;
+  vpHomogeneousMatrix cMg, cMg_ik, oMg, cMo;
+  double preshapes[2];
+  double measures[6];
   double distance_score, distance_ik_score, angle_ik_score, angle_axis_score, overall_score;
 
   GraspHypothesis(){}
@@ -34,49 +36,15 @@ public:
   void print(){
     ROS_INFO_STREAM(cMg);
     ROS_INFO_STREAM(cMg_ik);
-  }
-  ~GraspHypothesis(){}
-
-};
-
-//GraspHypothesis that comes from OpenRave grasping
-class ORGraspHypothesis : public GraspHypothesis{
-
-public:
-
-  vpHomogeneousMatrix oMg, cMo;
-  double preshapes[2];
-  double measures[6];
-
-  ORGraspHypothesis(){}
-
-  ORGraspHypothesis( vpHomogeneousMatrix cmg, vpHomogeneousMatrix cmgik, double d, double dik, double aik, double aa, double overall ):
-          GraspHypothesis(cmg, cmgik, d, dik, aik, aa, overall){}
-
-  ORGraspHypothesis( GraspHypothesis h):
-          GraspHypothesis(h.cMg, h.cMg_ik,  h.distance_score, h.distance_ik_score, h.angle_ik_score, h.angle_axis_score, h.overall_score){}
-
-  void print(){
-    ROS_INFO_STREAM(cMg);
-    ROS_INFO_STREAM(cMg_ik);
     ROS_INFO_STREAM(oMg);
   }
-
-  ~ORGraspHypothesis(){}
-
+  ~GraspHypothesis(){}
 };
 
 // Sort function
 bool sortByScore( GraspHypothesis a, GraspHypothesis b ){
   return a.overall_score < b.overall_score;
 }
-
-// Sort function
-bool sortByScoreOR( ORGraspHypothesis a, ORGraspHypothesis b){
-  return a.overall_score < b.overall_score;
-}
-
-
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -99,9 +67,6 @@ public:
   // Camera to object, camera to kinematic base
   vpHomogeneousMatrix cMo, bMc;
   ARM5Arm robot;
-
-  // Grasp positions list, cMg list
-  //std::vector<vpHomogeneousMatrix> grasp_list;
   std::list<GraspHypothesis> grasps;
 
   /** Constructor **/
@@ -198,8 +163,6 @@ class SQRankingGraspPlanner : public RankingGraspPlanner {
 
 public:
 
-  //Grasp list from OR computing
-  std::list<ORGraspHypothesis> grasps;
   boost::shared_ptr<SQPoseEstimation> pose_estimation;
 
   /** Constructor  * */
@@ -221,7 +184,7 @@ public:
 
   void graspCallback(const std_msgs::Float32MultiArray::ConstPtr& msg);
 
-  void generateGraspScores( ORGraspHypothesis & grasp );
+  void generateGraspScores( GraspHypothesis & grasp );
 
   void setGraspsParams( int n = 20, double arange = 0.4, double dspace = 0.04,
                         double roll1 = 0, double roll2 = 3.1416 * 2, double roll3 = 3.1416 / 2 ){
