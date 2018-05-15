@@ -44,10 +44,11 @@ void RankingGraspPlanner::publishGraspData( int grasp_id ){
   text.data = stringStream2.str();
   score_description_pub_.publish(text);
 
-  if( (*it).measures[0] != 0 && (*it).measures[1] != 0 && (*it).measures[2] != 0) {
+  if( (*it).measures[0] > 0.00000001 || (*it).measures[1] > 0.00000001 || (*it).measures[2] > 0.00000001 ) {
     std::ostringstream stringStream3;
-    stringStream3 << "M0" << (*it).measures[0] << "M1" << (*it).measures[1] << "M2" << (*it).measures[2]
-                  << "M3" << (*it).measures[3] << "M4" << (*it).measures[4] << "M5" << (*it).measures[5];
+    stringStream3 << "M0: " << (*it).measures[0] << "   M1: " << (*it).measures[1] << std::endl <<
+                     "M2: " << (*it).measures[2] << "   M3: " << (*it).measures[3] << std::endl <<
+                     "M4: " << (*it).measures[4] << "   M5: " << (*it).measures[5];
     text.data = stringStream3.str();
     metrics_pub_.publish(text);
   }

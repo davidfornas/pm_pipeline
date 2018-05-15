@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   ROS_INFO_STREAM("Initial cloud has: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points (not NaN).");
   begin = clock();
   PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
-  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
+  PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);//Was 0.01
   end = clock();
   pcl::copyPointCloud(*cloud, *aux_cloud);
   ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
@@ -142,24 +142,35 @@ int main(int argc, char **argv)
   }else{
     sq_planner.setGraspsParams(3, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
     bool success = sq_planner.generateGraspList();
-
+    // If !success load & display another cloud
     while(ros::ok() && !success){
+
       PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
+      pcl::copyPointCloud(*cloud, *aux_cloud);
+      PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
       PCLTools<PointT>::removeNanPoints(cloud);
       PCLTools<PointT>::applyZAxisPassthrough(cloud, 0, 3.5);
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+
+      sensor_msgs::PointCloud2 message;
+      pcl::PCLPointCloud2 pcl_pc;
+      pcl::toPCLPointCloud2(*aux_cloud, pcl_pc);
+      pcl_conversions::fromPCL(pcl_pc, message);
+      message.header.frame_id = "camera";
+      cloud_pub.publish(message);
+      ros::spinOnce();
+
       sq_planner.setNewCloud(cloud);
       success = sq_planner.generateGraspList();
     }
-
-    vpHomogeneousMatrix best;
-    best = sq_planner.getBestGrasp();
-    sq_planner.filterGraspList();
-    best = sq_planner.getBestGrasp();
-
     while(ros::ok()) {
-      ROS_INFO_STREAM("Publish grasp list in TF..");
-      sq_planner.publishGraspList( 1.5 );
+      ROS_INFO_STREAM("Publishing grasp number " << grasp_id << ".");
+      sq_planner.publishGraspData(grasp_id);
+      //ransac_planner.publishObjectPose();
+      grasp_follower.loop(sq_planner.getGrasp_cMg(grasp_id));
+      kinematics_follower.loop(sq_planner.getGrasp_cMg_ik(grasp_id));
+      ros::spinOnce();
+      r.sleep();
     }
   }
 
