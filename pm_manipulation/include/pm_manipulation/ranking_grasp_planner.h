@@ -15,6 +15,8 @@
 #include <pm_tools/tf_tools.h>
 #include <pm_perception/pose_estimation.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
+#include <std_msgs/Int8.h>
 
 #include <mar_robot_arm5e/ARM5Arm.h>
 
@@ -58,7 +60,7 @@ protected:
 
   ros::NodeHandle nh_;
   ros::Publisher grasp_pub_, pos_pub_;
-  ros::Publisher score_pub_, score_description_pub_, metrics_pub_;
+  ros::Publisher score_pub_, score_description_pub_, metrics_pub_, list_size_pub_;
 
   FrameToTF vispToTF_;
   bool debug_;
@@ -80,6 +82,7 @@ public:
     vispToTF_.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/object", "/grasp", "oMg");
     pos_pub_ = nh.advertise<geometry_msgs::Pose>( object_pose, 1);
     score_pub_ = nh.advertise<std_msgs::Float32>( "/score", 1);
+    list_size_pub_ = nh.advertise<std_msgs::Int32>( "/list_size", 1);
     score_description_pub_ = nh.advertise<std_msgs::String>( "/score_description", 1);
     metrics_pub_ = nh.advertise<std_msgs::String>( "/metrics", 1);
   }

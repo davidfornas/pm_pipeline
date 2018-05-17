@@ -35,6 +35,11 @@ void RankingGraspPlanner::publishGraspData( int grasp_id ){
   msg.data = (*it).overall_score;
   score_pub_.publish( msg );
 
+
+  std_msgs::Int32 smsg;
+  smsg.data = (int) grasps.size();
+  list_size_pub_.publish( smsg );
+
   std_msgs::String text;
   std::ostringstream stringStream2;
   stringStream2 << "Distance to desired cMg score: " << (*it).distance_ik_score << std::endl <<
