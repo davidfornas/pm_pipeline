@@ -28,6 +28,7 @@ add_library(${PROJECT_NAME}
   src/marker_tools.cpp
   src/tf_tools.cpp
   src/timing.cpp
+        src/logger.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} )
 
