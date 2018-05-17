@@ -42,8 +42,7 @@ void idCallback(const std_msgs::Int8 &msg ){
   grasp_id = msg.data;
 }
 
-/** Plans a grasp on a point cloud and visualize the list of grasps using UWSim externally. Subscribes to GUI Commands...
- */
+/** Plans a grasp on a point cloud and visualize the list of grasps using UWSim externally. Subscribes to GUI Commands... */
 int main(int argc, char **argv)
 {
   // Set up ROS.
@@ -125,7 +124,6 @@ int main(int argc, char **argv)
   SQRankingGraspPlanner sq_planner(cloud, nh, "/object_pose");
 
   ros::Rate r(10);
-
   if(ransac_method){
 
     ransac_planner.generateGraspList();
@@ -166,7 +164,6 @@ int main(int argc, char **argv)
     while(ros::ok()) {
       ROS_INFO_STREAM("Publishing grasp number " << grasp_id << ".");
       sq_planner.publishGraspData(grasp_id);
-      //ransac_planner.publishObjectPose();
       grasp_follower.loop(sq_planner.getGrasp_cMg(grasp_id));
       kinematics_follower.loop(sq_planner.getGrasp_cMg_ik(grasp_id));
       ros::spinOnce();
