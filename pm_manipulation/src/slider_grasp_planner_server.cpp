@@ -16,24 +16,21 @@
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Float32.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 
-
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
-
 
 bool marker_status, compute_initial_cMg, reset_marker, execute, do_ransac;
 Method method;
 
 void stringCallback(const std_msgs::String &msg ){
-  // DF initFromPose initFromRansac
   if( msg.data == "initFromPose" || msg.data == "initFromRansac" || msg.data == "initFromBox"
       || msg.data == "initFromPCA" || msg.data == "initFromSphere" || msg.data == "initFromSQ"){
     compute_initial_cMg = true;
-    //@TODO RENAME do_ransac
     if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"
         || msg.data == "initFromSphere" || msg.data == "initFromSQ"){
       do_ransac = true;
@@ -52,12 +49,15 @@ void stringCallback(const std_msgs::String &msg ){
   }
 }
 
-/** Plans a grasp on a point cloud and visualizes it using UWSim externally.
- *  Subscribes to GUI Commands...
- */
+std_msgs::Float32 toFloat32Msgs(float msg){
+  std_msgs::Float32 rosMsg;
+  rosMsg.data = msg;
+  return rosMsg;
+}
+
+/** Plans a grasp on a point cloud and visualizes it using UWSim externally. Subscribes to GUI Commands... */
 int main(int argc, char **argv)
 {
-  // Set up ROS.
   ros::init(argc, argv, "slider_grasp_server_split");
   ros::NodeHandle nh;
 
@@ -73,10 +73,15 @@ int main(int argc, char **argv)
 
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
+
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
   ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
   ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
   ros::Publisher vehicle_pub = nh.advertise<geometry_msgs::Pose>("/sim_vehicle_pose", 1);
+
+  ros::Publisher fullProcessTimePublisher = nh.advertise<std_msgs::Float32>("/stats/processCloud", 1);
+  ros::Publisher loadTimePublisher = nh.advertise<std_msgs::Float32>("/stats/loadCloud", 1);
+  ros::Publisher filterTimePublisher = nh.advertise<std_msgs::Float32>("/stats/filterCloud", 1);
 
   tf::TransformListener *listener_ = new tf::TransformListener();
   tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
@@ -132,15 +137,20 @@ int main(int argc, char **argv)
   // Load cloud if required.
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>), aux_cloud (new pcl::PointCloud<PointT>);
   if( do_ransac ){
-    //Point Cloud load
+    begin = clock();
     PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
+    end = clock();
+    ROS_INFO_STREAM("Cloud load time: " << double(end - begin) / CLOCKS_PER_SEC);
     ROS_INFO_STREAM("Initial cloud has: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points (not NaN).");
+    loadTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+
     begin = clock();
     PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
     end = clock();
     pcl::copyPointCloud(*cloud, *aux_cloud);
     ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
+    filterTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
     ROS_INFO_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
 
     sensor_msgs::PointCloud2 message;
@@ -152,7 +162,6 @@ int main(int argc, char **argv)
     ros::spinOnce();
   }
 
-  //Init planner
   SliderGraspPlanner * planner;
   if( do_ransac ){
     ROS_INFO_STREAM("Specification using pose estimation");
@@ -162,10 +171,13 @@ int main(int argc, char **argv)
     ROS_INFO_STREAM("Specification using a input object Pose from topic.");
     planner = new SliderGraspPlanner(object_pose_topic);
   }
+
   begin = clock();
   planner->perceive();
   end = clock();
   ROS_INFO_STREAM("First computing time: " << double(end - begin) / CLOCKS_PER_SEC);
+  fullProcessTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
   double angle = 75, rad = 18, along = 20;
@@ -190,7 +202,6 @@ int main(int argc, char **argv)
     planner->ialong = follower.ialong;
     planner->iangle = follower.iangle;
 
-    //Get object pose again.
     if( !do_ransac ){
       planner->perceive();
     }else{
@@ -199,6 +210,8 @@ int main(int argc, char **argv)
       PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
       end = clock();
       ROS_INFO_STREAM("Cloud load time: " << double(end - begin) / CLOCKS_PER_SEC);
+      loadTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+
       begin = clock();
       PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
@@ -206,23 +219,25 @@ int main(int argc, char **argv)
       pcl::copyPointCloud(*cloud, *aux_cloud);
       ROS_INFO_STREAM("Online downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
+      filterTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
 
       planner->setNewCloud(cloud);
       begin = clock();
       planner->redoRansac();
       end = clock();
       ROS_INFO_STREAM("Finished. Pose estimation processing time: " << double(end - begin) / CLOCKS_PER_SEC);
+      fullProcessTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;
       pcl::toPCLPointCloud2(*aux_cloud, pcl_pc);
       pcl_conversions::fromPCL(pcl_pc, message);
-      message.header.frame_id = "camera"; //New
+      message.header.frame_id = "camera";
       cloud_pub.publish(message);
       ros::spinOnce();
     }
 
-    //Compute new grasp frame with the slides
+    //Compute new grasp frame with the slider values
     planner->recalculate_cMg();
     cMg = planner->get_cMg();
     follower.setMarkerStatus(marker_status);
@@ -257,7 +272,6 @@ int main(int argc, char **argv)
     geometry_msgs::PoseStamped gps;
     gps.pose = gp;
     gps.header.stamp = pcl_conversions::fromPCL( cloud->header.stamp );
-
     gps.header.frame_id = "world";
 
     tf::Stamped<tf::Pose> pose;

@@ -65,10 +65,11 @@ public:
     symmetry_search_ = false;
     planar_symmetry_ = true;
 
-    objectParameterPublisher = nh.advertise<std_msgs::Float32MultiArray>("object/modelParametes", 10);
+    objectParameterPublisher = nh.advertise<std_msgs::Float32MultiArray>("object/modelParameters", 10);
     objectPosePublisher = nh.advertise<geometry_msgs::Pose>("object/pose", 10);
+
     estimationStatsPublisher = nh.advertise<std_msgs::Float32>("stats/estimation", 10);
-    symmetryStatsPublisher = nh.advertise<std_msgs::Float32>("stats/symmery", 10);
+    symmetryStatsPublisher = nh.advertise<std_msgs::Float32>("stats/symmetry", 10);
     backgroundExtractionStatsPublisher = nh.advertise<std_msgs::Float32>("stats/backgroundExtraction", 10);
   }
 
