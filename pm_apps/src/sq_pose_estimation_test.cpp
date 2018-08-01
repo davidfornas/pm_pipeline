@@ -6,7 +6,7 @@
  */
 
 #include <pm_tools/pcl_tools.h>
-#include <pm_perception/pose_estimation.h>
+#include <pm_perception/sq_pose_estimation.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef typename pcl::PointCloud<PointT> Cloud;
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
   SQPoseEstimation * pose_est;
-  pose_est = new SQPoseEstimation(point_cloud_ptr, 400, 0.01);
+  pose_est = new SQPoseEstimation(nh, point_cloud_ptr, 400, 0.01);
   pose_est->setRegionGrowingClustering(8.0, 8.0);
   //pose_est->setLMFitting();
   //pose_est->setSymmetrySearchParams(0.0);

@@ -10,20 +10,21 @@
 #ifndef PMGRASPPLANNINGSPLIT_H_
 #define PMGRASPPLANNINGSPLIT_H_
 
-#include <pm_tools/tf_tools.h>
-#include <pm_tools/marker_tools.h>
-#include <pm_tools/pcl_segmentation.h>
-#include <pm_perception/pose_estimation.h>
+#include <list>
 
 #include <pcl/io/pcd_io.h>
-
 #include <visp/vpImage.h>
 #include <visp/vpRGBa.h>
 #include <visp/vpPoint.h>
 #include <visp/vpHomogeneousMatrix.h>
-
 #include <tf/transform_datatypes.h>
-#include <list>
+
+#include <pm_tools/tf_tools.h>
+#include <pm_tools/marker_tools.h>
+#include <pm_tools/pcl_segmentation.h>
+#include <pm_perception/ransac_pose_estimation.h>
+#include <pm_perception/pca_pose_estimation.h>
+#include <pm_perception/sq_pose_estimation.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT>::Ptr PointTPtr;
@@ -84,19 +85,19 @@ public:
 
     switch(method) {
       case RANSACCylinder:
-        pose_estimation = boost::shared_ptr<CylinderPoseEstimation>(new CylinderPoseEstimation( cloud ));
+        pose_estimation = boost::shared_ptr<CylinderPoseEstimation>(new CylinderPoseEstimation( nh, cloud ));
         break;
       case RANSACSphere:
-        pose_estimation = boost::shared_ptr<SpherePoseEstimation>(new SpherePoseEstimation( cloud ));
+        pose_estimation = boost::shared_ptr<SpherePoseEstimation>(new SpherePoseEstimation( nh, cloud ));
         break;
       case PCA:
-        pose_estimation = boost::shared_ptr<PCAPoseEstimation>(new PCAPoseEstimation( cloud ));
+        pose_estimation = boost::shared_ptr<PCAPoseEstimation>(new PCAPoseEstimation( nh, cloud ));
         break;
       case BoxPlane:
-        pose_estimation = boost::shared_ptr<BoxPoseEstimation>(new BoxPoseEstimation( cloud ));
+        pose_estimation = boost::shared_ptr<BoxPoseEstimation>(new BoxPoseEstimation( nh, cloud ));
         break;
       case SQ:
-        pose_estimation = boost::shared_ptr<SQPoseEstimation>(new SQPoseEstimation( cloud, 400, 0.01 ));
+        pose_estimation = boost::shared_ptr<SQPoseEstimation>(new SQPoseEstimation( nh, cloud, 400, 0.01 ));
         break;
     }
     method_ = method;

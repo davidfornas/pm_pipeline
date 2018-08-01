@@ -6,7 +6,7 @@
  */
 
 #include <pm_tools/pcl_tools.h>
-#include <pm_perception/pose_estimation.h>
+#include <pm_perception/ransac_pose_estimation.h>
 
 typedef pcl::PointXYZRGB PointT;
 typedef typename pcl::PointCloud<PointT> Cloud;
@@ -28,9 +28,9 @@ int main(int argc, char **argv)
   PCLTools<PointT>::applyVoxelGridFilter(point_cloud_ptr, 0.01);
 
   PoseEstimation * pose_est;
-  //pose_est = new SpherePoseEstimation(point_cloud_ptr);
-  pose_est = new CylinderPoseEstimation(point_cloud_ptr);
-  //pose_est = new BoxPoseEstimation(point_cloud_ptr);
+  //pose_est = new SpherePoseEstimation(nh, point_cloud_ptr);
+  pose_est = new CylinderPoseEstimation(nh, point_cloud_ptr);
+  //pose_est = new BoxPoseEstimation(nh, point_cloud_ptr);
 
   pose_est->setDebug(true);
   pose_est->setPlaneSegmentationParams(0.04);

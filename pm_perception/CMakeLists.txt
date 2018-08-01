@@ -16,12 +16,10 @@ catkin_package(
   DEPENDS PCL Boost VISP OpenCV octomap
 )
 link_directories(${catkin_LIBRARY_DIRS})
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
+
 include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${VISP_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS})
 
-## Declare a cpp library
 add_library(${PROJECT_NAME}
         src/background_removal.cpp
         src/border_detection.cpp
@@ -29,9 +27,11 @@ add_library(${PROJECT_NAME}
         src/cluster_measure.cpp
         src/octomap.cpp
         src/pose_estimation.cpp
+        src/ransac_pose_estimation.cpp
+        src/sq_pose_estimation.cpp
+        src/pca_pose_estimation.cpp
         src/symmetry.cpp
 )
-## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${VISP_LIBRARIES} ${OpenCV} ${OCTOMAP_LIBRARIES} )
 
 install(

@@ -12,13 +12,16 @@
 #ifndef RANKINGGRASPPLANNING_H_
 #define RANKINGGRASPPLANNING_H_
 
-#include <pm_tools/tf_tools.h>
-#include <pm_perception/pose_estimation.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Int8.h>
 
 #include <mar_robot_arm5e/ARM5Arm.h>
+
+#include <pm_tools/tf_tools.h>
+#include <pm_perception/ransac_pose_estimation.h>
+#include <pm_perception/pca_pose_estimation.h>
+#include <pm_perception/sq_pose_estimation.h>
 
 //GraspHypothesis Desired cMg and cMg_ik the reachable pose
 class GraspHypothesis{
@@ -142,7 +145,7 @@ public:
 
   /**   * */
   CylinderRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false) : RankingGraspPlanner(cloud, nh, object_pose, debug){
-    pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(cloud) );
+    pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(nh, cloud) );
     pose_estimation->setDebug(debug);
     setNewCloud(cloud);
   }
@@ -173,7 +176,7 @@ public:
   /** Constructor  * */
   SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false, int num_grasps = 5) : RankingGraspPlanner(cloud, nh, object_pose, debug){
     // @TODO SWITCH METHOD.
-    pose_estimation = boost::shared_ptr<SQPoseEstimation>( new SQPoseEstimation(cloud, 400, 0.01) );
+    pose_estimation = boost::shared_ptr<SQPoseEstimation>( new SQPoseEstimation(nh, cloud, 400, 0.01) );
     pose_estimation->setRegionGrowingClustering(8.0, 8.0);
     //pose_estimation->setLMFitting();
     //pose_est->setSymmetrySearchParams(0.0);

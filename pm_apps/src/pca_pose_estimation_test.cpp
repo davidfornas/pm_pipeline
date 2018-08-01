@@ -6,7 +6,8 @@
  */
 
 #include <pm_tools/pcl_tools.h>
-#include <pm_perception/pose_estimation.h>
+#include <pm_perception/pca_pose_estimation.h>
+
 typedef pcl::PointXYZRGB PointT;
 typedef typename pcl::PointCloud<PointT> Cloud;
 typedef typename pcl::PointCloud<PointT>::Ptr CloudPtr;
@@ -20,7 +21,7 @@ int main(int argc, char **argv)
   std::string filename("/stereo/points2");
 
   PoseEstimation * pose_est;
-  pose_est = new PCAPoseEstimation(point_cloud_ptr, 200); //200 thereshold gets also the stone.
+  pose_est = new PCAPoseEstimation(nh, point_cloud_ptr, 200); //200 thereshold gets also the stone.
   pose_est->setDebug(true);
 
   // Enable search and Search only for distance.
