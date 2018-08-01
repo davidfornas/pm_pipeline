@@ -37,12 +37,15 @@ class PCAPoseEstimation : public PoseEstimation{
   int cluster_index_, cluster_thereshold_;
   CloudClustering<PointT> * cloud_clustering_;
 
+  float width_, height_, depth_;
+
 public:
 
   PCAPoseEstimation(ros::NodeHandle & nh, CloudPtr source, int cluster_thereshold = 400) : PoseEstimation(nh, source){
     cluster_thereshold_ = cluster_thereshold;
   }
 
+  void publishResults();
   bool initialize(){ return process(); }
 
   // Use process multiple times with new clouds.
@@ -50,7 +53,6 @@ public:
 
   //Use process next to process other cluster without repeating clustering.
   bool processNext();
-
 };
 
 #endif

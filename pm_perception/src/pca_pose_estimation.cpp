@@ -44,7 +44,6 @@ bool PCAPoseEstimation::process() {
   return processNext();
 }
 
-// @TODO Refactor...
 bool PCAPoseEstimation::processNext() {
 
   cluster_index_++;
@@ -79,17 +78,28 @@ bool PCAPoseEstimation::processNext() {
   Eigen::Quaternionf q;
   Eigen::Vector3f t;
   Eigen::Matrix4f cMo_eigen;
-  float width, height, depth;
-  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
+  cMo_eigen = cm.getOABBox( q, t, width_, height_, depth_ );
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 3.1416, 0);
-  UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
 
-  //if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  //}
-  ROS_INFO_STREAM("PCA Object. Width: " << width << ". Height: " << height << "Depth: " << depth);
+  publishResults();
   object_cloud_ = full_model;
   return true;
 
+}
+
+void PCAPoseEstimation::publishResults() {
+  UWSimMarkerPublisher::publishCubeMarker(cMo, height_, depth_, width_);
+
+  vispToTF.resetTransform(cMo, "cMo");
+  vispToTF.publish();
+
+  std_msgs::Float32MultiArray objectParameters;
+  objectParameters.data.push_back(width_);
+  objectParameters.data.push_back(height_);
+  objectParameters.data.push_back(depth_);
+  objectParameterPublisher.publish(objectParameters);
+
+  ros::spinOnce();
+
+  ROS_INFO_STREAM("PCA Object. Width: " << width_ << ". Height: " << height_ << "Depth: " << depth_);
 }
