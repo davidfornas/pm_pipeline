@@ -5,7 +5,10 @@
  */
 #ifndef PCLCLUSTERING_H_
 #define PCLCLUSTERING_H_
+
 #include <ros/ros.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/Float32MultiArray.h>
 
 #include <pcl/point_types.h>
 #include <pcl/ModelCoefficients.h>
@@ -24,6 +27,7 @@
 #include <pcl/visualization/pcl_visualizer.h>
 
 #include <pm_tools/pcl_tools.h>
+#include <pm_tools/timing.h>
 
 template <typename PointT>
 class CloudClustering
@@ -31,12 +35,17 @@ class CloudClustering
 
   typedef typename pcl::PointCloud<PointT> Cloud;
   typedef typename Cloud::Ptr CloudPtr;
+
   CloudPtr cloud_;
 
   /** Store the clusters in a vector of clouds  */
   void extract();
 
   void getColoredCloud();
+
+  ros::Publisher clusteringStatsPublisher;
+  ros::Publisher clusteringSizesPublisher;
+  bool publishing_;
 
 public:
 
@@ -45,8 +54,16 @@ public:
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud;
 
   CloudClustering(CloudPtr in_cloud, bool display_clusters = true) :
-      cloud_(in_cloud)
+      cloud_(in_cloud) {
+    publishing_ = false;
+  }
+
+  CloudClustering(ros::NodeHandle & nh, CloudPtr in_cloud, bool display_clusters = true) :
+          cloud_(in_cloud)
   {
+    publishing_ = true;
+    clusteringStatsPublisher = nh.advertise<std_msgs::Float32>("stats/clustering", 10);
+    clusteringSizesPublisher = nh.advertise<std_msgs::Float32MultiArray>("clustering/sizes", 10);
   }
 
   /** Apply Euclidian clustering http://pointclouds.org/documentation/tutorials/cluster_extraction.php */
@@ -64,10 +81,7 @@ public:
   /** Save clusters to ~/ros_ws/tmp/name+id+.pcd */
   void save( std::string name );
 
-  /** Display result  */
   void display();
-
-  /** Display result  */
   void displayColoured( int ms = 500 );
 
 };
@@ -115,17 +129,21 @@ template<typename PointT>
 void CloudClustering<PointT>::extract()
 {
 	cloud_clusters.clear();
+  std_msgs::Float32MultiArray clusterSizesMsg;
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 	{
-      CloudPtr cloud_cluster ( new Cloud);
+    CloudPtr cloud_cluster(new Cloud);
 	  for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
 		  cloud_cluster->points.push_back (cloud_->points[*pit]); //*
 	  cloud_cluster->width = it->indices.size();
 	  cloud_cluster->height = 1;
 	  cloud_cluster->is_dense = true;
 	  cloud_clusters.push_back(cloud_cluster);
+    clusterSizesMsg.data.push_back(cloud_cluster->points.size());
 	  ROS_DEBUG_STREAM("PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points.");
 	}
+  if(publishing_) clusteringSizesPublisher.publish(clusterSizesMsg);
+  ros::spinOnce();
 }
 
 template<typename PointT>
@@ -135,6 +153,7 @@ void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int min
   typename pcl::search::KdTree<PointT>::Ptr tree (new typename pcl::search::KdTree<PointT>);
   tree->setInputCloud (cloud_);
 
+  Timing tick;
   pcl::EuclideanClusterExtraction<PointT> ec;
   ec.setClusterTolerance (tolerance); // 2cm
   ec.setMinClusterSize (minSize);
@@ -142,10 +161,13 @@ void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int min
   ec.setSearchMethod (tree);
   ec.setInputCloud (cloud_);
   ec.extract (cluster_indices);
+  if(publishing_) clusteringStatsPublisher.publish(tick.getTotalTimeMsg());
+  ros::spinOnce();
 
   extract();
   getColoredCloud();
 }
+
 
 template<typename PointT>
 void CloudClustering<PointT>::applyConditionalEuclidianClustering()
@@ -165,7 +187,8 @@ void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh, 
   normal_estimator.setInputCloud (cloud_);
   normal_estimator.setKSearch (50);
   normal_estimator.compute (*normals);
-  //Apply region growing
+
+  Timing tick;
   typename pcl::RegionGrowing<PointT, pcl::Normal> reg;
   reg.setMinClusterSize (minSize);
   reg.setMaxClusterSize (maxSize);
@@ -178,6 +201,8 @@ void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh, 
   reg.setSmoothnessThreshold (smoothnessTh / 180.0 * M_PI);
   reg.setCurvatureThreshold (curvTh);
   reg.extract (cluster_indices);
+  if(publishing_) clusteringStatsPublisher.publish(tick.getTotalTimeMsg());
+  ros::spinOnce();
 
   colored_cloud = reg.getColoredCloud ();
   extract();
@@ -189,13 +214,17 @@ void CloudClustering<PointT>::applyRGBRegionGrowingClustering( float distance, f
 	typename pcl::search::Search<PointT>::Ptr tree =
 			boost::shared_ptr<typename pcl::search::Search<PointT> > (new pcl::search::KdTree<PointT>);
 	pcl::RegionGrowingRGB<PointT> reg;
-	reg.setInputCloud (cloud_);
+
+  Timing tick;
+  reg.setInputCloud (cloud_);
 	reg.setSearchMethod (tree);
 	reg.setDistanceThreshold (distance);
 	reg.setPointColorThreshold (pointColorTh);
 	reg.setRegionColorThreshold (regionColorTh);
 	reg.setMinClusterSize (minSize);
 	reg.extract (cluster_indices);
+  clusteringStatsPublisher.publish(tick.getTotalTimeMsg());
+  ros::spinOnce();
 
 	colored_cloud = reg.getColoredCloud ();
 	extract();
