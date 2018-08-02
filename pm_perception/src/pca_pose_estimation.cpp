@@ -4,6 +4,9 @@
  *  Created on: 29/09/2017
  *      Author: dfornas
  */
+
+#include <pm_tools/timing.h>
+
 #include <pm_perception/pca_pose_estimation.h>
 #include <pm_perception/cluster_measure.h>
 #include <pm_perception/symmetry.h>
@@ -52,9 +55,9 @@ bool PCAPoseEstimation::processNext() {
   if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
   // ESTIMATON OF THE SYMMETRY PLANE
+  Timing tick;
   CloudPtr full_model(new Cloud);
   if(planar_symmetry_) {
-
     PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane,
                                 *bg_remove->coefficients_plane);
     if (symmetry_search_) {
@@ -73,6 +76,7 @@ bool PCAPoseEstimation::processNext() {
       ase.estimateAndApply(full_model);
     }
   }
+  symmetryStatsPublisher.publish(tick.getLapTimeMsg());
 
   ClusterMeasure<PointT> cm(full_model, debug_);
   Eigen::Quaternionf q;
@@ -80,6 +84,7 @@ bool PCAPoseEstimation::processNext() {
   Eigen::Matrix4f cMo_eigen;
   cMo_eigen = cm.getOABBox( q, t, width_, height_, depth_ );
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 3.1416, 0);
+  estimationStatsPublisher.publish(tick.getTotalTimeMsg());
 
   publishResults();
   object_cloud_ = full_model;
@@ -92,6 +97,8 @@ void PCAPoseEstimation::publishResults() {
 
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
+
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(width_);

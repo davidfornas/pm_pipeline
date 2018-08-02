@@ -4,6 +4,9 @@
  *  Created on: 29/09/2017
  *      Author: dfornas
  */
+
+#include <pm_tools/timing.h>
+
 #include <pm_perception/sq_pose_estimation.h>
 #include <pm_perception/cluster_measure.h>
 #include <pm_perception/symmetry.h>
@@ -57,6 +60,7 @@ bool SQPoseEstimation::processNext() {
   if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
   // ESTIMATON OF THE SYMMETRY PLANE
+  Timing tick;
   CloudPtr full_model(new Cloud);
   if(planar_symmetry_) {
 
@@ -78,6 +82,7 @@ bool SQPoseEstimation::processNext() {
       ase.estimateAndApply(full_model);
     }
   }
+  symmetryStatsPublisher.publish(tick.getLapTimeMsg());
 
   // Call to SQ Computing
   double min_fit = std::numeric_limits<double>::max ();
@@ -130,6 +135,8 @@ bool SQPoseEstimation::processNext() {
            min_params.transform (3, 0), min_params.transform (3, 1), min_params.transform (3, 2), min_params.transform (3, 3));
 
   vpHomogeneousMatrix transform = VispTools::EigenMatrixDouble44ToVpHomogeneousMatrix(min_params.transform).inverse();
+
+  estimationStatsPublisher.publish(tick.getTotalTimeMsg());
 
   if(min_params.e1 == 0 && min_params.e2 == 0 && min_params.a == 1 && min_params.b == 1 && min_params.c ==1)
     return false;
@@ -202,6 +209,8 @@ void SQPoseEstimation::display( int ms ){
 void SQPoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
+
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(sq_params_.e1);

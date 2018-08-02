@@ -6,18 +6,22 @@
  */
 
 #include <pm_perception/background_removal.h>
+#include <pm_tools/timing.h>
 
 void BackgroundRemoval::initialize(CloudPtr &output, pcl::PointCloud<pcl::Normal>::Ptr &output_normals) {
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
 
+  Timing tick;
   PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
 
   PlaneSegmentation<PointT> plane_seg(cloud_, cloud_normals);
   plane_seg.setDistanceThreshold(plane_distance_threshold_);
   plane_seg.setIterations(plane_iterations_);
   plane_seg.apply(output, output_normals, cloud_plane, coefficients_plane);
+  backgroundExtractionStatsPublisher.publish(tick.getTotalTimeMsg());
+
 }
 
 
@@ -25,6 +29,8 @@ void BackgroundRemoval::process(CloudPtr & output, pcl::PointCloud<pcl::Normal>:
 
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
+
+  Timing tick;
   PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
 
   if( ransac_background_filter_ ) {
@@ -37,6 +43,7 @@ void BackgroundRemoval::process(CloudPtr & output, pcl::PointCloud<pcl::Normal>:
     PCLTools<PointT>::applyZAxisPassthrough(cloud_, output, 0, 0.89);//REAL 0.89 SIM 1.4 "REMOVE FILTER" 3
     PCLTools<PointT>::estimateNormals(output, output_normals);
   }
+  backgroundExtractionStatsPublisher.publish(tick.getTotalTimeMsg());
 
 }
 

@@ -8,6 +8,7 @@
 #ifndef BACKGROUNDREMOVAL_H_
 #define BACKGROUNDREMOVAL_H_
 
+#include <std_msgs/Float32.h>
 #include <pcl/io/pcd_io.h>
 #include <pm_tools/pcl_segmentation.h>
 
@@ -20,6 +21,7 @@ typedef Cloud::Ptr CloudPtr;
 class BackgroundRemoval {
 
   CloudPtr cloud_;
+  ros::Publisher backgroundExtractionStatsPublisher;
 
 public:
   pcl::ModelCoefficients::Ptr coefficients_plane;
@@ -33,11 +35,12 @@ public:
   /** Constructor.
    * @param source cloud
    */
-  BackgroundRemoval(CloudPtr source,  double distanceThreshold = 0.05){
+  BackgroundRemoval(ros::NodeHandle & nh, CloudPtr source,  double distanceThreshold = 0.05){
     setPlaneSegmentationParams(distanceThreshold);
     ransac_background_filter_ = true;
     coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
     cloud_plane = CloudPtr( new Cloud );
+    backgroundExtractionStatsPublisher = nh.advertise<std_msgs::Float32>("stats/background", 10);
   }
 
   /** Set background removal mode */

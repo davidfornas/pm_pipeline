@@ -4,6 +4,9 @@
  *  Created on: 29/09/2017
  *      Author: dfornas
  */
+
+#include <pm_tools/timing.h>
+
 #include <pm_perception/ransac_pose_estimation.h>
 #include <pm_perception/cluster_measure.h>
 #include <pm_perception/symmetry.h>
@@ -31,6 +34,8 @@ bool BoxPoseEstimation::process() {
   pcl::ModelCoefficients::Ptr coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
   PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
 
+  Timing tick;
+
   PlaneSegmentation<PointT> plane_seg(cloud_, cloud_normals);
   plane_seg.setDistanceThreshold(0.04);
   //plane_seg.setIterations(plane_iterations_);
@@ -54,6 +59,9 @@ bool BoxPoseEstimation::process() {
   Eigen::Matrix4f cMo_eigen;
   cMo_eigen = cm.getOABBox( q, t, width_, height_, depth_ );
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
+
+  estimationStatsPublisher.publish(tick.getTotalTimeMsg());
+
   publishResults();
   object_cloud_ = full_model;
   return true;
@@ -64,6 +72,8 @@ void BoxPoseEstimation::publishResults(){
 
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
+
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(width_);
@@ -85,6 +95,8 @@ bool CylinderPoseEstimation::initialize() {
   ROS_DEBUG_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
+
+  Timing tick;
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -131,7 +143,9 @@ bool CylinderPoseEstimation::initialize() {
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
+
+  estimationStatsPublisher.publish(tick.getTotalTimeMsg());
+  ROS_INFO_STREAM("cMo (camera to object) is...: " << std::endl << cMo );
 
   publishResults();
   object_cloud_ = cloud_cylinder;
@@ -150,6 +164,8 @@ bool CylinderPoseEstimation::process() {
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
+
+  Timing tick;
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -203,6 +219,8 @@ bool CylinderPoseEstimation::process() {
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
 
+  estimationStatsPublisher.publish(tick.getTotalTimeMsg());
+
   publishResults();
   object_cloud_ = cloud_cylinder;
   // @TODO Filter may be here or not. To avoid bad  detections.
@@ -212,6 +230,8 @@ bool CylinderPoseEstimation::process() {
 void CylinderPoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
+
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(radious);
@@ -290,6 +310,8 @@ bool SpherePoseEstimation::process() {
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
 
+  Timing tick;
+
   SphereSegmentation<PointT> sph_seg(cloud_filtered2, cloud_normals2);
   sph_seg.setDistanceThreshold(sphere_distance_threshold_);
   sph_seg.setIterations(sphere_iterations_);
@@ -332,6 +354,8 @@ bool SpherePoseEstimation::process() {
   cMo[1][0]=result.y(); cMo[1][1]=ground_plane_normal.y(); cMo[1][2]=ground_plane_vector.y();cMo[1][3]=sphere_centre.y();
   cMo[2][0]=result.z(); cMo[2][1]=ground_plane_normal.z(); cMo[2][2]=ground_plane_vector.z();cMo[2][3]=sphere_centre.z();
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
+
+  estimationStatsPublisher.publish(tick.getTotalTimeMsg());
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
 
   publishResults();
@@ -342,6 +366,8 @@ bool SpherePoseEstimation::process() {
 void SpherePoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
+
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(radious);

@@ -49,7 +49,6 @@ protected:
   ros::Publisher objectParameterPublisher;
   ros::Publisher estimationStatsPublisher;
   ros::Publisher symmetryStatsPublisher;
-  ros::Publisher backgroundExtractionStatsPublisher;
 
 public:
 
@@ -60,7 +59,7 @@ public:
   PoseEstimation(ros::NodeHandle & nh, CloudPtr cloud, double distanceThreshold = 0.05) : nh_(nh) {
     cloud_ = cloud;
     camera_frame_name = cloud->header.frame_id;
-    bg_remove = new BackgroundRemoval(cloud, distanceThreshold);
+    bg_remove = new BackgroundRemoval(nh, cloud, distanceThreshold);
     debug_ = false;
     vispToTF.addTransform(vpHomogeneousMatrix(0, 0, 0, 0, 0, 0), "/stereo", "/cMo", "cMo");
     symmetry_search_ = false;
@@ -71,7 +70,6 @@ public:
 
     estimationStatsPublisher = nh.advertise<std_msgs::Float32>("stats/estimation", 10);
     symmetryStatsPublisher = nh.advertise<std_msgs::Float32>("stats/symmetry", 10);
-    backgroundExtractionStatsPublisher = nh.advertise<std_msgs::Float32>("stats/backgroundExtraction", 10);
   }
 
   virtual bool initialize(){ return false;}
