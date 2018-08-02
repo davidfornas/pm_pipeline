@@ -49,12 +49,6 @@ void stringCallback(const std_msgs::String &msg ){
   }
 }
 
-std_msgs::Float32 toFloat32Msgs(float msg){
-  std_msgs::Float32 rosMsg;
-  rosMsg.data = msg;
-  return rosMsg;
-}
-
 /** Plans a grasp on a point cloud and visualizes it using UWSim externally. Subscribes to GUI Commands... */
 int main(int argc, char **argv)
 {
@@ -71,7 +65,6 @@ int main(int argc, char **argv)
   reset_marker = false;
   do_ransac = false;
 
-  //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
@@ -132,25 +125,24 @@ int main(int argc, char **argv)
       ROS_INFO("Cannot retrieve vehicle position. Not displaying vehicle position. %s",ex.what());
     }
   }
-  clock_t begin, end;
 
   // Load cloud if required.
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>), aux_cloud (new pcl::PointCloud<PointT>);
   if( do_ransac ){
-    begin = clock();
+    Timing tick;
     PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
-    end = clock();
-    ROS_INFO_STREAM("Cloud load time: " << double(end - begin) / CLOCKS_PER_SEC);
+    loadTimePublisher.publish(tick.getTotalTimeMsg());
+    ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
     ROS_INFO_STREAM("Initial cloud has: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points (not NaN).");
-    loadTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
 
-    begin = clock();
+    tick.resetTimer();
     PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
-    end = clock();
+
+    filterTimePublisher.publish(tick.getTotalTimeMsg());
+    ROS_INFO_STREAM("Downsample time: " << tick.getTotalTimeMsg());
+
     pcl::copyPointCloud(*cloud, *aux_cloud);
-    ROS_INFO_STREAM("Downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
-    filterTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
     ROS_INFO_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
 
     sensor_msgs::PointCloud2 message;
@@ -172,11 +164,10 @@ int main(int argc, char **argv)
     planner = new SliderGraspPlanner(object_pose_topic);
   }
 
-  begin = clock();
+  Timing tick;
   planner->perceive();
-  end = clock();
-  ROS_INFO_STREAM("First computing time: " << double(end - begin) / CLOCKS_PER_SEC);
-  fullProcessTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+  fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
+  ROS_INFO_STREAM("First computing time: " << tick.getTotalTimeMsg());
 
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
@@ -206,27 +197,26 @@ int main(int argc, char **argv)
       planner->perceive();
     }else{
 
-      begin = clock();
+      Timing tick;
       PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
-      end = clock();
-      ROS_INFO_STREAM("Cloud load time: " << double(end - begin) / CLOCKS_PER_SEC);
-      loadTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+      ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
+      loadTimePublisher.publish(tick.getTotalTimeMsg());
 
-      begin = clock();
+      tick.resetTimer();
       PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
-      end = clock();
+      filterTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_INFO_STREAM("Online downsample time: " << tick.getTotalTimeMsg());
+
       pcl::copyPointCloud(*cloud, *aux_cloud);
-      ROS_INFO_STREAM("Online downsample time: " << double(end - begin) / CLOCKS_PER_SEC);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
-      filterTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+
 
       planner->setNewCloud(cloud);
-      begin = clock();
+      tick.resetTimer();
       planner->redoRansac();
-      end = clock();
-      ROS_INFO_STREAM("Finished. Pose estimation processing time: " << double(end - begin) / CLOCKS_PER_SEC);
-      fullProcessTimePublisher.publish(toFloat32Msgs(float(end - begin) / CLOCKS_PER_SEC));
+      fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_INFO_STREAM("Finished. Pose estimation processing time: " << tick.getTotalTimeMsg());
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;

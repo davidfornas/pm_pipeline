@@ -160,11 +160,8 @@ bool SQPoseEstimation::processNext() {
   cMo[1][3] = transform [1][3];
   cMo[2][3] = transform [2][3];
 
-  //if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  //}
   object_cloud_ = full_model;
+  publishResults();
   display();
 
   //Generate Object Mesh for UWSim
@@ -200,4 +197,19 @@ void SQPoseEstimation::display( int ms ){
     p->spinOnce(20);
     boost::this_thread::sleep(boost::posix_time::microseconds(20000));
   }
+}
+
+void SQPoseEstimation::publishResults(){
+  vispToTF.resetTransform(cMo, "cMo");
+  vispToTF.publish();
+
+  std_msgs::Float32MultiArray objectParameters;
+  objectParameters.data.push_back(sq_params_.e1);
+  objectParameters.data.push_back(sq_params_.e2);
+  objectParameters.data.push_back(sq_params_.a);
+  objectParameters.data.push_back(sq_params_.b);
+  objectParameters.data.push_back(sq_params_.c);
+  objectParameterPublisher.publish(objectParameters);
+
+  ros::spinOnce();
 }

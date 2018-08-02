@@ -38,12 +38,17 @@ typedef Cloud::Ptr CloudPtr;
 /** Box Pose Estimation using RANSAC Plane Extraction*/
 class BoxPoseEstimation : public PoseEstimation{
 
+  float width_;
+  float height_;
+  float depth_;
+
 public:
 
   BoxPoseEstimation(ros::NodeHandle & nh, CloudPtr source) : PoseEstimation(nh, source){}
 
   bool initialize(){ return process(); }
   bool process();
+  void publishResults();
 
 };
 
@@ -84,6 +89,8 @@ public:
     cylinder_iterations_=iterations;
     radious_limit_=rlimit;
   }
+
+  void publishResults();
 
   ~CylinderPoseEstimation() {}
 
@@ -134,6 +141,9 @@ public:
     sphere_iterations_=iterations;
     radious_limit_=rlimit;
   }
+
+  void publishResults();
+
   ~SpherePoseEstimation() {}
 
 };//End SpherePoseEstimation

@@ -52,17 +52,26 @@ bool BoxPoseEstimation::process() {
   Eigen::Quaternionf q;
   Eigen::Vector3f t;
   Eigen::Matrix4f cMo_eigen;
-  float width, height, depth;
-  cMo_eigen = cm.getOABBox( q, t, width, height, depth );
+  cMo_eigen = cm.getOABBox( q, t, width_, height_, depth_ );
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 1.57, 0);
-  UWSimMarkerPublisher::publishCubeMarker(cMo, height, depth, width);
-
-  //if(debug_) {
-  vispToTF.resetTransform(cMo, "cMo");
-  vispToTF.publish();
-  //}
+  publishResults();
   object_cloud_ = full_model;
   return true;
+}
+
+void BoxPoseEstimation::publishResults(){
+  UWSimMarkerPublisher::publishCubeMarker(cMo, height_, depth_, width_);
+
+  vispToTF.resetTransform(cMo, "cMo");
+  vispToTF.publish();
+
+  std_msgs::Float32MultiArray objectParameters;
+  objectParameters.data.push_back(width_);
+  objectParameters.data.push_back(height_);
+  objectParameters.data.push_back(depth_);
+  objectParameterPublisher.publish(objectParameters);
+
+  ros::spinOnce();
 }
 
 bool CylinderPoseEstimation::initialize() {
@@ -123,13 +132,10 @@ bool CylinderPoseEstimation::initialize() {
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
-  //if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  //}
+
+  publishResults();
   object_cloud_ = cloud_cylinder;
   return true;
-
 }
 
 bool CylinderPoseEstimation::process() {
@@ -196,16 +202,27 @@ bool CylinderPoseEstimation::process() {
   cMo[1][0]=result.y(); cMo[1][1]=axis_dir.y(); cMo[1][2]=perp.y();cMo[1][3]=mean.y;
   cMo[2][0]=result.z(); cMo[2][1]=axis_dir.z(); cMo[2][2]=perp.z();cMo[2][3]=mean.z;
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
-  //if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  //}
-  vpHomogeneousMatrix cylinder;
-  cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
-  UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious,radious,height);
+
+  publishResults();
   object_cloud_ = cloud_cylinder;
   // @TODO Filter may be here or not. To avoid bad  detections.
   return true;
+}
+
+void CylinderPoseEstimation::publishResults(){
+  vispToTF.resetTransform(cMo, "cMo");
+  vispToTF.publish();
+
+  std_msgs::Float32MultiArray objectParameters;
+  objectParameters.data.push_back(radious);
+  objectParameters.data.push_back(height);
+  objectParameterPublisher.publish(objectParameters);
+
+  vpHomogeneousMatrix cylinder;
+  cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
+  UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious, radious, height);
+
+  ros::spinOnce();
 }
 
 //Ordenar en función de la proyección del punto sobre el eje definido
@@ -316,15 +333,24 @@ bool SpherePoseEstimation::process() {
   cMo[2][0]=result.z(); cMo[2][1]=ground_plane_normal.z(); cMo[2][2]=ground_plane_vector.z();cMo[2][3]=sphere_centre.z();
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
-  //if(debug_) {
-    vispToTF.resetTransform(cMo, "cMo");
-    vispToTF.publish();
-  //}
-  vpHomogeneousMatrix sphere;
-  sphere = cMo ;//* vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
-  UWSimMarkerPublisher::publishSphereMarker(sphere ,radious,radious,radious);
+
+  publishResults();
   object_cloud_ = cloud_sphere;
   return true;
+}
+
+void SpherePoseEstimation::publishResults(){
+  vispToTF.resetTransform(cMo, "cMo");
+  vispToTF.publish();
+
+  std_msgs::Float32MultiArray objectParameters;
+  objectParameters.data.push_back(radious);
+  objectParameterPublisher.publish(objectParameters);
+
+  vpHomogeneousMatrix cylinder;
+  //sphere = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
+  UWSimMarkerPublisher::publishSphereMarker(cMo ,radious,radious,radious);
+  ros::spinOnce();
 }
 
 

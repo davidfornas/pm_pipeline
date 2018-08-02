@@ -44,6 +44,7 @@ protected:
   bool symmetry_search_, planar_symmetry_, fixed_half_height_;
   double angle_limit_, angle_step_, distance_ratio_step_;
 
+  ros::NodeHandle & nh_;
   ros::Publisher objectPosePublisher;
   ros::Publisher objectParameterPublisher;
   ros::Publisher estimationStatsPublisher;
@@ -56,7 +57,7 @@ public:
   vpHomogeneousMatrix  cMo;
   BackgroundRemoval * bg_remove;
 
-  PoseEstimation(ros::NodeHandle & nh, CloudPtr cloud, double distanceThreshold = 0.05){
+  PoseEstimation(ros::NodeHandle & nh, CloudPtr cloud, double distanceThreshold = 0.05) : nh_(nh) {
     cloud_ = cloud;
     camera_frame_name = cloud->header.frame_id;
     bg_remove = new BackgroundRemoval(cloud, distanceThreshold);
@@ -75,6 +76,7 @@ public:
 
   virtual bool initialize(){ return false;}
   virtual bool process(){ return false;}
+  virtual void publishResults() { }
 
   //Set pose estimation debug, manily visualization with PCL Viewer.
   void setDebug( bool debug ){

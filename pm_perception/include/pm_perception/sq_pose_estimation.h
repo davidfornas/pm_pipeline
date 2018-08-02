@@ -80,6 +80,7 @@ public:
   }
 
   void display( int ms = 500 );
+  void publishResults();
 
 };
 

@@ -26,7 +26,7 @@ bool PCAPoseEstimation::process() {
   bg_remove->setNewCloud(cloud_);
   bg_remove->initialize(cloud_, cloud_normals);
 
-  cloud_clustering_ = new CloudClustering<PointT>(cloud_);
+  cloud_clustering_ = new CloudClustering<PointT>(nh_, cloud_);
   cloud_clustering_->applyEuclidianClustering();
   //Set to -1 because processNext increases the count..
   cluster_index_ = -1;

@@ -34,10 +34,14 @@ typedef Cloud::Ptr CloudPtr;
 /** Pose Estimation using PCA */
 class PCAPoseEstimation : public PoseEstimation{
 
-  int cluster_index_, cluster_thereshold_;
   CloudClustering<PointT> * cloud_clustering_;
 
-  float width_, height_, depth_;
+  int cluster_index_;
+  int cluster_thereshold_;
+
+  float width_;
+  float height_;
+  float depth_;
 
 public:
 
@@ -45,8 +49,8 @@ public:
     cluster_thereshold_ = cluster_thereshold;
   }
 
-  void publishResults();
   bool initialize(){ return process(); }
+  void publishResults();
 
   // Use process multiple times with new clouds.
   bool process();
