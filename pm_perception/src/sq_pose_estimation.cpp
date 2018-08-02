@@ -212,6 +212,14 @@ void SQPoseEstimation::publishResults(){
 
   objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
+  sensor_msgs::PointCloud2 message;
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
+  pcl_conversions::fromPCL(pcl_pc, message);
+  message.header.frame_id = "stereo";
+  objectCloudPublisher.publish(message);
+  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
+
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(sq_params_.e1);
   objectParameters.data.push_back(sq_params_.e2);

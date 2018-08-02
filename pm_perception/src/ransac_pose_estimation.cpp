@@ -75,6 +75,14 @@ void BoxPoseEstimation::publishResults(){
 
   objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
+  sensor_msgs::PointCloud2 message;
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
+  pcl_conversions::fromPCL(pcl_pc, message);
+  message.header.frame_id = "stereo";
+  objectCloudPublisher.publish(message);
+  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
+
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(width_);
   objectParameters.data.push_back(height_);
@@ -233,10 +241,18 @@ void CylinderPoseEstimation::publishResults(){
 
   objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
+  sensor_msgs::PointCloud2 message;
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
+  pcl_conversions::fromPCL(pcl_pc, message);
+  message.header.frame_id = "stereo";
+  objectCloudPublisher.publish(message);
+
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(radious);
   objectParameters.data.push_back(height);
   objectParameterPublisher.publish(objectParameters);
+  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
 
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
@@ -369,9 +385,17 @@ void SpherePoseEstimation::publishResults(){
 
   objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
+  sensor_msgs::PointCloud2 message;
+  pcl::PCLPointCloud2 pcl_pc;
+  pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
+  pcl_conversions::fromPCL(pcl_pc, message);
+  message.header.frame_id = "stereo";
+  objectCloudPublisher.publish(message);
+
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(radious);
   objectParameterPublisher.publish(objectParameters);
+  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
 
   vpHomogeneousMatrix cylinder;
   //sphere = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
