@@ -84,7 +84,7 @@ public:
   /** Set cylinder segmentation parameters: distance to the inliers to the plane,
    * number of iterations and radious limit.
    */
-  void setCylinderSegmentationParams(double distanceThreshold = 0.05,int iterations = 20000, double rlimit = 0.1){
+  void setCylinderSegmentationParams(double distanceThreshold = 0.05,int iterations = 20000, double rlimit = 0.15){
     cylinder_distance_threshold_=distanceThreshold;
     cylinder_iterations_=iterations;
     radious_limit_=rlimit;

@@ -9,6 +9,7 @@
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/marker_tools.h>
 #include <pm_tools/tf_tools.h>
+#include <pm_tools/average.h>
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -64,6 +65,16 @@ int main(int argc, char **argv)
   compute_initial_cMg = false;
   reset_marker = false;
   do_ransac = false;
+
+  AverageFloat32 avg1(nh, "object/cloudSize", "object/cloudSize/average");
+  AverageFloat32 avg2(nh, "stats/background", "stats/background/average");
+  AverageFloat32 avg3(nh, "stats/estimation", "stats/estimation/average");
+  AverageFloat32 avg4(nh, "stats/filterCloud", "stats/filterCloud/average");
+  AverageFloat32 avg5(nh, "stats/loadCloud", "stats/loadCloud/average");
+  AverageFloat32 avg6(nh, "stats/processCloud", "stats/processCloud/average");
+  AverageFloat32 avg7(nh, "stats/symmetry", "stats/symmetry/average");
+  AverageFloat32MultiArray avg8(nh, "object/modelParameters", "object/modelParameters/average");
+  AveragePose avg9(nh, "object/pose", "object/pose/average");
 
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 

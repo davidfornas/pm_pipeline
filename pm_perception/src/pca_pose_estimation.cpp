@@ -86,8 +86,9 @@ bool PCAPoseEstimation::processNext() {
   cMo = VispTools::EigenMatrix4fToVpHomogeneousMatrix(cMo_eigen) * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0) * vpHomogeneousMatrix(0, 0, 0, 0, 3.1416, 0);
   estimationStatsPublisher.publish(tick.getTotalTimeMsg());
 
-  publishResults();
   object_cloud_ = full_model;
+
+  publishResults();
   return true;
 
 }

@@ -71,7 +71,7 @@ public:
     objectParameterPublisher = nh.advertise<std_msgs::Float32MultiArray>("object/modelParameters", 10);
     objectPosePublisher      = nh.advertise<geometry_msgs::Pose>("object/pose", 10);
     objectCloudPublisher     = nh.advertise<sensor_msgs::PointCloud2>("object/cloud", 1000);
-    estimationStatsPublisher = nh.advertise<std_msgs::Float32>("object/cloudSize", 10);
+    objectCloudSizePublisher = nh.advertise<std_msgs::Float32>("object/cloudSize", 10);
     estimationStatsPublisher = nh.advertise<std_msgs::Float32>("stats/estimation", 10);
     symmetryStatsPublisher   = nh.advertise<std_msgs::Float32>("stats/symmetry", 10);
   }

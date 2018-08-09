@@ -155,8 +155,9 @@ bool CylinderPoseEstimation::initialize() {
   estimationStatsPublisher.publish(tick.getTotalTimeMsg());
   ROS_INFO_STREAM("cMo (camera to object) is...: " << std::endl << cMo );
 
-  publishResults();
   object_cloud_ = cloud_cylinder;
+
+  publishResults();
   return true;
 }
 
@@ -229,8 +230,8 @@ bool CylinderPoseEstimation::process() {
 
   estimationStatsPublisher.publish(tick.getTotalTimeMsg());
 
-  publishResults();
   object_cloud_ = cloud_cylinder;
+  publishResults();
   // @TODO Filter may be here or not. To avoid bad  detections.
   return true;
 }
@@ -374,8 +375,9 @@ bool SpherePoseEstimation::process() {
   estimationStatsPublisher.publish(tick.getTotalTimeMsg());
   ROS_INFO_STREAM("cMo is...: " << std::endl << cMo );
 
-  publishResults();
   object_cloud_ = cloud_sphere;
+
+  publishResults();
   return true;
 }
 
