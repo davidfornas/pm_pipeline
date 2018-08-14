@@ -13,8 +13,8 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   if(argc < 2){
-	  std::cerr << "rosrun pm_apps log_results -i ObjectId" << std::endl;
-      std::cerr << "Options: -a To append without adding header." << std::endl << std::endl;
+	  std::cerr << "rosrun pm_apps log_results -i objectId -f fileName" << std::endl;
+      std::cerr << "Options: -c To create file astarting with header." << std::endl << std::endl;
 	  return 0;
   }
 
@@ -25,13 +25,22 @@ int main(int argc, char** argv)
     std::cerr << "rosrun pm_apps log_results -i ObjectId !!" << std::endl;
   }
 
+  std::string fileName;
+  if (pcl::console::find_argument (argc, argv, "-f") > 0){
+    pcl::console::parse_argument (argc, argv, "-f", fileName);
+  }else{
+    fileName = "estimationResults";
+  }
+
   bool append = false;
-  if(pcl::console::find_argument (argc, argv, "-a") > 0) append = true;
-
-  AllDataLogger logger("ransacEstimationData", objectId, nh, true);
-
-  logger.writeRANSACCylinderHeader();
-  logger.writeRow();
+  if(pcl::console::find_argument (argc, argv, "-c") > 0){
+    AllDataLogger logger(fileName, objectId, nh, false, true); //append = false, use average = true;
+    logger.writeRANSACCylinderHeader();
+    logger.writeRow();
+  }else{
+    AllDataLogger logger(fileName, objectId, nh, true, true); //append = false, use average = true;
+    logger.writeRow();
+  }
 
   return (0);
 }

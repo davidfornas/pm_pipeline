@@ -51,7 +51,7 @@ class AllDataLogger{
 
 
 public:
-  AllDataLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool getAverages = true);
+  AllDataLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool appendMode = true, bool getAverages = true);
 
   int getAliveSubscribers();
 

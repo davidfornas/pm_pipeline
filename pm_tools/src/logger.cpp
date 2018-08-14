@@ -24,9 +24,14 @@ SimplePoseLogger::~SimplePoseLogger(){
   myfile.close();
 }
 
-AllDataLogger::AllDataLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool getAverages) {
+AllDataLogger::AllDataLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool appendMode, bool getAverages) {
 
-  file_.open((file_name + std::string(".csv")).c_str());
+  if(appendMode){
+    file_.open((file_name + std::string(".csv")).c_str(), std::ios_base::app);
+  }else{
+    file_.open((file_name + std::string(".csv")).c_str());
+  }
+
   if(getAverages) {
     cloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/cloudSize", 1, &AllDataLogger::cloudSizeCallback,
                                                            this);
@@ -50,6 +55,7 @@ AllDataLogger::AllDataLogger(std::string file_name, std::string objectId, ros::N
 
   }
   aliveSubscribers_ = 9;
+  objectId_ = objectId;
 }
 
 void AllDataLogger::writeRANSACCylinderHeader() {
