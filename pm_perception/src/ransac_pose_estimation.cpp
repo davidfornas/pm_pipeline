@@ -50,7 +50,9 @@ bool BoxPoseEstimation::process() {
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
   PlaneSymmetryEstimation pse(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
+  Timing tickSym;
   pse.applyCentroid(full_model);
+  symmetryStatsPublisher.publish(tickSym.getLapTimeMsg());
 
   ClusterMeasure<PointT> cm(full_model, true);
 
@@ -255,6 +257,10 @@ void CylinderPoseEstimation::publishResults(){
   objectParameterPublisher.publish(objectParameters);
   objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
 
+  std_msgs::Float32 zero;
+  zero.data = 0;
+  symmetryStatsPublisher.publish(zero);
+
   vpHomogeneousMatrix cylinder;
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious, radious, height);
@@ -393,6 +399,10 @@ void SpherePoseEstimation::publishResults(){
   pcl_conversions::fromPCL(pcl_pc, message);
   message.header.frame_id = "stereo";
   objectCloudPublisher.publish(message);
+
+  std_msgs::Float32 zero;
+  zero.data = 0;
+  symmetryStatsPublisher.publish(zero);
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(radious);
