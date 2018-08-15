@@ -15,6 +15,7 @@ int main(int argc, char** argv)
   if(argc < 2){
 	  std::cerr << "rosrun pm_apps log_results -i objectId -f fileName" << std::endl;
       std::cerr << "Options: -c To create file astarting with header." << std::endl << std::endl;
+      std::cerr << "Options: -k Continuous recording." << std::endl << std::endl;
 	  return 0;
   }
 
@@ -32,13 +33,19 @@ int main(int argc, char** argv)
     fileName = "estimationResults";
   }
 
+  if(pcl::console::find_argument (argc, argv, "-k") > 0){
+    AllDataMultiLogger logger(fileName, objectId, nh, 1); //1 = cylinder
+    ros::spin();
+    return 0;
+  }
+
   bool append = false;
   if(pcl::console::find_argument (argc, argv, "-c") > 0){
-    AllDataLogger logger(fileName, objectId, nh, false, true); //append = false, use average = true;
+    AllDataSingleLogger logger(fileName, objectId, nh, false); //append = false
     logger.writeRANSACCylinderHeader();
     logger.writeRow();
   }else{
-    AllDataLogger logger(fileName, objectId, nh, true, true); //append = false, use average = true;
+    AllDataSingleLogger logger(fileName, objectId, nh, true); //append = false
     logger.writeRow();
   }
 
