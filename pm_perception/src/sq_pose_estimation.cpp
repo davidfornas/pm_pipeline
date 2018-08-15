@@ -210,8 +210,6 @@ void SQPoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
 
-  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
-
   sensor_msgs::PointCloud2 message;
   pcl::PCLPointCloud2 pcl_pc;
   pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
@@ -228,5 +226,7 @@ void SQPoseEstimation::publishResults(){
   objectParameters.data.push_back(sq_params_.c);
   objectParameterPublisher.publish(objectParameters);
 
+  ros::spinOnce();
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
   ros::spinOnce();
 }

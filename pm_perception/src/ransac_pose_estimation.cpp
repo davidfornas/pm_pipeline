@@ -75,8 +75,6 @@ void BoxPoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
 
-  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
-
   sensor_msgs::PointCloud2 message;
   pcl::PCLPointCloud2 pcl_pc;
   pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
@@ -91,6 +89,8 @@ void BoxPoseEstimation::publishResults(){
   objectParameters.data.push_back(depth_);
   objectParameterPublisher.publish(objectParameters);
 
+  ros::spinOnce();
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
   ros::spinOnce();
 }
 
@@ -242,7 +242,6 @@ void CylinderPoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
 
-  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
 
   sensor_msgs::PointCloud2 message;
   pcl::PCLPointCloud2 pcl_pc;
@@ -265,6 +264,8 @@ void CylinderPoseEstimation::publishResults(){
   cylinder = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishCylinderMarker(cylinder ,radious, radious, height);
 
+  ros::spinOnce();
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
   ros::spinOnce();
 }
 
@@ -391,8 +392,6 @@ void SpherePoseEstimation::publishResults(){
   vispToTF.resetTransform(cMo, "cMo");
   vispToTF.publish();
 
-  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
-
   sensor_msgs::PointCloud2 message;
   pcl::PCLPointCloud2 pcl_pc;
   pcl::toPCLPointCloud2(*object_cloud_, pcl_pc);
@@ -412,6 +411,9 @@ void SpherePoseEstimation::publishResults(){
   vpHomogeneousMatrix cylinder;
   //sphere = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);
   UWSimMarkerPublisher::publishSphereMarker(cMo ,radious,radious,radious);
+
+  ros::spinOnce();
+  objectPosePublisher.publish( VispTools::geometryPoseFromVispHomog(cMo) );
   ros::spinOnce();
 }
 
