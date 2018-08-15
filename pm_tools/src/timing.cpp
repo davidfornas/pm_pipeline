@@ -44,7 +44,6 @@ double Timing::getTotalTimeWithDebug(){
 double Timing::getTotalTime(){
   clock_t end = clock();
   double elapsed = double(end - startTime_) / CLOCKS_PER_SEC;
-  ROS_DEBUG_STREAM("Total time: " << elapsed);
   return elapsed;
 }
 
