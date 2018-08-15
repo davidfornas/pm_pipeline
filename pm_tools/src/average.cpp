@@ -1,6 +1,7 @@
 /*
  */
 #include <pm_tools/average.h>
+#include <pm_tools/visp_tools.h>
 
 AverageFloat32::AverageFloat32(ros::NodeHandle & nh, const char * in, const char * out) : nh_(nh), count_(0) {
     averagePublisher = nh.advertise<std_msgs::Float32>(out, 10);
@@ -51,10 +52,10 @@ void AveragePose::msgCallback(const geometry_msgs::PoseConstPtr& msg) {
 		averagePose_ = *msg;
 
 	} else {
-		averagePose_.position.x = (averagePose_.position.x * count_ + msg->position.x) / (count_ + 1);
-		averagePose_.position.y = (averagePose_.position.y * count_ + msg->position.y) / (count_ + 1);
-		averagePose_.position.z = (averagePose_.position.z * count_ + msg->position.z) / (count_ + 1);
-		// WATCH OUT POSE IS NOT AVERAGED
+		vpHomogeneousMatrix result;
+		result = VispTools::weightedAverage(VispTools::vispHomogFromGeometryPose(averagePose_), count_,
+																				VispTools::vispHomogFromGeometryPose(*msg));
+		averagePose_ = VispTools::geometryPoseFromVispHomog(result);
 		count_++;
 	}
 	averagePublisher.publish(averagePose_);
