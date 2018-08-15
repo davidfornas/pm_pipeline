@@ -172,7 +172,8 @@ AllDataSingleLogger::~AllDataSingleLogger() {
 // MULTIPLE ============================================================================  //
 
 
-AllDataMultiLogger::AllDataMultiLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, int mode) {
+AllDataMultiLogger::AllDataMultiLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, int mode)
+        : objectId_(objectId) {
   switch(mode) {
     case 1:
       writeRANSACCylinderHeader();
@@ -195,26 +196,24 @@ AllDataMultiLogger::AllDataMultiLogger(std::string file_name, std::string object
   timerStarted_ = false;
   file_.open((file_name + std::string(".csv")).c_str());
 
-  cloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/cloudSize/average", 1, &AllDataMultiLogger::cloudSizeCallback,
+  cloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/cloudSize", 1, &AllDataMultiLogger::cloudSizeCallback,
                                                          this);
-  symmetrySubscriber_ = nh.subscribe<std_msgs::Float32>("stats/symmetry/average", 1, &AllDataMultiLogger::symmetryCallback,
+  symmetrySubscriber_ = nh.subscribe<std_msgs::Float32>("stats/symmetry", 1, &AllDataMultiLogger::symmetryCallback,
                                                         this);
-  estimationSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/estimation/average", 1,
+  estimationSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/estimation", 1,
                                                           &AllDataMultiLogger::estimationCallback, this);
-  backgroundSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/background/average", 1,
+  backgroundSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/background", 1,
                                                           &AllDataMultiLogger::backgroundCallback, this);
-  filterSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/filterCloud/average", 1, &AllDataMultiLogger::filterCallback,
+  filterSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/filterCloud", 1, &AllDataMultiLogger::filterCallback,
                                                       this);
-  loadSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/loadCloud/average", 1, &AllDataMultiLogger::loadCallback, this);
-  processSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/processCloud/average", 1,
+  loadSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/loadCloud", 1, &AllDataMultiLogger::loadCallback, this);
+  processSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/processCloud", 1,
                                                        &AllDataMultiLogger::processCallback, this);
 
-  modelParametersSubscriber_ = nh.subscribe<std_msgs::Float32MultiArray>("object/modelParameters/average", 1,
+  modelParametersSubscriber_ = nh.subscribe<std_msgs::Float32MultiArray>("object/modelParameters", 1,
                                                                          &AllDataMultiLogger::modelParametersCallback,
                                                                          this);
-  poseSubscriber_ = nh.subscribe<geometry_msgs::Pose>("object/pose/average", 1, &AllDataMultiLogger::poseCallback, this);
-
-  objectId_ = objectId;
+  poseSubscriber_ = nh.subscribe<geometry_msgs::Pose>("object/pose", 1, &AllDataMultiLogger::poseCallback, this);
 }
 
 void AllDataMultiLogger::writeRANSACCylinderHeader() {
@@ -311,7 +310,6 @@ void AllDataMultiLogger::poseCallback(const geometry_msgs::PoseConstPtr& m){
   pose_ = *m;
   writeRow();
 }
-
 
 AllDataMultiLogger::~AllDataMultiLogger() {
   file_.close();
