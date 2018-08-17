@@ -174,6 +174,9 @@ AllDataSingleLogger::~AllDataSingleLogger() {
 
 AllDataMultiLogger::AllDataMultiLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, int mode)
         : objectId_(objectId) {
+  timerStarted_ = false;
+  file_.open((file_name + std::string(".csv")).c_str());
+
   switch(mode) {
     case 1:
       writeRANSACCylinderHeader();
@@ -193,8 +196,6 @@ AllDataMultiLogger::AllDataMultiLogger(std::string file_name, std::string object
     default:
       break;
   }
-  timerStarted_ = false;
-  file_.open((file_name + std::string(".csv")).c_str());
 
   cloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/cloudSize", 1, &AllDataMultiLogger::cloudSizeCallback,
                                                          this);
