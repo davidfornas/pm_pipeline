@@ -50,7 +50,6 @@ void AveragePose::msgCallback(const geometry_msgs::PoseConstPtr& msg) {
 	if (count_ == 0) {
 		count_++;
 		averagePose_ = *msg;
-
 	} else {
 		vpHomogeneousMatrix result;
 		result = VispTools::weightedAverage(VispTools::vispHomogFromGeometryPose(averagePose_), count_,

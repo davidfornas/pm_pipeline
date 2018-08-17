@@ -74,7 +74,6 @@ vpHomogeneousMatrix VispTools::vispHomogFromXyzrpy(double x, double y, double z,
 
 vpHomogeneousMatrix VispTools::weightedAverage(vpHomogeneousMatrix old_avg, int old_weight, vpHomogeneousMatrix accum)
 {
-
   double mean_x = (old_avg[0][3] * old_weight + accum[0][3]) / (old_weight + 1);
   double mean_y = (old_avg[1][3] * old_weight + accum[1][3]) / (old_weight + 1);
   double mean_z = (old_avg[2][3] * old_weight + accum[2][3]) / (old_weight + 1);
@@ -90,7 +89,7 @@ vpHomogeneousMatrix VispTools::weightedAverage(vpHomogeneousMatrix old_avg, int 
   tf::Quaternion rotation2(rot.x(), rot.y(), rot.z(), rot.w());
   tf::Matrix3x3 m2(rotation2);
   double old_roll, old_pitch, old_yaw;
-  m2.getRPY(roll, pitch, yaw);
+  m2.getRPY(old_roll, old_pitch, old_yaw);
 
   double mean_c_roll = (cos(old_roll) * old_weight + cos(roll)) / (old_weight + 1);
   double mean_s_roll = (sin(old_roll) * old_weight + sin(roll)) / (old_weight + 1);
@@ -108,11 +107,6 @@ vpHomogeneousMatrix VispTools::weightedAverage(vpHomogeneousMatrix old_avg, int 
   vpTranslationVector tt(mean_x, mean_y, mean_z);
   vpQuaternionVector qq(btQ.x(), btQ.y(), btQ.z(), btQ.w());
   vpHomogeneousMatrix new_avg(tt, qq);
-  ROS_DEBUG_STREAM("Average bMc " << std::endl << new_avg);
-
-  vpTranslationVector trans;
-  new_avg.extract(trans);
-
   return new_avg;
 }
 
