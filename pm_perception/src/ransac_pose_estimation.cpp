@@ -34,7 +34,7 @@ bool BoxPoseEstimation::process() {
   pcl::ModelCoefficients::Ptr coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
   PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
 
-  Timing tick;
+  ProgramTimer tick;
 
   PlaneSegmentation<PointT> plane_seg(cloud_, cloud_normals);
   plane_seg.setDistanceThreshold(0.04);
@@ -42,15 +42,15 @@ bool BoxPoseEstimation::process() {
   plane_seg.apply(output, output_normals, cloud_plane, coefficients_plane);
   CloudClustering<PointT> cluster(cloud_plane);
   cluster.applyEuclidianClustering();
-  cluster.displayColoured();
-  // PCA
+  if(debug_) cluster.displayColoured();
+
   if (cluster.cloud_clusters.size() == 0) return false;
   // @TODO Compute position with centroid, orientation with plane directions (similar to cylinder axis...)
 
   // ESTIMATON OF THE SYMMETRY PLANE
   CloudPtr full_model(new Cloud);
   PlaneSymmetryEstimation pse(cluster.cloud_clusters[0], bg_remove->cloud_plane, *bg_remove->coefficients_plane);
-  Timing tickSym;
+  ProgramTimer tickSym;
   pse.applyCentroid(full_model);
   symmetryStatsPublisher.publish(tickSym.getLapTimeMsg());
 
@@ -81,7 +81,7 @@ void BoxPoseEstimation::publishResults(){
   pcl_conversions::fromPCL(pcl_pc, message);
   message.header.frame_id = "stereo";
   objectCloudPublisher.publish(message);
-  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
+  objectCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(object_cloud_->points.size()));
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(width_);
@@ -106,7 +106,7 @@ bool CylinderPoseEstimation::initialize() {
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
 
-  Timing tick;
+  ProgramTimer tick;
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -176,7 +176,7 @@ bool CylinderPoseEstimation::process() {
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
 
-  Timing tick;
+  ProgramTimer tick;
 
   CylinderSegmentation<PointT> cyl_seg(cloud_filtered2, cloud_normals2);
   cyl_seg.setDistanceThreshold(cylinder_distance_threshold_);
@@ -254,7 +254,7 @@ void CylinderPoseEstimation::publishResults(){
   objectParameters.data.push_back(radious);
   objectParameters.data.push_back(height);
   objectParameterPublisher.publish(objectParameters);
-  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
+  objectCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(object_cloud_->points.size()));
 
   std_msgs::Float32 zero;
   zero.data = 0;
@@ -330,21 +330,21 @@ bool SpherePoseEstimation::process() {
 
   // @ TODO : Add more filters -> downsampling and radial ooutlier removal.
   PCLTools<PointT>::applyZAxisPassthrough(cloud_, cloud_filtered, 0, 3);
-  ROS_DEBUG_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
+  ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
-  bg_remove->initialize(cloud_filtered2, cloud_normals2);
+  bg_remove->initialize(cloud_filtered2, cloud_normals);
 
-  Timing tick;
+  CloudClustering<PointT> cluster(cloud_filtered2);
+  cluster.applyEuclidianClustering();
+  if(debug_) cluster.displayColoured();
+  PCLTools<PointT>::estimateNormals(cluster.cloud_clusters[0], cloud_normals2);
 
-  SphereSegmentation<PointT> sph_seg(cloud_filtered2, cloud_normals2);
+  ProgramTimer tick;
+  SphereSegmentation<PointT> sph_seg(cluster.cloud_clusters[0], cloud_normals2);
   sph_seg.setDistanceThreshold(sphere_distance_threshold_);
   sph_seg.setIterations(sphere_iterations_);
   sph_seg.setRadiousLimit(radious_limit_);
   sph_seg.apply(cloud_sphere, coefficients_sphere);
-
-  PCLView<PointT>::showCloud(cloud_sphere);
-  PCLView<PointT>::showCloud(bg_remove->cloud_plane);
-  ROS_INFO_STREAM("DEBUG" << cloud_sphere->points.size());
 
   Eigen::Vector3f sphere_centre;
   sphere_centre.x() = coefficients_sphere->values[0];
@@ -406,7 +406,7 @@ void SpherePoseEstimation::publishResults(){
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(radious);
   objectParameterPublisher.publish(objectParameters);
-  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
+  objectCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(object_cloud_->points.size()));
 
   vpHomogeneousMatrix cylinder;
   //sphere = cMo * vpHomogeneousMatrix(0, 0, 0, 1.57, 0, 0);

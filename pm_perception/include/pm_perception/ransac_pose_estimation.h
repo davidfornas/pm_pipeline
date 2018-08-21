@@ -122,9 +122,9 @@ public:
   /** Constructor.
    * @params: Get pose using RANSAC & the input cloud.
    * */
-  SpherePoseEstimation(ros::NodeHandle & nh, CloudPtr cloud, double distanceThreshold = 0.05)
-          : PoseEstimation(nh, cloud, distanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
-    setSphereSegmentationParams();
+  SpherePoseEstimation(ros::NodeHandle & nh, CloudPtr cloud, double planeDistanceThreshold = 0.05, double sphereDistanceThreshold = 0.05, int iterations = 20000, double rlimit = 0.08)
+          : PoseEstimation(nh, cloud, planeDistanceThreshold){//, ros::NodeHandle & nh, std::string object_pose, vpHomogeneousMatrix wMc ){
+    setSphereSegmentationParams(sphereDistanceThreshold, iterations, rlimit);
   }
 
   /** Where segmentation is done */

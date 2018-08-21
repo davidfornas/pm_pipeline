@@ -283,7 +283,7 @@ bool SphereSegmentation<PointT>::apply(CloudPtr cloud_sphere, pcl::ModelCoeffici
 
   // Obtain the cylinder inliers and coefficients
   seg.segment(*inliers_sphere_, *coeffs);
-  ROS_DEBUG_STREAM("Sphere coefficients: " << *coeffs);
+  ROS_INFO_STREAM("Sphere coefficients: " << *coeffs);
   clock_t end = clock();
   ROS_DEBUG_STREAM("Elapsed seg. time: " << double(end - begin) / CLOCKS_PER_SEC);
 
@@ -293,10 +293,10 @@ bool SphereSegmentation<PointT>::apply(CloudPtr cloud_sphere, pcl::ModelCoeffici
   extract.setNegative(false);
   extract.filter(*cloud_sphere);
   if (cloud_sphere->points.empty())
-    ROS_DEBUG_STREAM("Can't find the spherical component.");
+    ROS_INFO_STREAM("Can't find the spherical component.");
   else
   {
-    ROS_DEBUG_STREAM(
+    ROS_INFO_STREAM(
             "PointCloud representing the spherical component: " << cloud_sphere->points.size () << " data points.");
     writer.write("scene_sphere.pcd", *cloud_sphere, false);
   }
