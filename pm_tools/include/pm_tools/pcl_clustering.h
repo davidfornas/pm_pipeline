@@ -153,7 +153,7 @@ void CloudClustering<PointT>::applyEuclidianClustering( float tolerance, int min
   typename pcl::search::KdTree<PointT>::Ptr tree (new typename pcl::search::KdTree<PointT>);
   tree->setInputCloud (cloud_);
 
-  Timing tick;
+  ProgramTimer tick;
   pcl::EuclideanClusterExtraction<PointT> ec;
   ec.setClusterTolerance (tolerance); // 2cm
   ec.setMinClusterSize (minSize);
@@ -188,7 +188,7 @@ void CloudClustering<PointT>::applyRegionGrowingClustering( float smoothnessTh, 
   normal_estimator.setKSearch (50);
   normal_estimator.compute (*normals);
 
-  Timing tick;
+  ProgramTimer tick;
   typename pcl::RegionGrowing<PointT, pcl::Normal> reg;
   reg.setMinClusterSize (minSize);
   reg.setMaxClusterSize (maxSize);
@@ -215,7 +215,7 @@ void CloudClustering<PointT>::applyRGBRegionGrowingClustering( float distance, f
 			boost::shared_ptr<typename pcl::search::Search<PointT> > (new pcl::search::KdTree<PointT>);
 	pcl::RegionGrowingRGB<PointT> reg;
 
-  Timing tick;
+  ProgramTimer tick;
   reg.setInputCloud (cloud_);
 	reg.setSearchMethod (tree);
 	reg.setDistanceThreshold (distance);

@@ -13,7 +13,7 @@ void BackgroundRemoval::initialize(CloudPtr &output, pcl::PointCloud<pcl::Normal
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
 
-  Timing tick;
+  ProgramTimer tick;
   PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
 
   PlaneSegmentation<PointT> plane_seg(cloud_, cloud_normals);
@@ -30,7 +30,7 @@ void BackgroundRemoval::process(CloudPtr & output, pcl::PointCloud<pcl::Normal>:
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
 
-  Timing tick;
+  ProgramTimer tick;
   PCLTools<PointT>::estimateNormals(cloud_, cloud_normals);
 
   if( ransac_background_filter_ ) {

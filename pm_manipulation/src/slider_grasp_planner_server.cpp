@@ -140,7 +140,7 @@ int main(int argc, char **argv)
   // Load cloud if required.
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>), aux_cloud (new pcl::PointCloud<PointT>);
   if( do_ransac ){
-    Timing tick;
+    ProgramTimer tick;
     PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
     loadTimePublisher.publish(tick.getTotalTimeMsg());
     ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
     planner = new SliderGraspPlanner(object_pose_topic);
   }
 
-  Timing tick;
+  ProgramTimer tick;
   planner->perceive();
   fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
   ROS_INFO_STREAM("First computing time: " << tick.getTotalTimeMsg());
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
       planner->perceive();
     }else{
 
-      Timing tick;
+      ProgramTimer tick;
       PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
       ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
       loadTimePublisher.publish(tick.getTotalTimeMsg());

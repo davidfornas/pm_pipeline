@@ -55,7 +55,7 @@ bool PCAPoseEstimation::processNext() {
   if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
   // ESTIMATON OF THE SYMMETRY PLANE
-  Timing tick;
+  ProgramTimer tick;
   CloudPtr full_model(new Cloud);
   if(planar_symmetry_) {
     PlaneSymmetryEstimation pse(cloud_clustering_->cloud_clusters[cluster_index_], bg_remove->cloud_plane,
@@ -105,7 +105,7 @@ void PCAPoseEstimation::publishResults() {
   pcl_conversions::fromPCL(pcl_pc, message);
   message.header.frame_id = "stereo";
   objectCloudPublisher.publish(message);
-  objectCloudSizePublisher.publish(Timing::toFloat32Msgs(object_cloud_->points.size()));
+  objectCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(object_cloud_->points.size()));
 
   std_msgs::Float32MultiArray objectParameters;
   objectParameters.data.push_back(width_);
