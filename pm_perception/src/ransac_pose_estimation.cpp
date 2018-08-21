@@ -346,6 +346,8 @@ bool SpherePoseEstimation::process() {
   sph_seg.setRadiousLimit(radious_limit_);
   sph_seg.apply(cloud_sphere, coefficients_sphere);
 
+  if(cloud_sphere->size() < 100) return false;
+
   Eigen::Vector3f sphere_centre;
   sphere_centre.x() = coefficients_sphere->values[0];
   sphere_centre.y() = coefficients_sphere->values[1];
@@ -371,12 +373,12 @@ bool SpherePoseEstimation::process() {
 
   tf::Vector3 tf_ground_plane_vector(ground_plane_vector.x(), ground_plane_vector.y(), ground_plane_vector.z());
   tf::Vector3 tf_ground_plane_normal(ground_plane_normal.x(), ground_plane_normal.y(), ground_plane_normal.z());
-  tf::Vector3 result=tf::tfCross( tf_ground_plane_vector, tf_ground_plane_normal).normalize();
+  tf::Vector3 result=tf::tfCross( tf_ground_plane_normal, tf_ground_plane_vector).normalize();
   result = -result;
 
-  cMo[0][0]=result.x(); cMo[0][1]=ground_plane_normal.x(); cMo[0][2]=ground_plane_vector.x();cMo[0][3]=sphere_centre.x();
-  cMo[1][0]=result.y(); cMo[1][1]=ground_plane_normal.y(); cMo[1][2]=ground_plane_vector.y();cMo[1][3]=sphere_centre.y();
-  cMo[2][0]=result.z(); cMo[2][1]=ground_plane_normal.z(); cMo[2][2]=ground_plane_vector.z();cMo[2][3]=sphere_centre.z();
+  cMo[0][0]=result.x(); cMo[0][1]=ground_plane_vector.x(); cMo[0][2]=ground_plane_normal.x();cMo[0][3]=sphere_centre.x();
+  cMo[1][0]=result.y(); cMo[1][1]=ground_plane_vector.y(); cMo[1][2]=ground_plane_normal.y();cMo[1][3]=sphere_centre.y();
+  cMo[2][0]=result.z(); cMo[2][1]=ground_plane_vector.z(); cMo[2][2]=ground_plane_normal.z();cMo[2][3]=sphere_centre.z();
   cMo[3][0]=0;cMo[3][1]=0;cMo[3][2]=0;cMo[3][3]=1;
 
   estimationStatsPublisher.publish(tick.getTotalTimeMsg());
