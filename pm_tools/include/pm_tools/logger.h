@@ -91,7 +91,7 @@ class AllDataMultiLogger{
   float cloudSize_, symmetry_, estimation_, background_, filter_, process_, load_;
 
   bool timerStarted_;
-  Timing timer;
+  SystemTimer timer;
 
   ros::Subscriber cloudSizeSubscriber_;
   ros::Subscriber symmetrySubscriber_;

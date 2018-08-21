@@ -6,13 +6,13 @@
  */
 #include <pm_tools/timing.h>
 
-Timing::Timing()
+ProgramTimer::ProgramTimer()
 {
   startTime_ = clock();
   lastLapTime_ = clock();
 }
 
-double Timing::getLapTimeWithDebug(){
+double ProgramTimer::getLapTimeWithDebug(){
   clock_t end = clock();
   double elapsed =  double(end - lastLapTime_) / CLOCKS_PER_SEC;
   ROS_DEBUG_STREAM("Elapsed time: " << elapsed << "Total time: " << double(end - lastLapTime_) / CLOCKS_PER_SEC);
@@ -20,47 +20,106 @@ double Timing::getLapTimeWithDebug(){
   return elapsed;
 }
 
-double Timing::getLapTime(){
+double ProgramTimer::getLapTime(){
   clock_t end = clock();
   double elapsed =  double(end - lastLapTime_) / CLOCKS_PER_SEC;
   lastLapTime_ = clock();
   return elapsed;
 }
 
-std_msgs::Float32 Timing::getLapTimeMsg(){
+std_msgs::Float32 ProgramTimer::getLapTimeMsg(){
   clock_t end = clock();
   double elapsed =  double(end - lastLapTime_) / CLOCKS_PER_SEC;
   lastLapTime_ = clock();
   return toFloat32Msgs(elapsed);
 }
 
-double Timing::getTotalTimeWithDebug(){
+double ProgramTimer::getTotalTimeWithDebug(){
   clock_t end = clock();
   double elapsed = double(end - startTime_) / CLOCKS_PER_SEC;
   ROS_DEBUG_STREAM("Total time: " << elapsed);
   return elapsed;
 }
 
-double Timing::getTotalTime(){
+double ProgramTimer::getTotalTime(){
   clock_t end = clock();
   double elapsed = double(end - startTime_) / CLOCKS_PER_SEC;
   return elapsed;
 }
 
-std_msgs::Float32 Timing::getTotalTimeMsg(){
+std_msgs::Float32 ProgramTimer::getTotalTimeMsg(){
   clock_t end = clock();
   double elapsed = double(end - startTime_) / CLOCKS_PER_SEC;
   ROS_DEBUG_STREAM("Total time: " << elapsed);
   return toFloat32Msgs(elapsed);
 }
 
-std_msgs::Float32 Timing::toFloat32Msgs(float msg){
+std_msgs::Float32 ProgramTimer::toFloat32Msgs(float msg){
   std_msgs::Float32 rosMsg;
   rosMsg.data = msg;
   return rosMsg;
 }
 
-void Timing::resetTimer(){
+void ProgramTimer::resetTimer(){
   startTime_ = clock();
   lastLapTime_ = clock();
+}
+
+SystemTimer::SystemTimer()
+{
+  startTime_ = ros::Time::now();
+  lastLapTime_ = ros::Time::now();
+}
+
+double SystemTimer::getLapTimeWithDebug(){
+  ros::Time end = ros::Time::now();
+  double elapsed =  (end - lastLapTime_).toSec();
+  ROS_DEBUG_STREAM("Elapsed time: " << elapsed << "Total time: " << (end - lastLapTime_).toSec());
+  lastLapTime_ = ros::Time::now();
+  return elapsed;
+}
+
+double SystemTimer::getLapTime(){
+  ros::Time end = ros::Time::now();
+  double elapsed =  (end - lastLapTime_).toSec();
+  lastLapTime_ = ros::Time::now();
+  return elapsed;
+}
+
+std_msgs::Float32 SystemTimer::getLapTimeMsg(){
+  ros::Time end = ros::Time::now();
+  double elapsed =  (end - lastLapTime_).toSec();
+  lastLapTime_ = ros::Time::now();
+  return toFloat32Msgs(elapsed);
+}
+
+double SystemTimer::getTotalTimeWithDebug(){
+  ros::Time end = ros::Time::now();
+  double elapsed = (end - startTime_).toSec();
+  ROS_DEBUG_STREAM("Total time: " << elapsed);
+  return elapsed;
+}
+
+double SystemTimer::getTotalTime(){
+  ros::Time end = ros::Time::now();
+  double elapsed = (end - startTime_).toSec();
+  return elapsed;
+}
+
+std_msgs::Float32 SystemTimer::getTotalTimeMsg(){
+  ros::Time end = ros::Time::now();
+  double elapsed = (end - startTime_).toSec();
+  ROS_DEBUG_STREAM("Total time: " << elapsed);
+  return toFloat32Msgs(elapsed);
+}
+
+std_msgs::Float32 SystemTimer::toFloat32Msgs(float msg){
+  std_msgs::Float32 rosMsg;
+  rosMsg.data = msg;
+  return rosMsg;
+}
+
+void SystemTimer::resetTimer(){
+  startTime_ = ros::Time::now();
+  lastLapTime_ = ros::Time::now();
 }

@@ -250,6 +250,7 @@ void AllDataMultiLogger::writeRow() {
   }else{
     time = timer.getTotalTime();
   }
+  ROS_INFO_STREAM(time);
   file_ << objectId_ << ",";
   file_ << time << ",";
   file_ << cloudSize_ << ",";
@@ -270,13 +271,21 @@ void AllDataMultiLogger::writeRow() {
   file_ << r << ",";
   file_ << p << ",";
   file_ << y << "\n";
+
+  file_.flush();
 }
 
 void AllDataMultiLogger::modelParametersCallback(const std_msgs::Float32MultiArrayConstPtr& m){
-  for(int i=0; i<m->data.size(); i++){
-    modelParameters_.push_back(m->data[i]);
+  if(modelParameters_.size() == 0) {
+    for (int i = 0; i < m->data.size(); i++) {
+      modelParameters_.push_back(m->data[i]);
+    }
   }
-  modelParametersSubscriber_.shutdown();
+  else{
+    for (int i = 0; i < m->data.size(); i++) {
+      modelParameters_[i] = m->data[i];
+    }
+  }
 }
 
 void AllDataMultiLogger::cloudSizeCallback(const std_msgs::Float32ConstPtr& m){
