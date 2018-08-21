@@ -88,7 +88,7 @@ public:
         pose_estimation = boost::shared_ptr<CylinderPoseEstimation>(new CylinderPoseEstimation( nh, cloud ));
         break;
       case RANSACSphere:
-        pose_estimation = boost::shared_ptr<SpherePoseEstimation>(new SpherePoseEstimation( nh, cloud, 0.05, 0.25, 20000, 0.3 ));
+        pose_estimation = boost::shared_ptr<SpherePoseEstimation>(new SpherePoseEstimation( nh, cloud, 0.05, 0.1, 20000, 0.15 ));
         break;
       case PCA:
         pose_estimation = boost::shared_ptr<PCAPoseEstimation>(new PCAPoseEstimation( nh, cloud ));
