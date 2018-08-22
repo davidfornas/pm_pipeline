@@ -141,6 +141,9 @@ bool SQPoseEstimation::processNext() {
   if(min_params.e1 == 0 && min_params.e2 == 0 && min_params.a == 1 && min_params.b == 1 && min_params.c ==1)
     return false;
 
+  if(min_params.e1 < 0 || min_params.e2 < 0)
+    return false;
+
   // Sampling: Uniform does not have Mesh export
   sq::SuperquadricSampling<PointT, double> sampling;
   //sq::SuperquadricSamplingUniform<PointT, double> sampling;
