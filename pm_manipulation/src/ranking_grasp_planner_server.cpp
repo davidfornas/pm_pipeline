@@ -9,6 +9,7 @@
 #include <pm_tools/pcl_tools.h>
 #include <pm_tools/marker_tools.h>
 #include <pm_tools/tf_tools.h>
+#include <pm_tools/average.h>
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -59,14 +60,28 @@ int main(int argc, char **argv)
   ransac_method = true;
   grasp_id = 0;
 
+
+  AverageFloat32 avg1(nh, "object/cloudSize", "object/cloudSize/average");
+  AverageFloat32 avg2(nh, "stats/background", "stats/background/average");
+  AverageFloat32 avg3(nh, "stats/estimation", "stats/estimation/average");
+  AverageFloat32 avg4(nh, "stats/filterCloud", "stats/filterCloud/average");
+  AverageFloat32 avg5(nh, "stats/loadCloud", "stats/loadCloud/average");
+  AverageFloat32 avg6(nh, "stats/processCloud", "stats/processCloud/average");
+  AverageFloat32 avg7(nh, "stats/symmetry", "stats/symmetry/average");
+  AverageFloat32MultiArray avg8(nh, "object/modelParameters", "object/modelParameters/average");
+  AveragePose avg9(nh, "object/pose", "object/pose/average");
+
   //SETUP GUI SUBSCRIBER for specification_status
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
   ros::Subscriber grasp_id_sub = nh.subscribe("/grasp_id", 1, idCallback);
 
-
   ros::Publisher params_pub = nh.advertise<std_msgs::Float32MultiArray>("/specification_params_to_gui", 1000);
   ros::Publisher final_pose_pub = nh.advertise<geometry_msgs::Pose>(final_grasp_pose_topic, 1000);
   ros::Publisher cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/specification_cloud", 1000);
+
+  ros::Publisher fullProcessTimePublisher = nh.advertise<std_msgs::Float32>("/stats/processCloud", 1);
+  ros::Publisher loadTimePublisher = nh.advertise<std_msgs::Float32>("/stats/loadCloud", 1);
+  ros::Publisher filterTimePublisher = nh.advertise<std_msgs::Float32>("/stats/filterCloud", 1);
 
   tf::TransformListener *listener_ = new tf::TransformListener();
   tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
@@ -140,21 +155,20 @@ int main(int argc, char **argv)
   }else{
     sq_planner.setGraspsParams(3, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
     bool success = sq_planner.generateGraspList();
-    ROS_INFO_STREAM("FAIL");
 
     // If !success load & display another cloud
     while(ros::ok() && !success){
 
       ProgramTimer tick;
       PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
-      ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
-      //loadTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_DEBUG_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
+      loadTimePublisher.publish(tick.getTotalTimeMsg());
 
       tick.resetTimer();
       PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0, 3.5);//Removes far away points
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
-      //filterTimePublisher.publish(tick.getTotalTimeMsg());
-      ROS_INFO_STREAM("Online downsample time: " << tick.getTotalTimeMsg());
+      filterTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_DEBUG_STREAM("Online downsample time: " << tick.getTotalTimeMsg());
 
       pcl::copyPointCloud(*cloud, *aux_cloud);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
@@ -162,8 +176,8 @@ int main(int argc, char **argv)
       sq_planner.setNewCloud(cloud);
       tick.resetTimer();
       success = sq_planner.generateGraspList();
-      //fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
-      ROS_INFO_STREAM("Finished. Pose estimation processing time: " << tick.getTotalTimeMsg());
+      fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_DEBUG_STREAM("Finished. Pose estimation processing time: " << tick.getTotalTimeMsg());
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;
@@ -173,15 +187,10 @@ int main(int argc, char **argv)
       cloud_pub.publish(message);
       ros::spinOnce();
 
-      ROS_INFO_STREAM("BEFORE");
       sq_planner.setNewCloud(cloud);
-      ROS_INFO_STREAM("AFTER");
       success = sq_planner.generateGraspList();
-
-      ROS_INFO_STREAM("TRY");
     }
     while(ros::ok()) {
-      ROS_INFO_STREAM("Publishing grasp number " << grasp_id << ".");
       sq_planner.publishGraspData(grasp_id);
       grasp_follower.loop(sq_planner.getGrasp_cMg(grasp_id));
       kinematics_follower.loop(sq_planner.getGrasp_cMg_ik(grasp_id));
