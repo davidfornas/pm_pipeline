@@ -80,6 +80,11 @@ public:
   virtual bool process(){ return false;}
   virtual void publishResults() { }
 
+  //SQ specific hack
+  virtual CloudPtr getSQCloud() { return object_cloud_; }
+  virtual void setLMFitting() {}
+  virtual void setRegionGrowingClustering(double region_growing_norm_th, double region_growing_curv_th) {}
+
   //Set pose estimation debug, manily visualization with PCL Viewer.
   void setDebug( bool debug ){
     debug_ = debug;

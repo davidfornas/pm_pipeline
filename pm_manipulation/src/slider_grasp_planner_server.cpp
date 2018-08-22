@@ -25,7 +25,7 @@
 typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 
-bool marker_status, compute_initial_cMg, reset_marker, execute, do_ransac;
+bool marker_status, compute_initial_cMg, reset_marker, execute, compute_pose;
 Method method;
 
 void stringCallback(const std_msgs::String &msg ){
@@ -34,7 +34,7 @@ void stringCallback(const std_msgs::String &msg ){
     compute_initial_cMg = true;
     if( msg.data == "initFromRansac" || msg.data == "initFromBox" || msg.data == "initFromPCA"
         || msg.data == "initFromSphere" || msg.data == "initFromSQ"){
-      do_ransac = true;
+      compute_pose = true;
       if(msg.data == "initFromRansac") method = RANSACCylinder;
       if(msg.data == "initFromSphere") method = RANSACSphere;
       if(msg.data == "initFromBox") method = BoxPlane;
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 
   compute_initial_cMg = false;
   reset_marker = false;
-  do_ransac = false;
+  compute_pose = false;
 
   AverageFloat32 avg1(nh, "object/cloudSize", "object/cloudSize/average");
   AverageFloat32 avg2(nh, "stats/background", "stats/background/average");
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 
   ROS_INFO_STREAM("World to camera OK. Getting vehicle frames...");
   //Display the simulated vehicle for better visualization
-  if( do_ransac ){
+  if( compute_pose ){
     try{
       listener_->lookupTransform( cloud_frame_id, "girona500", ros::Time(0), cMv);
       geometry_msgs::Pose p;
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 
   // Load cloud if required.
   Cloud::Ptr cloud (new pcl::PointCloud<PointT>), aux_cloud (new pcl::PointCloud<PointT>);
-  if( do_ransac ){
+  if( compute_pose ){
     ProgramTimer tick;
     PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
     loadTimePublisher.publish(tick.getTotalTimeMsg());
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
   }
 
   SliderGraspPlanner * planner;
-  if( do_ransac ){
+  if( compute_pose ){
     ROS_INFO_STREAM("Specification using pose estimation");
     planner = new SliderGraspPlanner(cloud, nh, object_pose_topic, method); //, VispTools::vispHomogFromTfTransform( wMc ));
     planner->pose_estimation->setPlaneSegmentationParams(0.08, 100);//006
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
     planner->ialong = follower.ialong;
     planner->iangle = follower.iangle;
 
-    if( !do_ransac ){
+    if( !compute_pose ){
       planner->perceive();
     }else{
 
@@ -248,12 +248,12 @@ int main(int argc, char **argv)
       reset_marker = false;
       follower.resetMarker();
     }
-    if(do_ransac && method == RANSACCylinder )
+    if(compute_pose && method == RANSACCylinder )
       planner->publishObjectPose();
 
     //PUBLISH POSE FRAME FOR EXECUTION in TF and in POSE.
     geometry_msgs::Pose gp;
-    if( do_ransac ){
+    if( compute_pose ){
       gp.position.x = follower.grasp_pose_world.position.x;
       gp.position.y = follower.grasp_pose_world.position.y;
       gp.position.z = follower.grasp_pose_world.position.z;

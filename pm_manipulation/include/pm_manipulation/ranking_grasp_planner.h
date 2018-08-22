@@ -147,7 +147,6 @@ public:
   CylinderRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false) : RankingGraspPlanner(cloud, nh, object_pose, debug){
     pose_estimation = boost::shared_ptr<CylinderPoseEstimation>( new CylinderPoseEstimation(nh, cloud) );
     pose_estimation->setDebug(debug);
-    setNewCloud(cloud);
   }
 
   ~CylinderRankingGraspPlanner() {
@@ -170,8 +169,6 @@ class SQRankingGraspPlanner : public RankingGraspPlanner {
   std::vector<double> standoffs;
 
 public:
-
-  boost::shared_ptr<SQPoseEstimation> pose_estimation;
 
   /** Constructor  * */
   SQRankingGraspPlanner(CloudPtr cloud, ros::NodeHandle & nh, std::string object_pose, bool debug = false, int num_grasps = 5) : RankingGraspPlanner(cloud, nh, object_pose, debug){

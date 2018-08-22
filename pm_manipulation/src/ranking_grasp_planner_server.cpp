@@ -50,10 +50,10 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   std::string input_topic("/input_cloud"), final_grasp_pose_topic("/desired_grasp_pose"), cloud_frame_id("stereo"), object_pose_topic("/object");
-  nh.getParam("input_topic", input_topic);
-  nh.getParam("grasp_pose_topic", final_grasp_pose_topic);
-  nh.getParam("object_pose_topic", object_pose_topic);
-  nh.getParam("cloud_frame_id", cloud_frame_id);
+  nh.param("input_topic", input_topic, std::string("/stereo/points2/"));
+  nh.param("grasp_pose_topic", final_grasp_pose_topic, std::string("/cMg"));
+  nh.param("object_pose_topic", object_pose_topic, std::string("/object_pose"));
+  nh.param("cloud_frame_id", cloud_frame_id, std::string("stereo"));
 
   compute_cMg_list = false;
   ransac_method = true;
@@ -140,15 +140,30 @@ int main(int argc, char **argv)
   }else{
     sq_planner.setGraspsParams(3, 0.5, 0.03, 0, 3.1416*2, 3.1416/4);
     bool success = sq_planner.generateGraspList();
+    ROS_INFO_STREAM("FAIL");
+
     // If !success load & display another cloud
     while(ros::ok() && !success){
 
-      PCLTools<PointT>::cloudFromTopic(cloud, input_topic);
-      pcl::copyPointCloud(*cloud, *aux_cloud);
+      ProgramTimer tick;
       PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
-      PCLTools<PointT>::removeNanPoints(cloud);
-      PCLTools<PointT>::applyZAxisPassthrough(cloud, 0, 3.5);
-      PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.01);
+      ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
+      //loadTimePublisher.publish(tick.getTotalTimeMsg());
+
+      tick.resetTimer();
+      PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0, 3.5);//Removes far away points
+      PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
+      //filterTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_INFO_STREAM("Online downsample time: " << tick.getTotalTimeMsg());
+
+      pcl::copyPointCloud(*cloud, *aux_cloud);
+      ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
+
+      sq_planner.setNewCloud(cloud);
+      tick.resetTimer();
+      success = sq_planner.generateGraspList();
+      //fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_INFO_STREAM("Finished. Pose estimation processing time: " << tick.getTotalTimeMsg());
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;
@@ -158,8 +173,12 @@ int main(int argc, char **argv)
       cloud_pub.publish(message);
       ros::spinOnce();
 
+      ROS_INFO_STREAM("BEFORE");
       sq_planner.setNewCloud(cloud);
+      ROS_INFO_STREAM("AFTER");
       success = sq_planner.generateGraspList();
+
+      ROS_INFO_STREAM("TRY");
     }
     while(ros::ok()) {
       ROS_INFO_STREAM("Publishing grasp number " << grasp_id << ".");
