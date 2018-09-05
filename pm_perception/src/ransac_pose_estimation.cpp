@@ -29,6 +29,8 @@ bool BoxPoseEstimation::process() {
   bg_remove->setNewCloud(cloud_);
   bg_remove->initialize(cloud_, cloud_normals);
 
+  noBackgroundCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud_->points.size()));
+
   CloudPtr output (new Cloud), cloud_plane (new Cloud);
   pcl::PointCloud<pcl::Normal>::Ptr output_normals (new pcl::PointCloud<pcl::Normal>);
   pcl::ModelCoefficients::Ptr coefficients_plane = (pcl::ModelCoefficients::Ptr) new pcl::ModelCoefficients;
@@ -40,6 +42,7 @@ bool BoxPoseEstimation::process() {
   plane_seg.setDistanceThreshold(0.04);
   //plane_seg.setIterations(plane_iterations_);
   plane_seg.apply(output, output_normals, cloud_plane, coefficients_plane);
+
   CloudClustering<PointT> cluster(cloud_plane);
   cluster.applyEuclidianClustering();
   if(debug_) cluster.displayColoured();
@@ -105,6 +108,8 @@ bool CylinderPoseEstimation::initialize() {
   ROS_DEBUG_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
+
+  noBackgroundCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud_filtered2->points.size()));
 
   ProgramTimer tick;
 
@@ -175,6 +180,9 @@ bool CylinderPoseEstimation::process() {
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals2);
+
+  noBackgroundCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud_filtered2->points.size()));
+
 
   ProgramTimer tick;
 
@@ -333,6 +341,8 @@ bool SpherePoseEstimation::process() {
   ROS_INFO_STREAM("PointCloud after filtering has: " << cloud_filtered->points.size () << " data points.");
   bg_remove->setNewCloud(cloud_filtered);
   bg_remove->initialize(cloud_filtered2, cloud_normals);
+
+  noBackgroundCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud_filtered2->points.size()));
 
   CloudClustering<PointT> cluster(cloud_filtered2);
   cluster.applyEuclidianClustering();

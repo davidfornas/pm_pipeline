@@ -67,6 +67,9 @@ int main(int argc, char **argv)
   compute_pose = false;
 
   AverageFloat32 avg1(nh, "object/cloudSize", "object/cloudSize/average");
+  AverageFloat32 avg12(nh, "object/originalCloudSize", "object/originalCloudSize/average");
+  AverageFloat32 avg13(nh, "object/filteredCloudSize", "object/filteredCloudSize/average");
+  AverageFloat32 avg14(nh, "object/noBackgroundCloudSize", "object/noBackgroundCloudSize/average");
   AverageFloat32 avg2(nh, "stats/background", "stats/background/average");
   AverageFloat32 avg3(nh, "stats/estimation", "stats/estimation/average");
   AverageFloat32 avg4(nh, "stats/filterCloud", "stats/filterCloud/average");
@@ -86,6 +89,8 @@ int main(int argc, char **argv)
   ros::Publisher fullProcessTimePublisher = nh.advertise<std_msgs::Float32>("/stats/processCloud", 1);
   ros::Publisher loadTimePublisher = nh.advertise<std_msgs::Float32>("/stats/loadCloud", 1);
   ros::Publisher filterTimePublisher = nh.advertise<std_msgs::Float32>("/stats/filterCloud", 1);
+  ros::Publisher originalCloudSizePublisher = nh.advertise<std_msgs::Float32>("object/originalCloudSize", 1);
+  ros::Publisher filteredCloudSizePublisher = nh.advertise<std_msgs::Float32>("object/filteredCloudSize", 1);
 
   tf::TransformListener *listener_ = new tf::TransformListener();
   tf::TransformBroadcaster *broadcaster = new tf::TransformBroadcaster();
@@ -144,13 +149,18 @@ int main(int argc, char **argv)
     PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
     loadTimePublisher.publish(tick.getTotalTimeMsg());
     ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
-    ROS_INFO_STREAM("Initial cloud has: " << PCLTools<PointT>::nanAwareCount(aux_cloud) << " data points (not NaN).");
+
+    int count = PCLTools<PointT>::nanAwareCount(aux_cloud);
+    originalCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(count));
+    ROS_INFO_STREAM("Initial cloud has: " << count << " data points (not NaN).");
 
     tick.resetTimer();
     PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
     PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);//Was 0.01
 
     filterTimePublisher.publish(tick.getTotalTimeMsg());
+    filteredCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud->points.size()));
+
     ROS_INFO_STREAM("Downsample time: " << tick.getTotalTimeMsg());
 
     pcl::copyPointCloud(*cloud, *aux_cloud);
@@ -210,18 +220,23 @@ int main(int argc, char **argv)
 
       ProgramTimer tick;
       PCLTools<PointT>::cloudFromTopic(aux_cloud, input_topic);
-      ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
       loadTimePublisher.publish(tick.getTotalTimeMsg());
+      ROS_INFO_STREAM("Cloud load time: " << tick.getTotalTimeMsg());
+
+      int count = PCLTools<PointT>::nanAwareCount(aux_cloud);
+      originalCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(count));
+      ROS_INFO_STREAM("Initial cloud has: " << count << " data points (not NaN).");
 
       tick.resetTimer();
       PCLTools<PointT>::applyZAxisPassthrough(aux_cloud, cloud, 0.5, 3);//Removes far away points
       PCLTools<PointT>::applyVoxelGridFilter(cloud, 0.008);
       filterTimePublisher.publish(tick.getTotalTimeMsg());
+      filteredCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud->points.size()));
+
       ROS_INFO_STREAM("Online downsample time: " << tick.getTotalTimeMsg());
 
       pcl::copyPointCloud(*cloud, *aux_cloud);
       ROS_DEBUG_STREAM("PointCloud loaded and filtered has: " << cloud->points.size() << " data points.");
-
 
       planner->setNewCloud(cloud);
       tick.resetTimer();

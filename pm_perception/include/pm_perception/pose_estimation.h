@@ -48,6 +48,7 @@ protected:
   ros::Publisher objectPosePublisher;
   ros::Publisher objectParameterPublisher;
   ros::Publisher objectCloudPublisher;
+  ros::Publisher noBackgroundCloudSizePublisher;
   ros::Publisher objectCloudSizePublisher;
 
   ros::Publisher estimationStatsPublisher;
@@ -72,6 +73,7 @@ public:
     objectPosePublisher      = nh.advertise<geometry_msgs::Pose>("object/pose", 10);
     objectCloudPublisher     = nh.advertise<sensor_msgs::PointCloud2>("object/cloud", 1000);
     objectCloudSizePublisher = nh.advertise<std_msgs::Float32>("object/cloudSize", 10);
+    noBackgroundCloudSizePublisher = nh.advertise<std_msgs::Float32>("object/noBackgroundCloudSize", 10);
     estimationStatsPublisher = nh.advertise<std_msgs::Float32>("stats/estimation", 10);
     symmetryStatsPublisher   = nh.advertise<std_msgs::Float32>("stats/symmetry", 10);
   }

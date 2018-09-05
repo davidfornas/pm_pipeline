@@ -38,12 +38,17 @@ public:
 
 class AllDataSingleLogger{
 
+  ros::NodeHandle & nh;
+
   std::ofstream file_;
   std::string objectId_;
   geometry_msgs::Pose pose_;
   std::vector<float> modelParameters_;
-  float cloudSize_, symmetry_, estimation_, background_, filter_, process_, load_;
+  float originalCloudSize_, filteredCloudSize_, noBackgroundCloudSize_, cloudSize_, symmetry_, estimation_, background_, filter_, process_, load_;
 
+  ros::Subscriber originalCloudSizeSubscriber_;
+  ros::Subscriber filteredCloudSizeSubscriber_;
+  ros::Subscriber noBackgroundcloudSizeSubscriber_;
   ros::Subscriber cloudSizeSubscriber_;
   ros::Subscriber symmetrySubscriber_;
   ros::Subscriber estimationSubscriber_;
@@ -54,21 +59,26 @@ class AllDataSingleLogger{
   ros::Subscriber modelParametersSubscriber_;
   ros::Subscriber poseSubscriber_;
 
-  int aliveSubscribers_;
+  bool alive_originalCloudSizeSubscriber_;
+  bool alive_filteredCloudSizeSubscriber_;
+  bool alive_noBackgroundcloudSizeSubscriber_;
+  bool alive_cloudSizeSubscriber_;
+  bool alive_symmetrySubscriber_;
+  bool alive_estimationSubscriber_;
+  bool alive_backgroundSubscriber_;
+  bool alive_filterSubscriber_;
+  bool alive_loadSubscriber_;
+  bool alive_processSubscriber_;
+  bool alive_modelParametersSubscriber_;
+  bool alive_poseSubscriber_;
 
-public:
-  AllDataSingleLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool appendMode = true);
-
-  int getAliveSubscribers();
-
-  void writeSQHeader();
-  void writePCAHeader();
-  void writeRANSACCylinderHeader();
-  void writeRANSACBoxHeader();
-  void writeRANSACSphereHeader();
-  void writeRow();
+  bool areAllSubscribersAlive();
+  void subscribeToAll();
 
   void modelParametersCallback(const std_msgs::Float32MultiArrayConstPtr& m);
+  void originalCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
+  void filteredCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
+  void noBackgroundCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
   void cloudSizeCallback(const std_msgs::Float32ConstPtr& m);
   void symmetryCallback(const std_msgs::Float32ConstPtr& m);
   void backgroundCallback(const std_msgs::Float32ConstPtr& m);
@@ -78,21 +88,36 @@ public:
   void processCallback(const std_msgs::Float32ConstPtr& m);
   void poseCallback(const geometry_msgs::PoseConstPtr& m);
 
+public:
+  AllDataSingleLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool appendMode = true);
+
+  void writeSQHeader();
+  void writePCAHeader();
+  void writeRANSACCylinderHeader();
+  void writeRANSACBoxHeader();
+  void writeRANSACSphereHeader();
+  void writeRow();
+
   ~AllDataSingleLogger();
 
 };
 
 class AllDataMultiLogger{
 
+  ros::NodeHandle & nh;
+
   std::ofstream file_;
   std::string objectId_;
   geometry_msgs::Pose pose_;
   std::vector<float> modelParameters_;
-  float cloudSize_, symmetry_, estimation_, background_, filter_, process_, load_;
+  float originalCloudSize_, filteredCloudSize_, noBackgroundCloudSize_, cloudSize_, symmetry_, estimation_, background_, filter_, process_, load_;
 
   bool timerStarted_;
   SystemTimer timer;
 
+  ros::Subscriber originalCloudSizeSubscriber_;
+  ros::Subscriber filteredCloudSizeSubscriber_;
+  ros::Subscriber noBackgroundcloudSizeSubscriber_;
   ros::Subscriber cloudSizeSubscriber_;
   ros::Subscriber symmetrySubscriber_;
   ros::Subscriber estimationSubscriber_;
@@ -103,6 +128,22 @@ class AllDataMultiLogger{
   ros::Subscriber modelParametersSubscriber_;
   ros::Subscriber poseSubscriber_;
 
+  bool alive_originalCloudSizeSubscriber_;
+  bool alive_filteredCloudSizeSubscriber_;
+  bool alive_noBackgroundCloudSizeSubscriber_;
+  bool alive_cloudSizeSubscriber_;
+  bool alive_symmetrySubscriber_;
+  bool alive_estimationSubscriber_;
+  bool alive_backgroundSubscriber_;
+  bool alive_filterSubscriber_;
+  bool alive_loadSubscriber_;
+  bool alive_processSubscriber_;
+  bool alive_modelParametersSubscriber_;
+  bool alive_poseSubscriber_;
+
+  bool areAllSubscribersAlive();
+  void subscribeToAll();
+
   void writeRANSACCylinderHeader(); //mode 1
   void writeRANSACBoxHeader(); //mode 2
   void writeRANSACSphereHeader(); //mode 3
@@ -111,6 +152,9 @@ class AllDataMultiLogger{
   void writeRow();
 
   void modelParametersCallback(const std_msgs::Float32MultiArrayConstPtr& m);
+  void originalCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
+  void filteredCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
+  void noBackgroundCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
   void cloudSizeCallback(const std_msgs::Float32ConstPtr& m);
   void symmetryCallback(const std_msgs::Float32ConstPtr& m);
   void backgroundCallback(const std_msgs::Float32ConstPtr& m);

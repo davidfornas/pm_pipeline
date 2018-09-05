@@ -59,6 +59,8 @@ bool SQPoseEstimation::processNext() {
   // @TODO Find best value. 400 for now. Stone is 300.
   if (cloud_clustering_->cloud_clusters[cluster_index_]->points.size() < cluster_thereshold_) return false;
 
+  noBackgroundCloudSizePublisher.publish(ProgramTimer::toFloat32Msgs(cloud_clustering_->cloud_clusters[cluster_index_]->points.size()));
+
   // ESTIMATON OF THE SYMMETRY PLANE
   ProgramTimer tick;
   CloudPtr full_model(new Cloud);

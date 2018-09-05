@@ -37,33 +37,53 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  std::string fileName;
+  std::ostringstream ssAll, ssAvg;
+  switch(mode) {
+    case 1:
+      ssAll << objectId << "_ransacCylinder" ;
+      ssAvg << "avg" << "_ransacCylinder" ;
+      break;
+    case 2:
+      ssAll << objectId << "_ransacBox" ;
+      ssAvg << "avg" << "_ransacBox" ;
+      break;
+    case 3:
+      ssAll << objectId << "_ransacSphere" ;
+      ssAvg << "avg" << "_ransacSphere" ;
+      break;
+    case 4:
+      ssAll << objectId << "_sq" ;
+      ssAvg << "avg" << "_sq" ;
+      break;
+    case 5:
+      ssAll << objectId << "_pca" ;
+      ssAvg << "avg" << "_pca" ;
+      break;
+    default:
+      break;
+  }
+
+  std::string fileName, avgName;
   if (pcl::console::find_argument (argc, argv, "-f") > 0){
     pcl::console::parse_argument (argc, argv, "-f", fileName);
   }else{
-    fileName = "estimationResults";
+    fileName = ssAll.str();
+    avgName = ssAvg.str();
   }
 
-  if(pcl::console::find_argument (argc, argv, "-k") > 0){
-    AllDataMultiLogger logger(fileName, objectId, nh, mode);
-    ros::spin();
-    return 0;
-  }
-
+  boost::scoped_ptr<AllDataSingleLogger> avgLoader;
   if(pcl::console::find_argument (argc, argv, "-c") > 0){
-    AllDataSingleLogger logger(fileName, objectId, nh, false); //append = false
-    logger.writeRANSACCylinderHeader();
-    logger.writeRow();
-    return 0;
+    avgLoader.reset(new AllDataSingleLogger(avgName, objectId, nh, false)); //append = false
+    avgLoader->writeRANSACCylinderHeader();
+  }else{
+    avgLoader.reset(new AllDataSingleLogger(avgName, objectId, nh, true)); //append = true
   }
+  AllDataMultiLogger logger(fileName, objectId, nh, mode);
+  ros::spin();
+  avgLoader->writeRow();
+  avgLoader.reset();
+  std::cerr << "Averages also written" << std::endl;
 
-  if(pcl::console::find_argument (argc, argv, "-a") > 0){
-    AllDataSingleLogger logger(fileName, objectId, nh, true); //append = false
-    logger.writeRow();
-    return 0;
-  }
-
-  std::cerr << "-t modelType (cylinder=1,ransacBox=2,sphere=3,sq=4,pca=5) is compulsory" << std::endl;
   return (0);
 }
 
