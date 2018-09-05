@@ -186,10 +186,10 @@ int main(int argc, char **argv)
   }
 
   ProgramTimer tick;
-  planner->perceive();
-  fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
-  ROS_INFO_STREAM("First computing time: " << tick.getTotalTimeMsg());
-
+  if(planner->perceive()) {
+    fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
+    ROS_INFO_STREAM("First computing time: " << tick.getTotalTimeMsg());
+  }
   vpHomogeneousMatrix cMg = planner->get_cMg();
 
   double angle = 75, rad = 18, along = 20;
@@ -240,9 +240,10 @@ int main(int argc, char **argv)
 
       planner->setNewCloud(cloud);
       tick.resetTimer();
-      planner->redoRansac();
-      fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
-      ROS_INFO_STREAM("Finished. Pose estimation processing time: " << tick.getTotalTimeMsg());
+      if(planner->redoRansac()) {
+        fullProcessTimePublisher.publish(tick.getTotalTimeMsg());
+        ROS_INFO_STREAM("Finished. Pose estimation processing time: " << tick.getTotalTimeMsg());
+      }
 
       sensor_msgs::PointCloud2 message;
       pcl::PCLPointCloud2 pcl_pc;

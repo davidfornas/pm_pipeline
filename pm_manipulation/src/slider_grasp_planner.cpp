@@ -8,36 +8,40 @@
 
 typedef pcl::PointXYZRGB PointT;
 
-void SliderGraspPlanner::perceive() {
+bool SliderGraspPlanner::perceive() {
 
-  bool initialized;
+  bool initialized, ret = false;
 
   if( do_ransac ){
-    pose_estimation->initialize();
+    ret = pose_estimation->initialize();
   }else{
     ROS_INFO_STREAM("Waiting for pose on topic: " << topic_name);
     if (!initialized){
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name);
       cMo = VispTools::vispHomogFromGeometryPose(*message);
       initialized = true;
+      ret = true;
       ROS_INFO_STREAM("Pose received");
     }else{
       geometry_msgs::Pose::ConstPtr message = ros::topic::waitForMessage< geometry_msgs::Pose >(topic_name, ros::Duration(2));
       if (message == NULL){
         ROS_INFO("No pose messages received in 2 seconds. cMo unchanged.");
-        return;
+        return false;
       }
+      ret = true;
       cMo = VispTools::vispHomogFromGeometryPose(*message);
     }
     // @DEBUG vispToTF.addTransform(cMo, "/world", "/amphora_from_pose", "cMo");
   }
   //Compute modified cMg from cMo
   recalculate_cMg();
+  return ret;
 }
 
-void SliderGraspPlanner::redoRansac() {
-  pose_estimation->process();
+bool SliderGraspPlanner::redoRansac() {
+  bool ret = pose_estimation->process();
   recalculate_cMg();
+  return ret;
 }
 
 void SliderGraspPlanner::computeMatrix( double angle, double rad, double along ){

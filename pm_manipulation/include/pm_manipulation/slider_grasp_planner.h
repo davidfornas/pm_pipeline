@@ -108,10 +108,10 @@ public:
   }
 
   /** Main function */
-  void perceive();
+  bool perceive();
 
   /** Online planning **/
-  void redoRansac();
+  bool redoRansac();
 
   void setCamerFrameName( std::string name){ camera_frame_name = name; }
 
