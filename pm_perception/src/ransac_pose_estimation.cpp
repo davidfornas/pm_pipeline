@@ -67,8 +67,9 @@ bool BoxPoseEstimation::process() {
 
   estimationStatsPublisher.publish(tick.getTotalTimeMsg());
 
-  publishResults();
   object_cloud_ = full_model;
+
+  publishResults();
   return true;
 }
 
