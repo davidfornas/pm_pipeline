@@ -25,7 +25,7 @@ SimplePoseLogger::~SimplePoseLogger(){
   myfile.close();
 }
 
-AllDataSingleLogger::AllDataSingleLogger(std::string file_name, std::string objectId, ros::NodeHandle & nH, bool appendMode)
+AllDataSingleLogger::AllDataSingleLogger(std::string file_name, std::string objectId, ros::NodeHandle & nH, bool appendMode, bool stdDevInsteadOfAvg)
         : nh(nH), alive_originalCloudSizeSubscriber_(false), alive_filteredCloudSizeSubscriber_(false),
           alive_noBackgroundcloudSizeSubscriber_(false), alive_cloudSizeSubscriber_(false), alive_symmetrySubscriber_(false),
           alive_estimationSubscriber_(false), alive_backgroundSubscriber_(false), alive_filterSubscriber_(false),
@@ -39,10 +39,14 @@ AllDataSingleLogger::AllDataSingleLogger(std::string file_name, std::string obje
   }
 
   objectId_ = objectId;
-  subscribeToAll();
+  if(stdDevInsteadOfAvg) {
+    subscribeToAllStdDev();
+  }else{
+    subscribeToAllAvg();
+  }
 }
 
-void AllDataSingleLogger::subscribeToAll(){
+void AllDataSingleLogger::subscribeToAllAvg(){
   cloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/cloudSize/average", 1, &AllDataSingleLogger::cloudSizeCallback,
                                                          this);
   originalCloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/originalCloudSize/average", 1, &AllDataSingleLogger::originalCloudSizeCallback,
@@ -67,6 +71,34 @@ void AllDataSingleLogger::subscribeToAll(){
                                                                          &AllDataSingleLogger::modelParametersCallback,
                                                                          this);
   poseSubscriber_ = nh.subscribe<geometry_msgs::Pose>("object/pose/average", 1, &AllDataSingleLogger::poseCallback, this);
+}
+
+
+void AllDataSingleLogger::subscribeToAllStdDev(){
+  cloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/cloudSize/stdDev", 1, &AllDataSingleLogger::cloudSizeCallback,
+                                                         this);
+  originalCloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/originalCloudSize/stdDev", 1, &AllDataSingleLogger::originalCloudSizeCallback,
+                                                                 this);
+  filteredCloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/filteredCloudSize/stdDev", 1, &AllDataSingleLogger::filteredCloudSizeCallback,
+                                                                 this);
+  noBackgroundcloudSizeSubscriber_ = nh.subscribe<std_msgs::Float32>("object/noBackgroundCloudSize/stdDev", 1, &AllDataSingleLogger::noBackgroundCloudSizeCallback,
+                                                                     this);
+  symmetrySubscriber_ = nh.subscribe<std_msgs::Float32>("stats/symmetry/stdDev", 1, &AllDataSingleLogger::symmetryCallback,
+                                                        this);
+  estimationSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/estimation/stdDev", 1,
+                                                          &AllDataSingleLogger::estimationCallback, this);
+  backgroundSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/background/stdDev", 1,
+                                                          &AllDataSingleLogger::backgroundCallback, this);
+  filterSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/filterCloud/stdDev", 1, &AllDataSingleLogger::filterCallback,
+                                                      this);
+  loadSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/loadCloud/stdDev", 1, &AllDataSingleLogger::loadCallback, this);
+  processSubscriber_ = nh.subscribe<std_msgs::Float32>("stats/processCloud/stdDev", 1,
+                                                       &AllDataSingleLogger::processCallback, this);
+
+  modelParametersSubscriber_ = nh.subscribe<std_msgs::Float32MultiArray>("object/modelParameters/stdDev", 1,
+                                                                         &AllDataSingleLogger::modelParametersCallback,
+                                                                         this);
+  poseSubscriber_ = nh.subscribe<std_msgs::Float32MultiArray>("object/pose/stdDev", 1, &AllDataSingleLogger::poseStdDevCallback, this);
 }
 
 void AllDataSingleLogger::writeRANSACCylinderHeader() {
@@ -121,6 +153,33 @@ void AllDataSingleLogger::writeRow() {
   file_ << p << ",";
   file_ << y << "\n";
 }
+
+
+void AllDataSingleLogger::writeRowStdDev() {
+  while(!areAllSubscribersAlive()){
+    ros::spinOnce();
+  }
+  ROS_INFO_STREAM("Average for object " << objectId_ << "SIZE: " << modelParameters_.size());
+  file_ << objectId_ << ",";
+  file_ << originalCloudSize_ << ",";
+  file_ << filteredCloudSize_ << ",";
+  file_ << noBackgroundCloudSize_ << ",";
+  file_ << cloudSize_ << ",";
+  file_ << process_ << ",";
+  file_ << load_ << ",";
+  file_ << filter_ << ",";
+  file_ << background_ << ",";
+  file_ << estimation_ << ",";
+  file_ << symmetry_ << ",";
+  for(int i = 0; i < modelParameters_.size(); i++){
+    file_ << modelParameters_[i] << ",";
+  }
+  for(int i = 0; i < poseStdDev_.size()-1; i++){
+    file_ << poseStdDev_[i] << ",";
+  }
+  file_ << poseStdDev_[5] << "\n";
+}
+
 
 bool AllDataSingleLogger::areAllSubscribersAlive(){
   return  alive_originalCloudSizeSubscriber_ && alive_filteredCloudSizeSubscriber_  && alive_noBackgroundcloudSizeSubscriber_
@@ -195,6 +254,21 @@ void AllDataSingleLogger::processCallback(const std_msgs::Float32ConstPtr& m){
 
 void AllDataSingleLogger::poseCallback(const geometry_msgs::PoseConstPtr& m){
   pose_ = *m;
+  alive_poseSubscriber_ = true;
+}
+
+
+void AllDataSingleLogger::poseStdDevCallback(const std_msgs::Float32MultiArrayConstPtr& m){
+  if(poseStdDev_.size() == 0) {
+    for (int i = 0; i < m->data.size(); i++) {
+      poseStdDev_.push_back(m->data[i]);
+    }
+  }
+  else{
+    for (int i = 0; i < m->data.size(); i++) {
+      poseStdDev_[i] = m->data[i];
+    }
+  }
   alive_poseSubscriber_ = true;
 }
 

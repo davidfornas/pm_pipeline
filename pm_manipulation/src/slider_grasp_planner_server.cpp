@@ -66,18 +66,18 @@ int main(int argc, char **argv)
   reset_marker = false;
   compute_pose = false;
 
-  AverageFloat32 avg1(nh, "object/cloudSize", "object/cloudSize/average");
-  AverageFloat32 avg12(nh, "object/originalCloudSize", "object/originalCloudSize/average");
-  AverageFloat32 avg13(nh, "object/filteredCloudSize", "object/filteredCloudSize/average");
-  AverageFloat32 avg14(nh, "object/noBackgroundCloudSize", "object/noBackgroundCloudSize/average");
-  AverageFloat32 avg2(nh, "stats/background", "stats/background/average");
-  AverageFloat32 avg3(nh, "stats/estimation", "stats/estimation/average");
-  AverageFloat32 avg4(nh, "stats/filterCloud", "stats/filterCloud/average");
-  AverageFloat32 avg5(nh, "stats/loadCloud", "stats/loadCloud/average");
-  AverageFloat32 avg6(nh, "stats/processCloud", "stats/processCloud/average");
-  AverageFloat32 avg7(nh, "stats/symmetry", "stats/symmetry/average");
-  AverageFloat32MultiArray avg8(nh, "object/modelParameters", "object/modelParameters/average");
-  AveragePose avg9(nh, "object/pose", "object/pose/average");
+  AverageFloat32 avg1(nh, "object/cloudSize", "object/cloudSize/average", "object/cloudSize/stdDev");
+  AverageFloat32 avg12(nh, "object/originalCloudSize", "object/originalCloudSize/average", "object/originalCloudSize/stdDev");
+  AverageFloat32 avg13(nh, "object/filteredCloudSize", "object/filteredCloudSize/average", "object/filteredCloudSize/stdDev");
+  AverageFloat32 avg14(nh, "object/noBackgroundCloudSize", "object/noBackgroundCloudSize/average", "object/noBackgroundCloudSize/stdDev");
+  AverageFloat32 avg2(nh, "stats/background", "stats/background/average", "stats/background/stdDev");
+  AverageFloat32 avg3(nh, "stats/estimation", "stats/estimation/average", "stats/estimation/stdDev");
+  AverageFloat32 avg4(nh, "stats/filterCloud", "stats/filterCloud/average", "stats/filterCloud/stdDev");
+  AverageFloat32 avg5(nh, "stats/loadCloud", "stats/loadCloud/average", "stats/loadCloud/stdDev");
+  AverageFloat32 avg6(nh, "stats/processCloud", "stats/processCloud/average", "stats/processCloud/stdDev");
+  AverageFloat32 avg7(nh, "stats/symmetry", "stats/symmetry/average", "stats/symmetry/stdDev");
+  AverageFloat32MultiArray avg8(nh, "object/modelParameters", "object/modelParameters/average", "object/modelParameters/stdDev");
+  AveragePose avg9(nh, "object/pose", "object/pose/average", "object/pose/stdDev");
 
   ros::Subscriber status_sub = nh.subscribe("/specification_status", 1, stringCallback);
 

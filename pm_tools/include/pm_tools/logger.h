@@ -44,6 +44,7 @@ class AllDataSingleLogger{
   std::string objectId_;
   geometry_msgs::Pose pose_;
   std::vector<float> modelParameters_;
+  std::vector<float> poseStdDev_;
   float originalCloudSize_, filteredCloudSize_, noBackgroundCloudSize_, cloudSize_, symmetry_, estimation_, background_, filter_, process_, load_;
 
   ros::Subscriber originalCloudSizeSubscriber_;
@@ -73,7 +74,8 @@ class AllDataSingleLogger{
   bool alive_poseSubscriber_;
 
   bool areAllSubscribersAlive();
-  void subscribeToAll();
+  void subscribeToAllAvg();
+  void subscribeToAllStdDev();
 
   void modelParametersCallback(const std_msgs::Float32MultiArrayConstPtr& m);
   void originalCloudSizeCallback(const std_msgs::Float32ConstPtr& m);
@@ -87,9 +89,10 @@ class AllDataSingleLogger{
   void loadCallback(const std_msgs::Float32ConstPtr& m);
   void processCallback(const std_msgs::Float32ConstPtr& m);
   void poseCallback(const geometry_msgs::PoseConstPtr& m);
+  void poseStdDevCallback(const std_msgs::Float32MultiArrayConstPtr& m);
 
 public:
-  AllDataSingleLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool appendMode = true);
+  AllDataSingleLogger(std::string file_name, std::string objectId, ros::NodeHandle & nh, bool appendMode = true, bool stdDevInsteadOfAvg = false);
 
   void writeSQHeader();
   void writePCAHeader();
@@ -97,6 +100,7 @@ public:
   void writeRANSACBoxHeader();
   void writeRANSACSphereHeader();
   void writeRow();
+  void writeRowStdDev();
 
   ~AllDataSingleLogger();
 
